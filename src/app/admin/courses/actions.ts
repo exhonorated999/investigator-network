@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/rbac";
 import { slugify, withSuffix } from "@/lib/slug";
 import { defaultUnitData } from "@/lib/units";
+import { sendLiveSessionReminder } from "@/lib/email";
 import type { UnitType, Prisma } from "@prisma/client";
 
 async function uniqueSlug(title: string): Promise<string> {
@@ -204,6 +205,40 @@ export async function deleteUnit(formData: FormData) {
   await prisma.unit.delete({ where: { id } });
   revalidatePath(`/admin/courses/${courseId}`);
   redirect(`/admin/courses/${courseId}`);
+}
+
+/** Email all enrolled learners a reminder for a LIVE_SESSION unit. */
+export async function sendLiveSessionReminders(formData: FormData) {
+  await requireAdmin();
+  const unitId = String(formData.get("unitId"));
+  const courseId = String(formData.get("courseId"));
+
+  const unit = await prisma.unit.findUnique({
+    where: { id: unitId },
+    include: { section: { include: { course: true } } },
+  });
+  if (!unit || unit.type !== "LIVE_SESSION") return;
+
+  const data = (unit.data as Record<string, unknown>) ?? {};
+  const enrollments = await prisma.enrollment.findMany({
+    where: { courseId: unit.section.courseId },
+    include: { user: true },
+  });
+
+  await Promise.all(
+    enrollments
+      .filter((e) => e.user.status === "APPROVED")
+      .map((e) =>
+        sendLiveSessionReminder(e.user.email, e.user.name, {
+          courseTitle: unit.section.course.title,
+          unitTitle: unit.title,
+          startsAt: data.startsAt ? String(data.startsAt) : undefined,
+          joinUrl: data.teamsJoinUrl ? String(data.teamsJoinUrl) : undefined,
+        })
+      )
+  );
+
+  revalidatePath(`/admin/courses/${courseId}/units/${unitId}`);
 }
 
 // Accept a full YouTube URL or a bare ID and normalise to the 11-char ID.

@@ -50,6 +50,22 @@ export function sendDenialEmail(to: string, name: string) {
   });
 }
 
+export function sendLiveSessionReminder(
+  to: string,
+  name: string,
+  opts: { courseTitle: string; unitTitle: string; startsAt?: string; joinUrl?: string }
+) {
+  const when = opts.startsAt
+    ? new Date(opts.startsAt).toLocaleString()
+    : "the scheduled time";
+  const join = opts.joinUrl ? `\n\nJoin the Teams meeting: ${opts.joinUrl}` : "";
+  return send({
+    to,
+    subject: `Reminder: live session "${opts.unitTitle}" — ${opts.courseTitle}`,
+    text: `Hi ${name},\n\nThis is a reminder for the upcoming live training session "${opts.unitTitle}" in ${opts.courseTitle}, scheduled for ${when}.${join}\n\n— Investigator Network`,
+  });
+}
+
 function loginUrl() {
   return (process.env.AUTH_URL || "http://localhost:3000") + "/login";
 }

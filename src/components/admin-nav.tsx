@@ -15,8 +15,8 @@ export function AdminNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="flex flex-col gap-1">
-      <Link href="/admin" className="mb-6 flex items-center gap-2">
+    <nav className="flex flex-row gap-1 overflow-x-auto md:flex-col">
+      <Link href="/admin" className="mb-0 mr-2 flex shrink-0 items-center gap-2 md:mb-6 md:mr-0">
         <Image
           src="/brand/logo.png"
           alt="Investigator Network"
@@ -24,7 +24,7 @@ export function AdminNav() {
           height={36}
           className="rounded-md"
         />
-        <span className="text-sm font-semibold text-foreground">
+        <span className="hidden text-sm font-semibold text-foreground md:inline">
           Investigator Network
         </span>
       </Link>
@@ -36,7 +36,7 @@ export function AdminNav() {
           <Link
             key={l.href}
             href={l.href}
-            className={`rounded-lg px-3 py-2 text-sm transition ${
+            className={`shrink-0 whitespace-nowrap rounded-lg px-3 py-2 text-sm transition ${
               active
                 ? "bg-accent/15 text-accent"
                 : "text-muted hover:bg-surface-2 hover:text-foreground"

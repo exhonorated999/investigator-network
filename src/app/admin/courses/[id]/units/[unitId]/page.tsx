@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { UNIT_LABEL } from "@/lib/units";
 import { updateUnit, deleteUnit } from "../../../actions";
+import { sendLiveSessionReminders } from "../../../actions";
 import { ensureQuiz } from "../../../quiz-actions";
 import { QuizBuilder } from "@/components/quiz-builder";
 
@@ -192,6 +193,21 @@ export default async function UnitEditor({
 
       {unit.type === "QUIZ" && quiz ? (
         <QuizBuilder quiz={quiz} courseId={courseId} unitId={unit.id} />
+      ) : null}
+
+      {unit.type === "LIVE_SESSION" ? (
+        <form action={sendLiveSessionReminders} className="mt-8 rounded-lg border border-border bg-surface p-4">
+          <input type="hidden" name="unitId" value={unit.id} />
+          <input type="hidden" name="courseId" value={courseId} />
+          <p className="text-sm text-foreground">Reminders</p>
+          <p className="mt-1 text-xs text-muted">
+            Email all enrolled learners a reminder with the schedule and Teams join
+            link for this session.
+          </p>
+          <button className="mt-3 rounded-lg border border-accent/50 px-4 py-2 text-sm font-semibold text-accent hover:bg-accent/10">
+            Send reminder to enrolled learners
+          </button>
+        </form>
       ) : null}
 
       <form action={deleteUnit} className="mt-8">

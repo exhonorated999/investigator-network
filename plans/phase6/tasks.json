@@ -1,0 +1,32 @@
+[
+  {
+    "content": "[6-1] Certificate lib: maybeIssueCertificate + serial; hook into completion mutations",
+    "id": "p6-1",
+    "status": "completed"
+  },
+  {
+    "content": "[6-2] Certificate page /certificates/[serial] + surface on course overview/dashboard",
+    "id": "p6-2",
+    "status": "completed"
+  },
+  {
+    "content": "[6-3] Admin analytics: enriched dashboard metrics + recent activity",
+    "id": "p6-3",
+    "status": "completed"
+  },
+  {
+    "content": "[6-4] Live-session reminder email helper + admin trigger action",
+    "id": "p6-4",
+    "status": "completed"
+  },
+  {
+    "content": "[6-5] Responsive QA pass (admin nav mobile, overflow)",
+    "id": "p6-5",
+    "status": "in_progress"
+  },
+  {
+    "content": "[6-6] Typecheck, E2E, commit",
+    "id": "p6-6",
+    "status": "pending"
+  }
+]

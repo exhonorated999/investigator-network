@@ -100,6 +100,9 @@ export default async function DashboardPage() {
                       <ProgressBar pct={pct} />
                       <span className="shrink-0 text-xs text-muted">{pct}%</span>
                     </div>
+                    {pct === 100 ? (
+                      <p className="mt-2 text-xs font-medium text-gold">🏅 Completed</p>
+                    ) : null}
                   </Link>
                 );
               })}

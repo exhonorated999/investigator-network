@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/rbac";
+import { maybeIssueCertificate } from "@/lib/certificate";
 
 /**
  * Grade a pending attempt. Admin awards points for each DOCUMENT_UPLOAD answer;
@@ -60,6 +61,13 @@ export async function gradeAttempt(formData: FormData) {
         completedAt: new Date(),
       },
     });
+    const courseUnit = await prisma.unit.findUnique({
+      where: { id: attempt.quiz.unitId },
+      include: { section: true },
+    });
+    if (courseUnit) {
+      await maybeIssueCertificate(attempt.userId, courseUnit.section.courseId);
+    }
   }
 
   revalidatePath("/admin/grading");

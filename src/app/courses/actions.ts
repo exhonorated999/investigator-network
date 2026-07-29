@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/rbac";
 import { saveFile } from "@/lib/storage";
+import { maybeIssueCertificate } from "@/lib/certificate";
 
 /** Enroll the current user in a published course, then open the first unit. */
 export async function enroll(formData: FormData) {
@@ -71,6 +72,8 @@ export async function setUnitComplete(formData: FormData) {
       completedAt: complete ? new Date() : null,
     },
   });
+
+  if (complete) await maybeIssueCertificate(userId, courseId);
 
   revalidatePath(`/courses/${slug}/units/${unitId}`);
   revalidatePath(`/courses/${slug}`);
@@ -174,6 +177,7 @@ export async function submitAttempt(formData: FormData) {
         update: { status: "COMPLETE", completedAt: new Date() },
         create: { userId, unitId, status: "COMPLETE", completedAt: new Date() },
       });
+      await maybeIssueCertificate(userId, courseId);
     }
   }
 
@@ -224,6 +228,8 @@ export async function submitAssignment(formData: FormData) {
     update: { status: "COMPLETE", completedAt: new Date() },
     create: { userId, unitId, status: "COMPLETE", completedAt: new Date() },
   });
+
+  await maybeIssueCertificate(userId, courseId);
 
   revalidatePath(`/courses/${slug}/units/${unitId}`);
   revalidatePath("/dashboard");

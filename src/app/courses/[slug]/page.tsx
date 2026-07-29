@@ -40,6 +40,13 @@ export default async function CourseOverview({
   const units = flattenUnits(course);
   const firstUnit = units[0];
 
+  const certificate =
+    enrollment && pct === 100
+      ? await prisma.certificate.findUnique({
+          where: { userId_courseId: { userId: user.id, courseId: course.id } },
+        })
+      : null;
+
   return (
     <div className="min-h-screen">
       <SiteHeader name={user.name} isAdmin={isAdmin} />
@@ -88,6 +95,14 @@ export default async function CourseOverview({
                     className="rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-[#04212b] hover:bg-accent-strong"
                   >
                     {pct > 0 ? "Continue" : "Start course"}
+                  </Link>
+                ) : null}
+                {certificate ? (
+                  <Link
+                    href={`/certificates/${certificate.serial}`}
+                    className="rounded-lg border border-gold/50 px-5 py-2.5 text-sm font-semibold text-gold hover:bg-gold/10"
+                  >
+                    🏅 View certificate
                   </Link>
                 ) : null}
               </div>
