@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+/*
+  Investigator Network — brand theme
+  Palette derived from logo/banner:
+    - deep navy backgrounds
+    - cyan / teal accent (primary action)
+    - gold outline (highlight / borders)
+    - purple secondary accent
+*/
+
+:root {
+  --background: #0b0f1a;
+  --surface: #131a2b;
+  --surface-2: #1b2334;
+  --foreground: #e7ecf5;
+  --muted: #9aa7bd;
+  --border: #26304a;
+
+  --accent: #22d3ee; /* cyan */
+  --accent-strong: #06b6d4;
+  --gold: #e8d9a0;
+  --purple: #a855f7;
+
+  --success: #34d399;
+  --warning: #fbbf24;
+  --danger: #f87171;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-gold: var(--gold);
+  --color-purple: var(--purple);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+}

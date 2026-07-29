@@ -1,0 +1,271 @@
+// Investigator Network LMS — Prisma schema (v1)
+// Datasource: PostgreSQL (Railway). Storage of uploaded files lives on a
+// persistent volume; only metadata is stored here (FileUpload).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Users, roles, approval gating
+// ---------------------------------------------------------------------------
+
+enum Role {
+  LEARNER
+  ADMIN
+}
+
+enum UserStatus {
+  PENDING
+  APPROVED
+  DENIED
+  SUSPENDED
+}
+
+model User {
+  id           String     @id @default(cuid())
+  name         String
+  agency       String
+  email        String     @unique
+  passwordHash String
+  role         Role       @default(LEARNER)
+  status       UserStatus @default(PENDING)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  approvedAt   DateTime?
+  approvedById String?
+  approvedBy   User?      @relation("Approvals", fields: [approvedById], references: [id])
+  approvedUsers User[]    @relation("Approvals")
+
+  enrollments   Enrollment[]
+  unitProgress  UnitProgress[]
+  attempts      Attempt[]
+  uploads       FileUpload[]
+  certificates  Certificate[]
+  gradedAnswers Answer[]        @relation("GradedBy")
+
+  @@index([status])
+}
+
+// ---------------------------------------------------------------------------
+// Course structure
+// ---------------------------------------------------------------------------
+
+enum CourseStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum UnitType {
+  VIDEO
+  NOTES
+  LIVE_SESSION
+  FILE_ASSIGNMENT
+  QUIZ
+  CERTIFICATE
+}
+
+model Category {
+  id      String   @id @default(cuid())
+  name    String   @unique
+  courses Course[]
+}
+
+model Course {
+  id          String       @id @default(cuid())
+  title       String
+  slug        String       @unique
+  description String       @default("")
+  coverImage  String?
+  status      CourseStatus @default(DRAFT)
+  categoryId  String?
+  category    Category?    @relation(fields: [categoryId], references: [id])
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  sections     Section[]
+  enrollments  Enrollment[]
+  certificates Certificate[]
+}
+
+model Section {
+  id       String @id @default(cuid())
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title    String
+  order    Int    @default(0)
+  units    Unit[]
+
+  @@index([courseId])
+}
+
+model Unit {
+  id             String   @id @default(cuid())
+  sectionId      String
+  section        Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  title          String
+  type           UnitType
+  order          Int      @default(0)
+  completionRule String?
+  // Type-specific payload stored as JSON:
+  //  VIDEO           -> { youtubeId, durationSec }
+  //  NOTES           -> { contentMarkdown, pdfFileId? }
+  //  LIVE_SESSION    -> { teamsJoinUrl, startsAt, durationMin, replayUrl? }
+  //  FILE_ASSIGNMENT -> { prompt, allowedFileTypes }
+  //  CERTIFICATE     -> { templateId }
+  data           Json     @default("{}")
+
+  quiz     Quiz?
+  progress UnitProgress[]
+
+  @@index([sectionId])
+}
+
+// ---------------------------------------------------------------------------
+// Enrollment & progress
+// ---------------------------------------------------------------------------
+
+model Enrollment {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId   String
+  course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  enrolledAt DateTime @default(now())
+
+  @@unique([userId, courseId])
+}
+
+enum ProgressStatus {
+  INCOMPLETE
+  COMPLETE
+}
+
+model UnitProgress {
+  id          String         @id @default(cuid())
+  userId      String
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  unitId      String
+  unit        Unit           @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  status      ProgressStatus @default(INCOMPLETE)
+  completedAt DateTime?
+
+  @@unique([userId, unitId])
+}
+
+// ---------------------------------------------------------------------------
+// Assessments
+// ---------------------------------------------------------------------------
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  DOCUMENT_UPLOAD
+}
+
+enum AttemptStatus {
+  PENDING_GRADING
+  GRADED
+}
+
+model Quiz {
+  id        String     @id @default(cuid())
+  unitId    String     @unique
+  unit      Unit       @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  title     String
+  passScore Int        @default(70)
+  questions Question[]
+  attempts  Attempt[]
+}
+
+model Question {
+  id      String       @id @default(cuid())
+  quizId  String
+  quiz    Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  type    QuestionType
+  prompt  String
+  order   Int          @default(0)
+  points  Int          @default(1)
+  choices Choice[]
+  answers Answer[]
+
+  @@index([quizId])
+}
+
+model Choice {
+  id         String   @id @default(cuid())
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  text       String
+  isCorrect  Boolean  @default(false)
+  answers    Answer[]
+
+  @@index([questionId])
+}
+
+model Attempt {
+  id          String        @id @default(cuid())
+  quizId      String
+  quiz        Quiz          @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  submittedAt DateTime      @default(now())
+  score       Int?
+  status      AttemptStatus @default(PENDING_GRADING)
+  passed      Boolean?
+  answers     Answer[]
+
+  @@index([quizId, status])
+}
+
+model Answer {
+  id               String      @id @default(cuid())
+  attemptId        String
+  attempt          Attempt     @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  questionId       String
+  question         Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  selectedChoiceId String?
+  selectedChoice   Choice?     @relation(fields: [selectedChoiceId], references: [id])
+  uploadedFileId   String?
+  uploadedFile     FileUpload? @relation(fields: [uploadedFileId], references: [id])
+  awardedPoints    Int?
+  feedback         String?
+  gradedById       String?
+  gradedBy         User?       @relation("GradedBy", fields: [gradedById], references: [id])
+
+  @@index([attemptId])
+}
+
+// ---------------------------------------------------------------------------
+// Files & certificates
+// ---------------------------------------------------------------------------
+
+model FileUpload {
+  id          String   @id @default(cuid())
+  ownerUserId String
+  owner       User     @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  path        String
+  filename    String
+  mimeType    String
+  sizeBytes   Int
+  purpose     String
+  createdAt   DateTime @default(now())
+
+  answers Answer[]
+}
+
+model Certificate {
+  id       String   @id @default(cuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId String
+  course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  issuedAt DateTime @default(now())
+  serial   String   @unique
+
+  @@unique([userId, courseId])
+}

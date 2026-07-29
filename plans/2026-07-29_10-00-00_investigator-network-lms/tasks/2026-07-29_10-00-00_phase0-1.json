@@ -1,0 +1,32 @@
+[
+  {
+    "id": "P0-1",
+    "content": "[P0-1] Scaffold Next.js (TS, App Router, Tailwind) + init git",
+    "status": "pending"
+  },
+  {
+    "id": "P0-2",
+    "content": "[P0-2] Add Prisma + Postgres, env config, storage abstraction",
+    "status": "pending"
+  },
+  {
+    "id": "P0-3",
+    "content": "[P0-3] Base dark brand theme + logos, start.sh using $APP_PORT",
+    "status": "pending"
+  },
+  {
+    "id": "P1-1",
+    "content": "[P1-1] User model + Auth.js credentials, bcrypt, seed admin",
+    "status": "pending"
+  },
+  {
+    "id": "P1-2",
+    "content": "[P1-2] Register form (name/agency/email/pw) -> PENDING user",
+    "status": "pending"
+  },
+  {
+    "id": "P1-3",
+    "content": "[P1-3] Login gating (block non-APPROVED) + RBAC middleware",
+    "status": "pending"
+  }
+]
