@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/rbac";
-import type { QuestionType } from "@prisma/client";
+import type { QuestionType } from "@/generated/prisma";
 
 function unitPath(courseId: string, unitId: string) {
   revalidatePath(`/admin/courses/${courseId}/units/${unitId}`);

@@ -1,4 +1,4 @@
-import type { UnitType } from "@prisma/client";
+import type { UnitType } from "@/generated/prisma";
 
 export const UNIT_TYPES: {
   type: UnitType;

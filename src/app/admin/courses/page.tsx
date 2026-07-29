@@ -17,18 +17,19 @@ export default async function AdminCoursesPage() {
   ]);
 
   return (
-    <div>
+    <div className="reveal">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground">Courses</h1>
-          <p className="mt-1 text-muted">
+          <p className="eyebrow eyebrow-gold">// COURSE MANAGEMENT</p>
+          <h1 className="display-lg mt-2 text-foreground">Courses</h1>
+          <p className="mt-2 text-[15px] text-muted">
             Create and manage training courses.
           </p>
         </div>
       </div>
 
-      <div className="mt-6 rounded-2xl border border-border bg-surface p-5">
-        <h2 className="text-sm font-semibold text-foreground">New course</h2>
+      <div className="panel rule-top mt-6 p-5">
+        <p className="eyebrow eyebrow-muted">New course</p>
         <form
           action={createCourse}
           className="mt-3 grid gap-3 sm:grid-cols-[1fr_200px_auto]"
@@ -37,13 +38,13 @@ export default async function AdminCoursesPage() {
             name="title"
             required
             placeholder="Course title"
-            className="rounded-lg border border-border bg-surface-2 px-3 py-2 text-foreground outline-none focus:border-accent"
+            className="field"
           />
           <input
             name="category"
             list="cats"
             placeholder="Category (optional)"
-            className="rounded-lg border border-border bg-surface-2 px-3 py-2 text-foreground outline-none focus:border-accent"
+            className="field"
           />
           <datalist id="cats">
             {categories.map((c) => (
@@ -52,7 +53,7 @@ export default async function AdminCoursesPage() {
           </datalist>
           <button
             type="submit"
-            className="rounded-lg bg-accent px-4 py-2 font-semibold text-[#04212b] transition hover:bg-accent-strong"
+            className="btn btn-primary"
           >
             Create
           </button>
@@ -67,20 +68,20 @@ export default async function AdminCoursesPage() {
             <Link
               key={c.id}
               href={`/admin/courses/${c.id}`}
-              className="flex items-center justify-between rounded-xl border border-border bg-surface p-4 transition hover:border-accent"
+              className="panel panel-hover rule-top flex items-center justify-between p-4"
             >
               <div>
-                <div className="font-medium text-foreground">{c.title}</div>
-                <div className="mt-0.5 text-sm text-muted">
+                <div className="display-sm text-foreground">{c.title}</div>
+                <div className="mt-1 font-mono text-[11px] text-muted">
                   {c.category?.name ?? "Uncategorized"} · {c._count.sections}{" "}
                   sections · {c._count.enrollments} enrolled
                 </div>
               </div>
               <span
-                className={`rounded-full border px-2.5 py-0.5 text-xs ${
+                className={`inline-block shrink-0 border px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.14em] ${
                   c.status === "PUBLISHED"
-                    ? "border-success/30 bg-success/15 text-success"
-                    : "border-warning/30 bg-warning/15 text-warning"
+                    ? "border-success/40 text-success bg-[rgba(74,222,128,0.08)]"
+                    : "border-gold/40 text-gold bg-[rgba(244,162,97,0.08)]"
                 }`}
               >
                 {c.status}

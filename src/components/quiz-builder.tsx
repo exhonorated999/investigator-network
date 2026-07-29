@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+import type { Prisma } from "@/generated/prisma";
 import {
   updateQuiz,
   addQuestion,
@@ -14,8 +14,7 @@ type QuizWithQuestions = Prisma.QuizGetPayload<{
   include: { questions: { include: { choices: true } } };
 }>;
 
-const inputClass =
-  "rounded-lg border border-border bg-surface-2 px-3 py-2 text-foreground outline-none focus:border-accent";
+const inputClass = "field";
 
 export function QuizBuilder({
   quiz,
@@ -30,52 +29,55 @@ export function QuizBuilder({
 
   return (
     <div className="mt-8 border-t border-border pt-6">
-      <h2 className="text-lg font-semibold text-foreground">Test builder</h2>
+      <p className="eyebrow eyebrow-gold">// TEST BUILDER</p>
+      <h2 className="display-sm mt-2 text-foreground">Test builder</h2>
 
       {/* Quiz settings */}
-      <form action={updateQuiz} className="mt-4 flex flex-wrap items-end gap-3">
+      <form action={updateQuiz} className="panel rule-top mt-4 flex flex-wrap items-end gap-3 p-4">
         <input type="hidden" name="quizId" value={quiz.id} />
         <input type="hidden" name="courseId" value={courseId} />
         <input type="hidden" name="unitId" value={unitId} />
-        <label className="grid gap-1 text-sm">
-          <span className="text-muted">Quiz title</span>
+        <label className="grid flex-1 gap-1.5">
+          <span className="eyebrow eyebrow-muted">Quiz title</span>
           <input name="title" defaultValue={quiz.title} className={inputClass} />
         </label>
-        <label className="grid gap-1 text-sm">
-          <span className="text-muted">Pass score (%)</span>
+        <label className="grid gap-1.5">
+          <span className="eyebrow eyebrow-muted">Pass score (%)</span>
           <input
             name="passScore"
             type="number"
             min={0}
             max={100}
             defaultValue={quiz.passScore}
-            className={`${inputClass} w-28`}
+            className="field w-28"
           />
         </label>
-        <button className="rounded-lg border border-border px-4 py-2 text-sm text-foreground hover:border-accent/60">
+        <button className="btn btn-ghost btn-sm">
           Save settings
         </button>
       </form>
 
       {/* Questions */}
-      <div className="mt-6 space-y-5">
+      <div className="mt-6 space-y-4">
         {questions.length === 0 ? (
-          <p className="rounded-lg border border-border bg-surface px-4 py-4 text-sm text-muted">
+          <p className="panel px-4 py-4 text-[15px] text-muted">
             No questions yet. Add one below.
           </p>
         ) : (
           questions.map((q, i) => (
-            <div key={q.id} className="rounded-xl border border-border bg-surface p-4">
+            <div key={q.id} className="panel rule-top p-4">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wide text-accent">
-                  Q{i + 1} ·{" "}
+                <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-accent">
+                  Q{String(i + 1).padStart(2, "0")} ·{" "}
                   {q.type === "MULTIPLE_CHOICE" ? "Multiple choice" : "Document upload"}
                 </span>
                 <form action={deleteQuestion}>
                   <input type="hidden" name="id" value={q.id} />
                   <input type="hidden" name="courseId" value={courseId} />
                   <input type="hidden" name="unitId" value={unitId} />
-                  <button className="text-xs text-danger hover:underline">Delete</button>
+                  <button className="btn btn-ghost btn-sm border-danger/40 text-danger hover:border-danger hover:bg-[rgba(239,68,68,0.08)] hover:text-danger">
+                    Delete
+                  </button>
                 </form>
               </div>
 
@@ -83,29 +85,29 @@ export function QuizBuilder({
                 <input type="hidden" name="id" value={q.id} />
                 <input type="hidden" name="courseId" value={courseId} />
                 <input type="hidden" name="unitId" value={unitId} />
-                <label className="grid flex-1 gap-1 text-sm">
-                  <span className="text-muted">Prompt</span>
+                <label className="grid flex-1 gap-1.5">
+                  <span className="eyebrow eyebrow-muted">Prompt</span>
                   <input name="prompt" defaultValue={q.prompt} className={inputClass} />
                 </label>
-                <label className="grid gap-1 text-sm">
-                  <span className="text-muted">Points</span>
+                <label className="grid gap-1.5">
+                  <span className="eyebrow eyebrow-muted">Points</span>
                   <input
                     name="points"
                     type="number"
                     min={1}
                     defaultValue={q.points}
-                    className={`${inputClass} w-24`}
+                    className="field w-24"
                   />
                 </label>
-                <button className="rounded-lg border border-border px-3 py-2 text-sm text-foreground hover:border-accent/60">
+                <button className="btn btn-ghost btn-sm">
                   Save
                 </button>
               </form>
 
               {q.type === "MULTIPLE_CHOICE" ? (
                 <div className="mt-4 space-y-2">
-                  <p className="text-xs text-muted">
-                    Choices — select the radio to mark the correct answer.
+                  <p className="eyebrow eyebrow-muted">
+                    Choices — select the radio to mark the correct answer
                   </p>
                   {q.choices.map((c) => (
                     <div key={c.id} className="flex items-center gap-2">
@@ -116,10 +118,10 @@ export function QuizBuilder({
                         <input type="hidden" name="unitId" value={unitId} />
                         <button
                           title="Mark correct"
-                          className={`flex h-5 w-5 items-center justify-center rounded-full border ${
+                          className={`flex h-5 w-5 items-center justify-center rounded-full border transition ${
                             c.isCorrect
-                              ? "border-success bg-success text-[#04212b]"
-                              : "border-border text-transparent hover:border-accent"
+                              ? "border-accent-bright bg-accent-bright text-[#04212b]"
+                              : "border-border text-transparent hover:border-accent-bright"
                           }`}
                         >
                           ✓
@@ -133,9 +135,9 @@ export function QuizBuilder({
                           name="text"
                           defaultValue={c.text}
                           placeholder="Choice text"
-                          className={`${inputClass} flex-1`}
+                          className="field flex-1"
                         />
-                        <button className="rounded-lg border border-border px-3 py-2 text-sm text-foreground hover:border-accent/60">
+                        <button className="btn btn-ghost btn-sm">
                           Save
                         </button>
                       </form>
@@ -143,7 +145,7 @@ export function QuizBuilder({
                         <input type="hidden" name="id" value={c.id} />
                         <input type="hidden" name="courseId" value={courseId} />
                         <input type="hidden" name="unitId" value={unitId} />
-                        <button className="px-2 text-danger hover:underline" title="Remove">
+                        <button className="btn btn-ghost btn-sm border-danger/40 px-2 text-danger hover:border-danger hover:bg-[rgba(239,68,68,0.08)] hover:text-danger" title="Remove">
                           ✕
                         </button>
                       </form>
@@ -153,13 +155,13 @@ export function QuizBuilder({
                     <input type="hidden" name="questionId" value={q.id} />
                     <input type="hidden" name="courseId" value={courseId} />
                     <input type="hidden" name="unitId" value={unitId} />
-                    <button className="mt-1 text-sm text-accent hover:underline">
+                    <button className="btn btn-ghost btn-sm mt-1">
                       + Add choice
                     </button>
                   </form>
                 </div>
               ) : (
-                <p className="mt-3 rounded-lg border border-border bg-surface-2 px-3 py-2 text-xs text-muted">
+                <p className="mt-3 border border-border bg-[rgba(10,12,17,0.6)] px-3 py-2 font-mono text-[11px] text-muted">
                   Learners upload a document. This question is graded manually in the
                   grading queue.
                 </p>
@@ -170,26 +172,26 @@ export function QuizBuilder({
       </div>
 
       {/* Add question */}
-      <form action={addQuestion} className="mt-6 flex flex-wrap items-end gap-3 rounded-xl border border-border bg-surface p-4">
+      <form action={addQuestion} className="panel rule-top mt-6 flex flex-wrap items-end gap-3 p-4">
         <input type="hidden" name="quizId" value={quiz.id} />
         <input type="hidden" name="courseId" value={courseId} />
         <input type="hidden" name="unitId" value={unitId} />
-        <label className="grid gap-1 text-sm">
-          <span className="text-muted">Type</span>
-          <select name="type" className={inputClass} defaultValue="MULTIPLE_CHOICE">
+        <label className="grid gap-1.5">
+          <span className="eyebrow eyebrow-muted">Type</span>
+          <select name="type" className="field w-auto" defaultValue="MULTIPLE_CHOICE">
             <option value="MULTIPLE_CHOICE">Multiple choice</option>
             <option value="DOCUMENT_UPLOAD">Document upload</option>
           </select>
         </label>
-        <label className="grid flex-1 gap-1 text-sm">
-          <span className="text-muted">Prompt</span>
+        <label className="grid flex-1 gap-1.5">
+          <span className="eyebrow eyebrow-muted">Prompt</span>
           <input name="prompt" placeholder="Question prompt" className={inputClass} />
         </label>
-        <label className="grid gap-1 text-sm">
-          <span className="text-muted">Points</span>
-          <input name="points" type="number" min={1} defaultValue={1} className={`${inputClass} w-24`} />
+        <label className="grid gap-1.5">
+          <span className="eyebrow eyebrow-muted">Points</span>
+          <input name="points" type="number" min={1} defaultValue={1} className="field w-24" />
         </label>
-        <button className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-[#04212b] hover:bg-accent-strong">
+        <button className="btn btn-primary btn-sm">
           Add question
         </button>
       </form>

@@ -1,8 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { getViewerUser } from "@/lib/viewer";
 import { SignOutButton } from "@/components/sign-out";
 import { UnitView } from "@/components/unit-view";
 import { QuizTaker } from "@/components/quiz-taker";
@@ -24,8 +24,7 @@ export default async function CoursePlayer({
   params: Promise<{ slug: string; unitId: string }>;
 }) {
   const { slug, unitId } = await params;
-  const session = await auth();
-  const user = session!.user;
+  const user = (await getViewerUser())!;
   const isAdmin = user.role === "ADMIN";
 
   const course = await loadCourseBySlug(slug);
@@ -46,47 +45,76 @@ export default async function CoursePlayer({
   const pct = percentComplete(course, completed);
   const { prevId, nextId, index, total } = neighbors(course, unitId);
   const isDone = completed.has(unitId);
+  const doneCount = completed.size;
 
   return (
     <div className="min-h-screen md:grid md:grid-cols-[320px_1fr]">
-      {/* Outline */}
-      <aside className="border-b border-border bg-surface md:min-h-screen md:border-b-0 md:border-r">
+      {/* ----------------------------------------------------------- outline */}
+      <aside className="border-b border-border bg-surface md:sticky md:top-0 md:min-h-screen md:border-b-0 md:border-r">
         <div className="flex items-center gap-2.5 border-b border-border px-4 py-3">
           <Image src="/brand/logo.png" alt="" width={28} height={28} />
-          <Link href={`/courses/${slug}`} className="text-sm font-semibold text-foreground hover:text-accent">
+          <Link
+            href={`/courses/${slug}`}
+            className="display-sm text-[13px] text-foreground transition hover:text-accent-bright"
+          >
             {course.title}
           </Link>
         </div>
-        <div className="px-4 py-3">
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
-            <div className="h-full rounded-full bg-accent" style={{ width: `${pct}%` }} />
+
+        {/* progress */}
+        <div className="border-b border-border px-4 py-3">
+          <div className="mb-2 flex items-baseline justify-between">
+            <span className="font-mono text-[11px] text-muted">
+              {doneCount}/{total} units
+            </span>
+            <span className="font-display text-lg font-bold text-accent-bright">
+              {pct}%
+            </span>
           </div>
-          <p className="mt-1 text-xs text-muted">{pct}% complete</p>
+          <div className="h-[6px] w-full overflow-hidden bg-[rgba(255,255,255,0.06)]">
+            <div
+              className="h-full bg-gradient-to-r from-accent to-accent-bright transition-all"
+              style={{
+                width: `${pct}%`,
+                boxShadow: "0 0 12px rgba(0,180,216,0.7)",
+              }}
+            />
+          </div>
         </div>
+
         <nav className="pb-6">
           {course.sections.map((section) => (
-            <div key={section.id} className="mt-2">
-              <p className="px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
+            <div key={section.id} className="mt-3">
+              <p className="eyebrow eyebrow-muted px-4 py-1.5 text-[10px]">
                 {section.title}
               </p>
               <ul>
                 {section.units.map((u) => {
                   const active = u.id === unitId;
                   const done = completed.has(u.id);
+                  const uIdx = units.findIndex((x) => x.id === u.id);
                   return (
                     <li key={u.id}>
                       <Link
                         href={`/courses/${slug}/units/${u.id}`}
-                        className={`flex items-center gap-2.5 px-4 py-2 text-sm ${
+                        className={`flex items-center gap-3 px-4 py-2.5 text-sm transition ${
                           active
                             ? "border-l-2 border-accent bg-surface-2 text-foreground"
                             : "border-l-2 border-transparent text-muted hover:bg-surface-2 hover:text-foreground"
                         }`}
+                        style={
+                          active
+                            ? { boxShadow: "inset 2px 0 12px rgba(0,180,216,0.25)" }
+                            : undefined
+                        }
                       >
-                        <span className="w-4 text-center text-xs">
-                          {done ? "✓" : UNIT_ICON[u.type]}
+                        <span className="font-mono text-[11px] text-muted">
+                          {(uIdx + 1).toString().padStart(2, "0")}
                         </span>
-                        <span className="flex-1">{u.title}</span>
+                        <span className="flex-1 truncate">{u.title}</span>
+                        {done ? (
+                          <span className="text-xs text-success">✓</span>
+                        ) : null}
                       </Link>
                     </li>
                   );
@@ -97,27 +125,30 @@ export default async function CoursePlayer({
         </nav>
       </aside>
 
-      {/* Content */}
+      {/* ----------------------------------------------------------- content */}
       <div className="flex min-h-screen flex-col">
         <header className="flex items-center justify-between border-b border-border px-6 py-3">
-          <Link href="/dashboard" className="text-sm text-muted hover:text-foreground">
+          <Link
+            href="/dashboard"
+            className="eyebrow eyebrow-muted transition hover:text-accent-bright"
+          >
             ← My training
           </Link>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-muted">
-              Unit {index + 1} of {total}
+            <span className="font-mono text-xs text-muted">
+              UNIT {String(index + 1).padStart(2, "0")} OF {String(total).padStart(2, "0")}
             </span>
             <SignOutButton />
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-8">
-          <span className="text-xs font-medium uppercase tracking-wide text-accent">
+        <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-10">
+          <span className="tag-chip tag-chip-cyan">
             {UNIT_ICON[current.type]} {current.type.replace("_", " ")}
           </span>
-          <h1 className="mt-1 text-2xl font-semibold text-foreground">{current.title}</h1>
+          <h1 className="display-lg mt-4">{current.title}</h1>
 
-          <div className="mt-6">
+          <div className="mt-8">
             {current.type === "QUIZ" ? (
               <QuizTaker unitId={current.id} slug={slug} userId={user.id} />
             ) : (
@@ -127,30 +158,31 @@ export default async function CoursePlayer({
 
           {/* Completion */}
           {current.type !== "FILE_ASSIGNMENT" && current.type !== "QUIZ" ? (
-            <form action={setUnitComplete} className="mt-6">
+            <form action={setUnitComplete} className="mt-8">
               <input type="hidden" name="unitId" value={current.id} />
               <input type="hidden" name="slug" value={slug} />
               <input type="hidden" name="complete" value={isDone ? "false" : "true"} />
               <button
-                className={`rounded-lg px-5 py-2.5 text-sm font-semibold ${
+                className={isDone ? "btn btn-ghost btn-sm" : "btn btn-primary btn-sm"}
+                style={
                   isDone
-                    ? "border border-border text-muted hover:border-accent/60"
-                    : "bg-success text-[#04212b] hover:opacity-90"
-                }`}
+                    ? { color: "var(--success)", borderColor: "rgba(74,222,128,0.4)" }
+                    : undefined
+                }
               >
                 {isDone ? "✓ Completed — mark incomplete" : "Mark as complete"}
               </button>
             </form>
           ) : current.type === "FILE_ASSIGNMENT" && isDone ? (
-            <p className="mt-6 text-sm text-success">✓ Assignment submitted.</p>
+            <p className="mt-8 text-sm text-success">✓ Assignment submitted.</p>
           ) : null}
 
           {/* Prev / next */}
-          <div className="mt-10 flex items-center justify-between border-t border-border pt-5">
+          <div className="mt-12 flex items-center justify-between border-t border-border pt-6">
             {prevId ? (
               <Link
                 href={`/courses/${slug}/units/${prevId}`}
-                className="rounded-lg border border-border px-4 py-2 text-sm text-foreground hover:border-accent/60"
+                className="btn btn-ghost btn-sm"
               >
                 ← Previous
               </Link>
@@ -160,15 +192,12 @@ export default async function CoursePlayer({
             {nextId ? (
               <Link
                 href={`/courses/${slug}/units/${nextId}`}
-                className="rounded-lg border border-border px-4 py-2 text-sm text-foreground hover:border-accent/60"
+                className="btn btn-ghost btn-sm"
               >
                 Next →
               </Link>
             ) : (
-              <Link
-                href={`/courses/${slug}`}
-                className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-[#04212b] hover:bg-accent-strong"
-              >
+              <Link href={`/courses/${slug}`} className="btn btn-gold">
                 Finish
               </Link>
             )}

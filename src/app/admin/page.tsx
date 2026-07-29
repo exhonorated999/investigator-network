@@ -60,34 +60,45 @@ export default async function AdminHome() {
   ];
 
   return (
-    <div>
-      <h1 className="text-2xl font-semibold text-foreground">Admin dashboard</h1>
-      <p className="mt-1 text-muted">Approvals, courses, grading, and platform activity.</p>
+    <div className="reveal">
+      <p className="eyebrow eyebrow-gold">// OPS DASHBOARD</p>
+      <h1 className="display-lg mt-2 text-foreground">Command Center</h1>
+      <p className="mt-2 text-[15px] text-muted">
+        Approvals, courses, grading, and platform activity at a glance.
+      </p>
 
-      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((s) => {
+      {/* Stat tiles */}
+      <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {stats.map((s, i) => {
           const highlight = s.accent && Number(s.value) > 0;
           return (
             <Link
               key={s.label}
               href={s.href}
-              className={`rounded-2xl border bg-surface p-5 transition hover:border-accent ${
-                highlight ? "border-accent/50 ring-1 ring-accent/20" : "border-border"
-              }`}
+              className={`panel panel-hover rule-top px-5 py-4 transition ${
+                highlight ? "rule-top-gold glow-ring" : ""
+              } reveal reveal-${Math.min(i + 1, 5)}`}
             >
-              <div className="text-2xl font-semibold text-foreground">{s.value}</div>
-              <div className="mt-1 text-sm text-muted">{s.label}</div>
+              <p
+                className={`font-display text-3xl font-black leading-none ${
+                  highlight ? "text-gold" : "text-accent-bright"
+                }`}
+              >
+                {s.value}
+              </p>
+              <p className="eyebrow eyebrow-muted mt-2">{s.label}</p>
             </Link>
           );
         })}
       </div>
 
+      {/* Action banners */}
       {(pending > 0 || pendingGrading > 0) && (
         <div className="mt-6 flex flex-wrap gap-3">
           {pending > 0 && (
             <Link
               href="/admin/users?status=PENDING"
-              className="rounded-xl border border-accent/40 bg-accent/10 px-4 py-2 text-sm text-accent hover:bg-accent/20"
+              className="btn btn-gold btn-sm"
             >
               {pending} {pending === 1 ? "person" : "people"} awaiting access →
             </Link>
@@ -95,7 +106,7 @@ export default async function AdminHome() {
           {pendingGrading > 0 && (
             <Link
               href="/admin/grading"
-              className="rounded-xl border border-accent/40 bg-accent/10 px-4 py-2 text-sm text-accent hover:bg-accent/20"
+              className="btn btn-primary btn-sm"
             >
               {pendingGrading} {pendingGrading === 1 ? "attempt" : "attempts"} to grade →
             </Link>
@@ -103,8 +114,9 @@ export default async function AdminHome() {
         </div>
       )}
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-3">
-        <ActivityCard title="Newest users">
+      {/* Activity feeds */}
+      <div className="mt-8 grid gap-4 lg:grid-cols-3">
+        <ActivityCard title="Newest users" label="01 / Registrations">
           {recentUsers.length === 0 ? (
             <Empty />
           ) : (
@@ -114,7 +126,7 @@ export default async function AdminHome() {
           )}
         </ActivityCard>
 
-        <ActivityCard title="Recent enrollments">
+        <ActivityCard title="Recent enrollments" label="02 / Enrollments">
           {recentEnrollments.length === 0 ? (
             <Empty />
           ) : (
@@ -124,12 +136,12 @@ export default async function AdminHome() {
           )}
         </ActivityCard>
 
-        <ActivityCard title="Certificates issued">
+        <ActivityCard title="Certificates issued" label="03 / Credentials">
           {recentCerts.length === 0 ? (
             <Empty />
           ) : (
             recentCerts.map((c) => (
-              <Row key={c.id} main={c.user.name} sub={c.course.title} tag="🏅" />
+              <Row key={c.id} main={c.user.name} sub={c.course.title} tag="CERT" />
             ))
           )}
         </ActivityCard>
@@ -138,23 +150,44 @@ export default async function AdminHome() {
   );
 }
 
-function ActivityCard({ title, children }: { title: string; children: React.ReactNode }) {
+function ActivityCard({
+  title,
+  label,
+  children,
+}: {
+  title: string;
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="rounded-2xl border border-border bg-surface p-5">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">{title}</h2>
-      <div className="mt-3 divide-y divide-border">{children}</div>
+    <div className="panel rule-top p-5">
+      <p className="eyebrow eyebrow-gold">{label}</p>
+      <h2 className="display-sm mt-2 text-foreground">{title}</h2>
+      <div className="mt-4 divide-y divide-border">{children}</div>
     </div>
   );
 }
 
 function Row({ main, sub, tag }: { main: string; sub?: string; tag?: string }) {
+  const tagColor =
+    tag === "PENDING"
+      ? "text-gold"
+      : tag === "APPROVED"
+        ? "text-success"
+        : tag === "DENIED" || tag === "SUSPENDED"
+          ? "text-danger"
+          : "text-accent-bright";
   return (
-    <div className="flex items-center gap-3 py-2">
+    <div className="flex items-center gap-3 py-2.5">
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm text-foreground">{main}</p>
-        {sub ? <p className="truncate text-xs text-muted">{sub}</p> : null}
+        <p className="truncate text-[15px] text-foreground">{main}</p>
+        {sub ? <p className="truncate font-mono text-[11px] text-muted">{sub}</p> : null}
       </div>
-      {tag ? <span className="shrink-0 text-xs text-muted">{tag}</span> : null}
+      {tag ? (
+        <span className={`shrink-0 font-mono text-[10px] uppercase tracking-[0.16em] ${tagColor}`}>
+          {tag}
+        </span>
+      ) : null}
     </div>
   );
 }

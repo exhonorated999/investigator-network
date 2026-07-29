@@ -24,39 +24,40 @@ export default async function AdminGradingPage() {
   });
 
   return (
-    <div>
-      <h1 className="text-2xl font-semibold text-foreground">Grading</h1>
-      <p className="mt-1 text-sm text-muted">
+    <div className="reveal">
+      <p className="eyebrow eyebrow-gold">// GRADING QUEUE</p>
+      <h1 className="display-lg mt-2 text-foreground">Grading</h1>
+      <p className="mt-2 text-[15px] text-muted">
         Document-upload answers await manual grading. Multiple-choice is scored
         automatically.
       </p>
 
       <section className="mt-6">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
+        <p className="eyebrow eyebrow-muted">
           Awaiting grading ({pending.length})
-        </h2>
+        </p>
         {pending.length === 0 ? (
-          <p className="mt-3 rounded-lg border border-border bg-surface px-4 py-6 text-sm text-muted">
+          <p className="panel mt-3 px-4 py-6 text-[15px] text-muted">
             Nothing to grade right now.
           </p>
         ) : (
-          <ul className="mt-3 divide-y divide-border overflow-hidden rounded-lg border border-border bg-surface">
+          <ul className="panel mt-3 divide-y divide-border overflow-hidden">
             {pending.map((a) => (
               <li key={a.id}>
                 <Link
                   href={`/admin/grading/${a.id}`}
-                  className="flex items-center gap-4 px-4 py-3 hover:bg-surface-2"
+                  className="flex items-center gap-4 px-4 py-3 transition hover:bg-[rgba(0,180,216,0.04)]"
                 >
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-foreground">{a.user.name}</p>
-                    <p className="text-xs text-muted">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[15px] text-foreground">{a.user.name}</p>
+                    <p className="truncate font-mono text-[11px] text-muted">
                       {a.user.agency} · {a.quiz.unit.section.course.title} — {a.quiz.title}
                     </p>
                   </div>
-                  <span className="text-xs text-muted">
+                  <span className="hidden shrink-0 font-mono text-[11px] text-muted sm:block">
                     {a.submittedAt.toLocaleDateString()}
                   </span>
-                  <span className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-[#04212b]">
+                  <span className="btn btn-primary btn-sm shrink-0">
                     Grade →
                   </span>
                 </Link>
@@ -67,25 +68,25 @@ export default async function AdminGradingPage() {
       </section>
 
       <section className="mt-8">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
+        <p className="eyebrow eyebrow-muted">
           Recently graded
-        </h2>
+        </p>
         {recent.length === 0 ? (
-          <p className="mt-3 text-sm text-muted">No graded attempts yet.</p>
+          <p className="mt-3 text-[15px] text-muted">No graded attempts yet.</p>
         ) : (
-          <ul className="mt-3 divide-y divide-border overflow-hidden rounded-lg border border-border bg-surface">
+          <ul className="panel mt-3 divide-y divide-border overflow-hidden">
             {recent.map((a) => (
               <li key={a.id} className="flex items-center gap-4 px-4 py-3">
-                <div className="flex-1">
-                  <p className="text-sm text-foreground">{a.user.name}</p>
-                  <p className="text-xs text-muted">{a.quiz.title}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[15px] text-foreground">{a.user.name}</p>
+                  <p className="truncate font-mono text-[11px] text-muted">{a.quiz.title}</p>
                 </div>
-                <span className="text-sm text-muted">{a.score}%</span>
+                <span className="shrink-0 font-mono text-[13px] text-foreground">{a.score}%</span>
                 <span
-                  className={`rounded-full px-2.5 py-0.5 text-xs ${
+                  className={`inline-block shrink-0 border px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.14em] ${
                     a.passed
-                      ? "border border-success/40 text-success"
-                      : "border border-danger/40 text-danger"
+                      ? "border-success/40 text-success bg-[rgba(74,222,128,0.08)]"
+                      : "border-danger/40 text-danger bg-[rgba(239,68,68,0.08)]"
                   }`}
                 >
                   {a.passed ? "Passed" : "Not passed"}

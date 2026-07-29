@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { getViewerUser } from "@/lib/viewer";
 import { SiteHeader } from "@/components/site-header";
 import {
   loadCourseBySlug,
@@ -21,8 +21,7 @@ export default async function CourseOverview({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const session = await auth();
-  const user = session!.user;
+  const user = (await getViewerUser())!;
 
   const course = await loadCourseBySlug(slug);
   if (!course) notFound();
@@ -47,112 +46,156 @@ export default async function CourseOverview({
         })
       : null;
 
+  const totalUnits = units.length;
+  const doneCount = completed.size;
+
   return (
     <div className="min-h-screen">
       <SiteHeader name={user.name} isAdmin={isAdmin} />
-      <main className="mx-auto max-w-4xl px-4 py-8">
-        <Link href="/dashboard" className="text-sm text-accent hover:underline">
+      <main className="mx-auto max-w-4xl px-5 pb-20 pt-8">
+        <Link
+          href="/dashboard"
+          className="eyebrow eyebrow-muted transition hover:text-accent-bright"
+        >
           ← Back to my training
         </Link>
 
-        <div className="mt-4 rounded-xl border border-border bg-surface p-6">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              {course.category ? (
-                <span className="text-xs font-medium uppercase tracking-wide text-accent">
-                  {course.category.name}
-                </span>
-              ) : null}
-              <h1 className="mt-1 text-2xl font-semibold text-foreground">
-                {course.title}
-              </h1>
-              <p className="mt-2 max-w-2xl text-sm text-muted">
-                {course.description || "No description provided."}
-              </p>
-            </div>
+        {/* ----------------------------------------------------------- header */}
+        <header className="reveal reveal-1 mt-5">
+          <div className="flex items-center gap-3">
+            {course.category ? (
+              <span className="eyebrow">{course.category.name}</span>
+            ) : null}
             {course.status !== "PUBLISHED" ? (
-              <span className="rounded-full border border-warning/40 px-2.5 py-0.5 text-xs text-warning">
-                {course.status} (admin preview)
+              <span className="tag-chip">
+                // {course.status} — ADMIN PREVIEW
               </span>
             ) : null}
           </div>
+          <h1 className="display-lg mt-4">
+            {course.title}
+          </h1>
+          {course.description ? (
+            <p className="mt-4 max-w-2xl text-lg text-muted">
+              {course.description}
+            </p>
+          ) : null}
+        </header>
 
-          <div className="mt-6">
-            {enrollment ? (
-              <div className="flex flex-wrap items-center gap-4">
-                <div className="min-w-[180px] flex-1">
-                  <div className="h-2 w-full overflow-hidden rounded-full bg-surface-2">
-                    <div
-                      className="h-full rounded-full bg-accent"
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-                  <p className="mt-1 text-xs text-muted">{pct}% complete</p>
+        {/* ----------------------------------------------------- progress panel */}
+        {enrollment ? (
+          <div className="panel rule-top reveal reveal-2 mt-8 p-6">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p className="eyebrow eyebrow-muted">Case progress</p>
+                <div className="mt-2 flex items-baseline gap-3">
+                  <span className="font-display text-4xl font-black text-accent-bright">
+                    {pct}%
+                  </span>
+                  <span className="font-mono text-xs text-muted">
+                    {doneCount}/{totalUnits} units
+                  </span>
                 </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
                 {firstUnit ? (
                   <Link
                     href={`/courses/${slug}/units/${firstUnit.id}`}
-                    className="rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-[#04212b] hover:bg-accent-strong"
+                    className="btn btn-primary"
                   >
-                    {pct > 0 ? "Continue" : "Start course"}
+                    {pct > 0 ? "Resume" : "Start course"}
                   </Link>
                 ) : null}
                 {certificate ? (
                   <Link
                     href={`/certificates/${certificate.serial}`}
-                    className="rounded-lg border border-gold/50 px-5 py-2.5 text-sm font-semibold text-gold hover:bg-gold/10"
+                    className="btn btn-gold"
                   >
                     🏅 View certificate
                   </Link>
                 ) : null}
               </div>
-            ) : course.status === "PUBLISHED" ? (
-              <form action={enroll}>
-                <input type="hidden" name="slug" value={slug} />
-                <button className="rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-[#04212b] hover:bg-accent-strong">
-                  Enroll
-                </button>
-              </form>
-            ) : (
-              <p className="text-sm text-muted">Publish this course to allow enrollment.</p>
-            )}
+            </div>
+            <div className="mt-5">
+              <div className="h-[6px] w-full overflow-hidden bg-[rgba(255,255,255,0.06)]">
+                <div
+                  className="h-full bg-gradient-to-r from-accent to-accent-bright transition-all"
+                  style={{
+                    width: `${pct}%`,
+                    boxShadow: "0 0 12px rgba(0,180,216,0.7)",
+                  }}
+                />
+              </div>
+            </div>
           </div>
-        </div>
+        ) : course.status === "PUBLISHED" ? (
+          <div className="panel rule-top reveal reveal-2 mt-8 p-6">
+            <p className="text-muted">This course is open for enrollment.</p>
+            <form action={enroll} className="mt-4">
+              <input type="hidden" name="slug" value={slug} />
+              <button className="btn btn-primary">Enroll</button>
+            </form>
+          </div>
+        ) : (
+          <div className="panel rule-top reveal reveal-2 mt-8 p-6">
+            <p className="text-muted">Publish this course to allow enrollment.</p>
+          </div>
+        )}
 
-        <section className="mt-8">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
-            Curriculum
-          </h2>
-          <div className="mt-3 space-y-5">
+        {/* -------------------------------------------------------- curriculum */}
+        <section className="reveal reveal-3 mt-12">
+          <header className="flex items-end justify-between gap-4 border-b border-border pb-3">
+            <div>
+              <p className="eyebrow eyebrow-gold">01 / Curriculum</p>
+              <h2 className="display-lg mt-2">Case file</h2>
+            </div>
+            <span className="font-mono text-xs text-muted">
+              {totalUnits.toString().padStart(2, "0")} units
+            </span>
+          </header>
+
+          <div className="mt-6 space-y-8">
             {course.sections.length === 0 ? (
-              <p className="rounded-lg border border-border bg-surface px-4 py-6 text-sm text-muted">
+              <p className="panel px-6 py-8 text-muted">
                 No content yet.
               </p>
             ) : (
-              course.sections.map((section) => (
+              course.sections.map((section, sIdx) => (
                 <div key={section.id}>
-                  <h3 className="text-sm font-semibold text-foreground">
-                    {section.title}
-                  </h3>
-                  <ul className="mt-2 divide-y divide-border overflow-hidden rounded-lg border border-border bg-surface">
-                    {section.units.map((u) => {
+                  <p className="eyebrow eyebrow-gold">
+                    {(sIdx + 1).toString().padStart(2, "0")} / {section.title}
+                  </p>
+                  <ul className="mt-3 divide-y divide-border overflow-hidden border border-border">
+                    {section.units.map((u, uIdx) => {
                       const done = completed.has(u.id);
+                      const globalIdx = units.findIndex((x) => x.id === u.id);
                       const row = (
-                        <div className="flex items-center gap-3 px-4 py-3">
-                          <span className="text-muted">{UNIT_ICON[u.type]}</span>
-                          <span className="flex-1 text-sm text-foreground">{u.title}</span>
-                          <span className="text-xs text-muted">{UNIT_LABEL[u.type]}</span>
+                        <div className="flex items-center gap-4 px-5 py-3.5">
+                          <span className="font-mono text-xs text-muted">
+                            {(globalIdx + 1).toString().padStart(2, "0")}
+                          </span>
+                          <span className="text-lg text-accent">
+                            {UNIT_ICON[u.type]}
+                          </span>
+                          <span className="flex-1 text-[15px] text-foreground">
+                            {u.title}
+                          </span>
+                          <span className="tag-chip tag-chip-cyan hidden sm:inline-flex">
+                            {UNIT_LABEL[u.type]}
+                          </span>
                           {done ? (
-                            <span className="text-xs text-success">✓ Done</span>
-                          ) : null}
+                            <span className="text-sm text-success">✓</span>
+                          ) : (
+                            <span className="text-sm text-muted/40">○</span>
+                          )}
                         </div>
                       );
                       return (
-                        <li key={u.id}>
+                        <li key={u.id} className="bg-surface/50">
                           {enrollment ? (
                             <Link
                               href={`/courses/${slug}/units/${u.id}`}
-                              className="block hover:bg-surface-2"
+                              className="block transition hover:bg-surface-2"
                             >
                               {row}
                             </Link>
@@ -163,7 +206,9 @@ export default async function CourseOverview({
                       );
                     })}
                     {section.units.length === 0 ? (
-                      <li className="px-4 py-3 text-sm text-muted">No units.</li>
+                      <li className="bg-surface/50 px-5 py-4 text-sm text-muted">
+                        No units.
+                      </li>
                     ) : null}
                   </ul>
                 </div>

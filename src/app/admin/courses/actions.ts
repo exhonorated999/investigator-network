@@ -7,7 +7,7 @@ import { requireAdmin } from "@/lib/rbac";
 import { slugify, withSuffix } from "@/lib/slug";
 import { defaultUnitData } from "@/lib/units";
 import { sendLiveSessionReminder } from "@/lib/email";
-import type { UnitType, Prisma } from "@prisma/client";
+import type { UnitType, Prisma } from "@/generated/prisma";
 
 async function uniqueSlug(title: string): Promise<string> {
   const base = slugify(title) || "course";

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import type { Prisma, UnitType } from "@prisma/client";
+import type { Prisma, UnitType } from "@/generated/prisma";
 
 /**
  * Course loaded with ordered sections + units, plus a per-user progress map

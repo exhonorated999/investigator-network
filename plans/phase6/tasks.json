@@ -22,11 +22,11 @@
   {
     "content": "[6-5] Responsive QA pass (admin nav mobile, overflow)",
     "id": "p6-5",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
     "content": "[6-6] Typecheck, E2E, commit",
     "id": "p6-6",
-    "status": "pending"
+    "status": "completed"
   }
 ]

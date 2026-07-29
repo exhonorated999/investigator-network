@@ -4,6 +4,9 @@
 
 generator client {
   provider = "prisma-client-js"
+  // Generated inside the project tree: Turbopack (Next 16) cannot resolve the
+  // dynamic `.prisma/client` indirection inside node_modules.
+  output   = "../src/generated/prisma"
 }
 
 datasource db {

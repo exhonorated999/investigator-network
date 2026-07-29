@@ -1,53 +1,467 @@
 @import "tailwindcss";
 
 /*
-  Investigator Network — brand theme
-  Palette derived from logo/banner:
-    - deep navy backgrounds
-    - cyan / teal accent (primary action)
-    - gold outline (highlight / borders)
-    - purple secondary accent
+  Investigator Network — Intellect LE design system
+  Aligned with the S.O.M.S. / Intellect LE brand:
+    Orbitron  -> display / eyebrows / labels (geometric tech)
+    Rajdhani  -> body / UI copy (condensed sans)
+    JetBrains -> tag chips, serials, data
 */
 
 :root {
-  --background: #0b0f1a;
-  --surface: #131a2b;
-  --surface-2: #1b2334;
-  --foreground: #e7ecf5;
-  --muted: #9aa7bd;
-  --border: #26304a;
+  --void: #0d0f14;
+  --background: #0d0f14;
+  --deep-navy: #0a1628;
+  --surface: #141720;
+  --surface-2: #1a1d26;
+  --foreground: #e0e8f0;
+  --muted: #8899aa;
+  --border: rgba(0, 180, 216, 0.18);
+  --border-strong: rgba(0, 180, 216, 0.4);
 
-  --accent: #22d3ee; /* cyan */
-  --accent-strong: #06b6d4;
-  --gold: #e8d9a0;
+  --accent: #00b4d8; /* electric blue */
+  --accent-strong: #0096b8;
+  --accent-bright: #90e0ef; /* cyber cyan */
+  --gold: #f4a261; /* amber */
   --purple: #a855f7;
 
-  --success: #34d399;
-  --warning: #fbbf24;
-  --danger: #f87171;
+  --success: #4ade80;
+  --warning: #f4a261;
+  --danger: #ef4444;
+
+  --glow-blue: rgba(0, 180, 216, 0.35);
+  --glow-cyan: rgba(144, 224, 239, 0.25);
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-void: var(--void);
+  --color-deep-navy: var(--deep-navy);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-accent: var(--accent);
   --color-accent-strong: var(--accent-strong);
+  --color-accent-bright: var(--accent-bright);
   --color-gold: var(--gold);
   --color-purple: var(--purple);
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-danger: var(--danger);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+
+  --font-display: var(--font-orbitron);
+  --font-sans: var(--font-rajdhani);
+  --font-mono: var(--font-jetbrains);
+}
+
+/* ---------------------------------------------------------------- base ---- */
+
+* {
+  border-color: var(--border);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), system-ui, Arial, Helvetica, sans-serif;
+  font-family: var(--font-rajdhani), system-ui, sans-serif;
+  font-size: 17px;
+  line-height: 1.6;
   min-height: 100vh;
+  position: relative;
+}
+
+/* Grid / graph-paper texture + top radial wash. Fixed so it never scrolls. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(0, 180, 216, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 180, 216, 0.045) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse 120% 80% at 50% 0%, #000 20%, transparent 85%);
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 70% 45% at 50% -10%, rgba(0, 180, 216, 0.12), transparent 70%),
+    radial-gradient(ellipse 50% 40% at 100% 100%, rgba(168, 85, 247, 0.07), transparent 70%);
+}
+
+body > * {
+  position: relative;
+  z-index: 1;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-orbitron), var(--font-rajdhani), sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.05;
+  text-transform: uppercase;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--void);
+}
+
+/* ------------------------------------------------------------ utilities ---- */
+
+@layer utilities {
+  /* Small letterspaced uppercase label — Orbitron. */
+  .eyebrow {
+    font-family: var(--font-orbitron), sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .eyebrow-gold {
+    color: var(--gold);
+  }
+
+  .eyebrow-muted {
+    color: var(--muted);
+  }
+
+  /* Display headings, fluid. */
+  .display-xl {
+    font-family: var(--font-orbitron), sans-serif;
+    font-weight: 900;
+    font-size: clamp(2.4rem, 6vw, 4.75rem);
+    line-height: 0.95;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+  }
+
+  .display-lg {
+    font-family: var(--font-orbitron), sans-serif;
+    font-weight: 800;
+    font-size: clamp(1.75rem, 3.6vw, 2.75rem);
+    line-height: 1;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+
+  .display-sm {
+    font-family: var(--font-orbitron), sans-serif;
+    font-weight: 700;
+    font-size: clamp(1.1rem, 1.8vw, 1.4rem);
+    line-height: 1.15;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* Cyan glow on an accent word. */
+  .glow-text {
+    color: var(--accent-bright);
+    text-shadow:
+      0 0 18px rgba(144, 224, 239, 0.55),
+      0 0 48px rgba(0, 180, 216, 0.35);
+  }
+
+  .glow-ring {
+    box-shadow:
+      0 0 0 1px var(--border-strong),
+      0 0 24px var(--glow-blue);
+  }
+
+  /* Pill badge with a pulsing dot. */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.4rem 0.95rem;
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    background: rgba(0, 180, 216, 0.07);
+    font-family: var(--font-orbitron), sans-serif;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--accent-bright);
+  }
+
+  .pill::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--accent-bright);
+    box-shadow: 0 0 10px var(--accent-bright);
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+
+  /* Mono data chip — "// CASE FILE: OPEN" */
+  .tag-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.7rem;
+    border: 1px solid rgba(244, 162, 97, 0.35);
+    background: rgba(13, 15, 20, 0.92);
+    font-family: var(--font-jetbrains), monospace;
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--gold);
+  }
+
+  .tag-chip-cyan {
+    border-color: var(--border-strong);
+    color: var(--accent-bright);
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.8rem 1.5rem;
+    font-family: var(--font-orbitron), sans-serif;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition:
+      transform 0.18s ease,
+      box-shadow 0.25s ease,
+      background 0.25s ease,
+      color 0.25s ease,
+      border-color 0.25s ease;
+  }
+
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .btn-primary {
+    color: #06222b;
+    background: linear-gradient(135deg, var(--accent-bright), var(--accent));
+    border: 1px solid rgba(144, 224, 239, 0.7);
+    box-shadow:
+      0 0 22px rgba(0, 180, 216, 0.35),
+      inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow:
+      0 0 34px rgba(0, 180, 216, 0.55),
+      inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  }
+
+  .btn-ghost {
+    color: var(--foreground);
+    background: transparent;
+    border: 1px solid var(--border-strong);
+  }
+
+  .btn-ghost:hover:not(:disabled) {
+    color: var(--accent-bright);
+    border-color: var(--accent-bright);
+    background: rgba(0, 180, 216, 0.08);
+    transform: translateY(-2px);
+  }
+
+  .btn-gold {
+    color: #2a1a08;
+    background: linear-gradient(135deg, #f8c48c, var(--gold));
+    border: 1px solid rgba(244, 162, 97, 0.7);
+    box-shadow: 0 0 22px rgba(244, 162, 97, 0.3);
+  }
+
+  .btn-gold:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 0 34px rgba(244, 162, 97, 0.5);
+  }
+
+  .btn-sm {
+    padding: 0.55rem 1rem;
+    font-size: 10px;
+    letter-spacing: 0.16em;
+  }
+
+  /* Panels */
+  .panel {
+    background: linear-gradient(160deg, var(--surface), rgba(13, 15, 20, 0.85));
+    border: 1px solid var(--border);
+    position: relative;
+  }
+
+  .panel-hover {
+    transition:
+      transform 0.22s ease,
+      border-color 0.22s ease,
+      box-shadow 0.22s ease;
+  }
+
+  .panel-hover:hover {
+    transform: translateY(-3px);
+    border-color: var(--border-strong);
+    box-shadow: 0 14px 40px -18px rgba(0, 180, 216, 0.55);
+  }
+
+  /* Accent top rule on a card. */
+  .rule-top::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), transparent 85%);
+  }
+
+  .rule-top-gold::before {
+    background: linear-gradient(90deg, var(--gold), transparent 85%);
+  }
+
+  .rule-top-danger::before {
+    background: linear-gradient(90deg, var(--danger), transparent 85%);
+  }
+
+  /* L-shaped corner brackets around an element. */
+  .bracket {
+    position: relative;
+  }
+
+  .bracket::before,
+  .bracket::after {
+    content: "";
+    position: absolute;
+    width: 28px;
+    height: 28px;
+    border: 2px solid var(--accent);
+    pointer-events: none;
+  }
+
+  .bracket::before {
+    top: -6px;
+    left: -6px;
+    border-right: 0;
+    border-bottom: 0;
+  }
+
+  .bracket::after {
+    bottom: -6px;
+    right: -6px;
+    border-left: 0;
+    border-top: 0;
+  }
+
+  /* Field styling for inputs/selects/textareas. */
+  .field {
+    width: 100%;
+    background: rgba(10, 12, 17, 0.85);
+    border: 1px solid var(--border);
+    padding: 0.7rem 0.9rem;
+    color: var(--foreground);
+    font-family: var(--font-rajdhani), sans-serif;
+    font-size: 16px;
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
+  .field:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0, 180, 216, 0.15);
+  }
+
+  .field::placeholder {
+    color: rgba(136, 153, 170, 0.6);
+  }
+
+  /* Scanline sheen used on hero media. */
+  .scanlines::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      180deg,
+      rgba(144, 224, 239, 0.05) 0px,
+      rgba(144, 224, 239, 0.05) 1px,
+      transparent 1px,
+      transparent 4px
+    );
+  }
+
+  /* Staggered entrance. */
+  .reveal {
+    animation: reveal-up 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
+  .reveal-1 { animation-delay: 0.05s; }
+  .reveal-2 { animation-delay: 0.13s; }
+  .reveal-3 { animation-delay: 0.21s; }
+  .reveal-4 { animation-delay: 0.29s; }
+  .reveal-5 { animation-delay: 0.37s; }
+}
+
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.8);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .pill::before {
+    animation: none;
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--void);
+}
+::-webkit-scrollbar-thumb {
+  background: #22303f;
+  border: 2px solid var(--void);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-strong);
 }

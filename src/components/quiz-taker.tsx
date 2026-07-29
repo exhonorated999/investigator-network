@@ -30,7 +30,7 @@ export async function QuizTaker({
   // Result banners
   if (latest && latest.status === "PENDING_GRADING") {
     return (
-      <Banner tone="info">
+      <Banner tone="gold">
         Your submission was received and is awaiting instructor grading. You will be
         able to see your result here once it is graded.
       </Banner>
@@ -54,16 +54,18 @@ export async function QuizTaker({
           try again below.
         </Banner>
       ) : (
-        <p className="mb-4 text-sm text-muted">
-          {quiz.questions.length} question{quiz.questions.length === 1 ? "" : "s"} · pass
-          mark {quiz.passScore}%
-        </p>
+        <div className="mb-5 flex items-center gap-3">
+          <span className="tag-chip tag-chip-cyan">
+            // {quiz.questions.length} question{quiz.questions.length === 1 ? "" : "s"}
+          </span>
+          <span className="tag-chip">Pass mark {quiz.passScore}%</span>
+        </div>
       )}
 
       <form
         action={submitAttempt}
         encType="multipart/form-data"
-        className="space-y-5"
+        className="space-y-6"
       >
         <input type="hidden" name="unitId" value={unitId} />
         <input type="hidden" name="slug" value={slug} />
@@ -71,42 +73,51 @@ export async function QuizTaker({
         {quiz.questions.map((q, i) => (
           <fieldset
             key={q.id}
-            className="rounded-xl border border-border bg-surface p-4"
+            className="panel rule-top p-5"
           >
-            <legend className="px-1 text-sm font-semibold text-foreground">
-              {i + 1}. {q.prompt}
-              <span className="ml-2 text-xs font-normal text-muted">
-                ({q.points} pt{q.points === 1 ? "" : "s"})
+            <legend className="flex items-center gap-3 px-1">
+              <span className="font-mono text-sm font-bold text-accent-bright">
+                Q{(i + 1).toString().padStart(2, "0")}
+              </span>
+              <span className="text-[15px] font-semibold text-foreground">
+                {q.prompt}
+              </span>
+              <span className="tag-chip">
+                {q.points} pt{q.points === 1 ? "" : "s"}
               </span>
             </legend>
 
             {q.type === "MULTIPLE_CHOICE" ? (
-              <div className="mt-3 space-y-2">
+              <div className="mt-4 space-y-2.5">
                 {q.choices.map((c) => (
                   <label
                     key={c.id}
-                    className="flex cursor-pointer items-center gap-2.5 rounded-lg border border-border px-3 py-2 text-sm text-foreground hover:border-accent/60"
+                    className="flex cursor-pointer items-center gap-3 border border-border bg-[rgba(10,12,17,0.5)] px-4 py-3 text-[15px] text-foreground transition hover:border-accent/50 hover:bg-[rgba(0,180,216,0.06)] has-[:checked]:border-accent has-[:checked]:bg-[rgba(0,180,216,0.1)] has-[:checked]:shadow-[0_0_16px_rgba(0,180,216,0.2)]"
                   >
                     <input
                       type="radio"
                       name={`q_${q.id}`}
                       value={c.id}
                       required
-                      className="accent-[var(--accent)]"
+                      className="h-4 w-4 accent-[var(--accent)]"
                     />
                     {c.text || <span className="text-muted">(empty choice)</span>}
                   </label>
                 ))}
               </div>
             ) : (
-              <div className="mt-3">
-                <input
-                  type="file"
-                  name={`file_${q.id}`}
-                  required
-                  className="text-sm text-foreground file:mr-3 file:rounded-lg file:border-0 file:bg-surface-2 file:px-3 file:py-2 file:text-sm file:text-foreground"
-                />
-                <p className="mt-1 text-xs text-muted">
+              <div className="mt-4">
+                <label className="group flex cursor-pointer flex-col items-center justify-center gap-2 border-2 border-dashed border-accent/30 bg-[rgba(0,180,216,0.04)] px-6 py-8 text-center transition hover:border-accent/60 hover:bg-[rgba(0,180,216,0.08)]">
+                  <span className="text-2xl text-accent">📎</span>
+                  <span className="eyebrow">Drop file or click to browse</span>
+                  <input
+                    type="file"
+                    name={`file_${q.id}`}
+                    required
+                    className="text-sm text-foreground file:mr-3 file:rounded-lg file:border-0 file:bg-surface-2 file:px-3 file:py-2 file:text-sm file:text-foreground"
+                  />
+                </label>
+                <p className="mt-2 font-mono text-xs text-muted">
                   Upload your document. This answer is graded by an instructor.
                 </p>
               </div>
@@ -114,7 +125,7 @@ export async function QuizTaker({
           </fieldset>
         ))}
 
-        <button className="rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-[#04212b] hover:bg-accent-strong">
+        <button className="btn btn-primary">
           {failed ? "Resubmit test" : "Submit test"}
         </button>
       </form>
@@ -124,7 +135,7 @@ export async function QuizTaker({
 
 function Empty({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-border bg-surface px-6 py-10 text-center text-sm text-muted">
+    <div className="panel rule-top px-6 py-12 text-center text-sm text-muted">
       {children}
     </div>
   );
@@ -134,17 +145,17 @@ function Banner({
   tone,
   children,
 }: {
-  tone: "info" | "success" | "danger";
+  tone: "gold" | "success" | "danger";
   children: React.ReactNode;
 }) {
   const cls =
     tone === "success"
-      ? "border-success/40 text-success"
+      ? "rule-top border-success/40 text-success"
       : tone === "danger"
-        ? "border-danger/40 text-danger"
-        : "border-accent/40 text-accent";
+        ? "rule-top-danger border-danger/40 text-danger"
+        : "rule-top-gold border-gold/40 text-gold";
   return (
-    <div className={`rounded-xl border bg-surface px-4 py-3 text-sm ${cls}`}>
+    <div className={`panel px-5 py-4 text-sm ${cls}`}>
       {children}
     </div>
   );

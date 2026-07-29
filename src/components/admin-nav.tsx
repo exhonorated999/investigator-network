@@ -9,6 +9,7 @@ const links = [
   { href: "/admin/users", label: "Users & approvals" },
   { href: "/admin/courses", label: "Courses" },
   { href: "/admin/grading", label: "Grading" },
+  { href: "/admin/preview", label: "View as learner" },
 ];
 
 export function AdminNav() {
@@ -16,7 +17,7 @@ export function AdminNav() {
 
   return (
     <nav className="flex flex-row gap-1 overflow-x-auto md:flex-col">
-      <Link href="/admin" className="mb-0 mr-2 flex shrink-0 items-center gap-2 md:mb-6 md:mr-0">
+      <Link href="/admin" className="mb-0 mr-3 flex shrink-0 items-center gap-2 md:mb-6 md:mr-0">
         <Image
           src="/brand/logo.png"
           alt="Investigator Network"
@@ -24,8 +25,9 @@ export function AdminNav() {
           height={36}
           className="rounded-md"
         />
-        <span className="hidden text-sm font-semibold text-foreground md:inline">
-          Investigator Network
+        <span className="hidden leading-none md:inline">
+          <span className="eyebrow eyebrow-muted block text-[8px]">Intellect LE</span>
+          <span className="display-sm block text-[13px] text-foreground">Investigator Network</span>
         </span>
       </Link>
       {links.map((l) => {
@@ -36,10 +38,10 @@ export function AdminNav() {
           <Link
             key={l.href}
             href={l.href}
-            className={`shrink-0 whitespace-nowrap rounded-lg px-3 py-2 text-sm transition ${
+            className={`shrink-0 whitespace-nowrap border-l-2 px-3 py-2 font-display text-[11px] font-semibold uppercase tracking-[0.18em] transition ${
               active
-                ? "bg-accent/15 text-accent"
-                : "text-muted hover:bg-surface-2 hover:text-foreground"
+                ? "border-accent-bright bg-[rgba(0,180,216,0.08)] text-accent-bright"
+                : "border-transparent text-muted hover:border-border-strong hover:text-accent-bright"
             }`}
           >
             {l.label}

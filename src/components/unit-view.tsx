@@ -27,15 +27,20 @@ export function UnitView({
       return <Empty>No video has been added to this unit yet.</Empty>;
     }
     return (
-      <div className="overflow-hidden rounded-xl border border-border bg-black">
-        <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
-          <iframe
-            className="absolute inset-0 h-full w-full"
-            src={`https://www.youtube-nocookie.com/embed/${youtubeId}`}
-            title={unit.title}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
+      <div className="bracket scanlines relative">
+        <span className="tag-chip tag-chip-cyan absolute -top-3 left-4 z-10">
+          // PLAYBACK
+        </span>
+        <div className="overflow-hidden border border-border bg-black">
+          <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
+            <iframe
+              className="absolute inset-0 h-full w-full"
+              src={`https://www.youtube-nocookie.com/embed/${youtubeId}`}
+              title={unit.title}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
         </div>
       </div>
     );
@@ -47,7 +52,7 @@ export function UnitView({
     const html = marked.parse(md, { async: false }) as string;
     return (
       <article
-        className="prose-invert max-w-none rounded-xl border border-border bg-surface p-6 text-foreground [&_a]:text-accent [&_a]:underline [&_code]:rounded [&_code]:bg-surface-2 [&_code]:px-1 [&_h1]:mb-3 [&_h1]:text-xl [&_h1]:font-semibold [&_h2]:mb-2 [&_h2]:mt-4 [&_h2]:text-lg [&_h2]:font-semibold [&_li]:ml-5 [&_li]:list-disc [&_p]:my-2 [&_ul]:my-2"
+        className="panel rule-top max-w-none p-6 text-foreground [&_a]:text-accent [&_a]:underline [&_a]:transition [&_a:hover]:text-accent-bright [&_blockquote]:border-l-2 [&_blockquote]:border-accent/40 [&_blockquote]:pl-4 [&_blockquote]:text-muted [&_code]:rounded [&_code]:bg-surface-2 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-sm [&_code]:text-accent-bright [&_h1]:mb-4 [&_h1]:mt-6 [&_h1]:font-display [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:uppercase [&_h1]:tracking-wide [&_h2]:mb-3 [&_h2]:mt-6 [&_h2]:font-display [&_h2]:text-xl [&_h2]:font-bold [&_h2]:uppercase [&_h2]:tracking-wide [&_h2]:text-accent-bright [&_h3]:mb-2 [&_h3]:mt-4 [&_h3]:font-display [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:uppercase [&_h3]:tracking-wide [&_li]:my-1 [&_li]:relative [&_li]:pl-5 [&_li]:before:absolute [&_li]:before:left-0 [&_li]:before:text-accent [&_li]:before:content-['▸'] [&_p]:my-3 [&_p]:max-w-[68ch] [&_pre]:my-4 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:border [&_pre]:border-border [&_pre]:bg-[rgba(10,12,17,0.85)] [&_pre]:p-4 [&_pre]:font-mono [&_pre]:text-sm [&_strong]:text-foreground [&_ul]:my-3 [&_ul]:list-none"
         dangerouslySetInnerHTML={{ __html: html }}
       />
     );
@@ -59,29 +64,34 @@ export function UnitView({
     const durationMin = d.durationMin ? Number(d.durationMin) : null;
     const replayUrl = String(d.replayUrl || "");
     return (
-      <div className="rounded-xl border border-border bg-surface p-6">
-        <div className="flex items-center gap-2 text-accent">
-          <span>📡</span>
-          <span className="text-sm font-semibold uppercase tracking-wide">
-            Live session (Microsoft Teams)
-          </span>
+      <div className="panel rule-top p-6">
+        <div className="flex items-center gap-2">
+          <span className="tag-chip tag-chip-cyan">// DISPATCH</span>
+          <span className="eyebrow eyebrow-muted">Live session · Microsoft Teams</span>
         </div>
-        {startsAt ? (
-          <p className="mt-3 text-foreground">
-            <span className="text-muted">Scheduled: </span>
-            {fmtDateTime(startsAt)}
-            {durationMin ? ` · ${durationMin} min` : ""}
-          </p>
-        ) : (
-          <p className="mt-3 text-sm text-muted">Schedule to be announced.</p>
-        )}
-        <div className="mt-5 flex flex-wrap gap-3">
+
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          <div className="border border-border bg-[rgba(10,12,17,0.6)] p-4">
+            <p className="eyebrow eyebrow-muted text-[10px]">Date / Time</p>
+            <p className="mt-2 font-mono text-sm text-foreground">
+              {startsAt ? fmtDateTime(startsAt) : "TBA"}
+            </p>
+          </div>
+          <div className="border border-border bg-[rgba(10,12,17,0.6)] p-4">
+            <p className="eyebrow eyebrow-muted text-[10px]">Duration</p>
+            <p className="mt-2 font-mono text-sm text-foreground">
+              {durationMin ? `${durationMin} min` : "—"}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-6 flex flex-wrap gap-3">
           {teamsJoinUrl ? (
             <a
               href={teamsJoinUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-[#04212b] hover:bg-accent-strong"
+              className="btn btn-primary"
             >
               Join Teams meeting
             </a>
@@ -93,7 +103,7 @@ export function UnitView({
               href={replayUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="rounded-lg border border-border px-5 py-2.5 text-sm text-foreground hover:border-accent/60"
+              className="btn btn-ghost"
             >
               Watch replay
             </a>
@@ -107,28 +117,33 @@ export function UnitView({
     const prompt = String(d.prompt || "");
     const allowed = String(d.allowedFileTypes || "");
     return (
-      <div className="rounded-xl border border-border bg-surface p-6">
-        <h3 className="font-semibold text-foreground">Assignment</h3>
-        <p className="mt-2 whitespace-pre-wrap text-sm text-muted">
+      <div className="panel rule-top p-6">
+        <span className="tag-chip">// FILE SUBMISSION</span>
+        <h3 className="display-sm mt-4">Assignment</h3>
+        <p className="mt-3 max-w-[68ch] whitespace-pre-wrap text-[15px] text-muted">
           {prompt || "Upload the required document to complete this unit."}
         </p>
-        <form action={submitAssignment} className="mt-5 grid gap-3">
+        <form action={submitAssignment} className="mt-6 grid gap-4">
           <input type="hidden" name="unitId" value={unit.id} />
           <input type="hidden" name="slug" value={slug} />
-          <input
-            type="file"
-            name="file"
-            accept={allowed || undefined}
-            required
-            className="text-sm text-foreground file:mr-3 file:rounded-lg file:border-0 file:bg-surface-2 file:px-3 file:py-2 file:text-sm file:text-foreground"
-          />
+          <label className="group flex cursor-pointer flex-col items-center justify-center gap-3 border-2 border-dashed border-accent/30 bg-[rgba(0,180,216,0.04)] px-6 py-10 text-center transition hover:border-accent/60 hover:bg-[rgba(0,180,216,0.08)]">
+            <span className="text-3xl text-accent transition group-hover:scale-110">📎</span>
+            <span className="eyebrow">Drop file or click to browse</span>
+            <input
+              type="file"
+              name="file"
+              accept={allowed || undefined}
+              required
+              className="text-sm text-foreground file:mr-3 file:rounded-lg file:border-0 file:bg-surface-2 file:px-3 file:py-2 file:text-sm file:text-foreground"
+            />
+          </label>
           {allowed ? (
-            <p className="text-xs text-muted">Allowed types: {allowed}</p>
+            <p className="font-mono text-xs text-muted">
+              Allowed types: {allowed}
+            </p>
           ) : null}
           <div>
-            <button className="rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-[#04212b] hover:bg-accent-strong">
-              Upload &amp; submit
-            </button>
+            <button className="btn btn-primary">Upload &amp; submit</button>
           </div>
         </form>
       </div>
@@ -156,7 +171,7 @@ export function UnitView({
 
 function Empty({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-border bg-surface px-6 py-10 text-center text-sm text-muted">
+    <div className="panel rule-top px-6 py-12 text-center text-sm text-muted">
       {children}
     </div>
   );

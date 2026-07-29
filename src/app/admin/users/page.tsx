@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import type { Prisma, UserStatus } from "@prisma/client";
+import type { Prisma, UserStatus } from "@/generated/prisma";
 import {
   approveUser,
   denyUser,
@@ -19,10 +19,10 @@ const STATUS_TABS: { key: string; label: string }[] = [
 ];
 
 const badgeClass: Record<UserStatus, string> = {
-  PENDING: "bg-warning/15 text-warning border-warning/30",
-  APPROVED: "bg-success/15 text-success border-success/30",
-  DENIED: "bg-danger/15 text-danger border-danger/30",
-  SUSPENDED: "bg-muted/15 text-muted border-muted/30",
+  PENDING: "border-gold/40 text-gold bg-[rgba(244,162,97,0.08)]",
+  APPROVED: "border-success/40 text-success bg-[rgba(74,222,128,0.08)]",
+  DENIED: "border-danger/40 text-danger bg-[rgba(239,68,68,0.08)]",
+  SUSPENDED: "border-muted/40 text-muted bg-[rgba(136,153,170,0.08)]",
 };
 
 function ActionButton({
@@ -38,17 +38,14 @@ function ActionButton({
 }) {
   const styles =
     variant === "primary"
-      ? "bg-accent text-[#04212b] hover:bg-accent-strong"
+      ? "btn btn-primary btn-sm"
       : variant === "danger"
-      ? "border border-danger/40 text-danger hover:bg-danger/10"
-      : "border border-border text-muted hover:text-foreground hover:border-accent";
+      ? "btn btn-ghost btn-sm border-danger/40 text-danger hover:border-danger hover:bg-[rgba(239,68,68,0.08)] hover:text-danger"
+      : "btn btn-ghost btn-sm";
   return (
     <form action={action}>
       <input type="hidden" name="userId" value={userId} />
-      <button
-        type="submit"
-        className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${styles}`}
-      >
+      <button type="submit" className={styles}>
         {label}
       </button>
     </form>
@@ -82,11 +79,10 @@ export default async function UsersPage({
     `/admin/users?status=${s}${q ? `&q=${encodeURIComponent(q)}` : ""}`;
 
   return (
-    <div>
-      <h1 className="text-2xl font-semibold text-foreground">
-        Users &amp; approvals
-      </h1>
-      <p className="mt-1 text-muted">
+    <div className="reveal">
+      <p className="eyebrow eyebrow-gold">// ACCESS CONTROL</p>
+      <h1 className="display-lg mt-2 text-foreground">Users &amp; Approvals</h1>
+      <p className="mt-2 text-[15px] text-muted">
         Review registrations and manage learner access.
       </p>
 
@@ -97,10 +93,10 @@ export default async function UsersPage({
             <Link
               key={t.key}
               href={buildHref(t.key)}
-              className={`rounded-full px-3 py-1.5 text-sm transition ${
+              className={`shrink-0 border px-3 py-1.5 font-display text-[10px] font-semibold uppercase tracking-[0.18em] transition ${
                 active
-                  ? "bg-accent/15 text-accent"
-                  : "border border-border text-muted hover:text-foreground"
+                  ? "border-accent-bright bg-[rgba(0,180,216,0.08)] text-accent-bright"
+                  : "border-border text-muted hover:border-border-strong hover:text-accent-bright"
               }`}
             >
               {t.label}
@@ -113,27 +109,27 @@ export default async function UsersPage({
             name="q"
             defaultValue={q}
             placeholder="Search name, email, agency"
-            className="w-56 rounded-lg border border-border bg-surface-2 px-3 py-1.5 text-sm text-foreground outline-none focus:border-accent"
+            className="field w-48 sm:w-56"
           />
           <button
             type="submit"
-            className="rounded-lg border border-border px-3 py-1.5 text-sm text-muted hover:text-foreground"
+            className="btn btn-ghost btn-sm"
           >
             Search
           </button>
         </form>
       </div>
 
-      <div className="mt-6 overflow-x-auto rounded-2xl border border-border">
+      <div className="panel mt-6 overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-surface-2 text-left text-muted">
+          <thead className="border-b border-border text-left">
             <tr>
-              <th className="px-4 py-3 font-medium">Name</th>
-              <th className="px-4 py-3 font-medium">Agency</th>
-              <th className="px-4 py-3 font-medium">Email</th>
-              <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 font-medium">Registered</th>
-              <th className="px-4 py-3 font-medium text-right">Actions</th>
+              <th className="eyebrow eyebrow-muted px-4 py-3">Name</th>
+              <th className="eyebrow eyebrow-muted px-4 py-3">Agency</th>
+              <th className="eyebrow eyebrow-muted px-4 py-3">Email</th>
+              <th className="eyebrow eyebrow-muted px-4 py-3">Status</th>
+              <th className="eyebrow eyebrow-muted px-4 py-3">Registered</th>
+              <th className="eyebrow eyebrow-muted px-4 py-3 text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -145,18 +141,18 @@ export default async function UsersPage({
               </tr>
             ) : (
               users.map((u) => (
-                <tr key={u.id} className="border-t border-border">
+                <tr key={u.id} className="border-t border-border transition hover:bg-[rgba(0,180,216,0.03)]">
                   <td className="px-4 py-3 text-foreground">{u.name}</td>
                   <td className="px-4 py-3 text-muted">{u.agency}</td>
-                  <td className="px-4 py-3 text-muted">{u.email}</td>
+                  <td className="px-4 py-3 font-mono text-[12px] text-muted">{u.email}</td>
                   <td className="px-4 py-3">
                     <span
-                      className={`rounded-full border px-2 py-0.5 text-xs ${badgeClass[u.status]}`}
+                      className={`inline-block border px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.14em] ${badgeClass[u.status]}`}
                     >
                       {u.status}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-muted">
+                  <td className="px-4 py-3 font-mono text-[11px] text-muted">
                     {u.createdAt.toLocaleDateString()}
                   </td>
                   <td className="px-4 py-3">

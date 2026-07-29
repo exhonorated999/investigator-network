@@ -16,8 +16,8 @@ export function Field({
   error?: string;
 }) {
   return (
-    <div className="flex flex-col gap-1.5">
-      <label htmlFor={name} className="text-sm font-medium text-foreground">
+    <div className="flex flex-col gap-2">
+      <label htmlFor={name} className="eyebrow eyebrow-muted">
         {label}
       </label>
       <input
@@ -25,9 +25,15 @@ export function Field({
         name={name}
         type={type}
         autoComplete={autoComplete}
-        className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2.5 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/30"
+        className="field"
+        aria-invalid={error ? true : undefined}
       />
-      {error ? <p className="text-sm text-danger">{error}</p> : null}
+      {error ? (
+        <p className="font-mono text-xs text-danger" role="alert">
+          <span className="opacity-60">// </span>
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -38,7 +44,7 @@ export function SubmitButton({ label }: { label: string }) {
     <button
       type="submit"
       disabled={pending}
-      className="w-full rounded-lg bg-accent px-4 py-2.5 font-semibold text-[#04212b] transition hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60"
+      className="btn btn-primary w-full"
     >
       {pending ? "Please wait…" : label}
     </button>

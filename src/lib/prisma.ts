@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@/generated/prisma";
 
 // Reuse a single PrismaClient across hot reloads in development to avoid
 // exhausting the database connection pool.

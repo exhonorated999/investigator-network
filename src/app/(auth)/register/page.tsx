@@ -13,14 +13,12 @@ export default function RegisterPage() {
   if (state.ok) {
     return (
       <div className="text-center">
-        <h1 className="text-xl font-semibold text-foreground mb-3">
-          Thanks for registering
-        </h1>
-        <p className="text-muted">{state.message}</p>
-        <Link
-          href="/login"
-          className="mt-6 inline-block text-accent hover:underline"
-        >
+        <p className="eyebrow eyebrow-gold">// Status: pending</p>
+        <h1 className="display-lg mt-2">Request received</h1>
+        <div className="mt-5 border border-success/40 bg-[rgba(74,222,128,0.08)] px-4 py-4">
+          <p className="text-sm text-foreground">{state.message}</p>
+        </div>
+        <Link href="/login" className="btn btn-ghost btn-sm mt-6">
           Back to sign in
         </Link>
       </div>
@@ -29,15 +27,21 @@ export default function RegisterPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-semibold text-foreground mb-1">
-        Request access
-      </h1>
-      <p className="text-sm text-muted mb-6">
+      <p className="eyebrow eyebrow-gold">// Request access</p>
+      <h1 className="display-lg mt-2">Request access</h1>
+      <p className="mt-3 text-sm text-muted">
         Registrations are reviewed and approved by an administrator before access
         is granted.
       </p>
 
-      <form action={formAction} className="flex flex-col gap-4">
+      <div className="mt-4 border border-gold/30 bg-[rgba(244,162,97,0.06)] px-4 py-2.5">
+        <p className="font-mono text-[11px] text-gold">
+          <span className="opacity-60">// </span>
+          ADMIN APPROVAL REQUIRED — NO IMMEDIATE ACCESS
+        </p>
+      </div>
+
+      <form action={formAction} className="mt-6 flex flex-col gap-4">
         <Field
           label="Full name"
           name="name"
@@ -67,10 +71,13 @@ export default function RegisterPage() {
         <SubmitButton label="Request access" />
       </form>
 
-      <p className="mt-6 text-center text-sm text-muted">
+      <p className="mt-6 text-center font-mono text-xs text-muted">
         Already approved?{" "}
-        <Link href="/login" className="text-accent hover:underline">
-          Sign in
+        <Link
+          href="/login"
+          className="text-accent-bright transition hover:text-accent"
+        >
+          Sign in →
         </Link>
       </p>
     </div>

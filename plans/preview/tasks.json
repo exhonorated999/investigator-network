@@ -1,0 +1,27 @@
+[
+  {
+    "content": "[pv-1] viewer lib: getViewerUser (admin cookie impersonation, read-only)",
+    "id": "pv-1",
+    "status": "completed"
+  },
+  {
+    "content": "[pv-2] preview actions + /admin/preview learner picker + nav link",
+    "id": "pv-2",
+    "status": "completed"
+  },
+  {
+    "content": "[pv-3] PreviewBanner + wire into learner layouts",
+    "id": "pv-3",
+    "status": "completed"
+  },
+  {
+    "content": "[pv-4] Swap learner pages to effective viewer (dashboard, course, player, certificate)",
+    "id": "pv-4",
+    "status": "in_progress"
+  },
+  {
+    "content": "[pv-5] Typecheck, verify, commit",
+    "id": "pv-5",
+    "status": "pending"
+  }
+]

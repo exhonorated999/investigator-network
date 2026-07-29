@@ -9,8 +9,7 @@ import { QuizBuilder } from "@/components/quiz-builder";
 
 export const dynamic = "force-dynamic";
 
-const inputClass =
-  "rounded-lg border border-border bg-surface-2 px-3 py-2 text-foreground outline-none focus:border-accent";
+const inputClass = "field";
 
 export default async function UnitEditor({
   params,
@@ -36,17 +35,17 @@ export default async function UnitEditor({
   const num = (k: string) => (d[k] == null ? "" : String(d[k]));
 
   return (
-    <div className="max-w-3xl">
+    <div className="reveal max-w-3xl">
       <Link
         href={`/admin/courses/${courseId}`}
-        className="text-sm text-accent hover:underline"
+        className="eyebrow eyebrow-muted transition hover:text-accent-bright"
       >
         ← Back to course
       </Link>
 
       <div className="mt-3 flex items-center gap-3">
-        <h1 className="text-2xl font-semibold text-foreground">Edit unit</h1>
-        <span className="rounded-full border border-border px-2.5 py-0.5 text-xs text-muted">
+        <h1 className="display-lg text-foreground">Edit unit</h1>
+        <span className="inline-block border border-border-strong px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-accent-bright">
           {UNIT_LABEL[unit.type]}
         </span>
       </div>
@@ -55,17 +54,15 @@ export default async function UnitEditor({
         <input type="hidden" name="id" value={unit.id} />
         <input type="hidden" name="courseId" value={courseId} />
 
-        <label className="grid gap-1 text-sm">
-          <span className="text-muted">Unit title</span>
+        <label className="grid gap-1.5">
+          <span className="eyebrow eyebrow-muted">Unit title</span>
           <input name="title" defaultValue={unit.title} className={inputClass} />
         </label>
 
         {unit.type === "VIDEO" && (
           <>
-            <label className="grid gap-1 text-sm">
-              <span className="text-muted">
-                YouTube URL or video ID (unlisted recommended)
-              </span>
+            <label className="grid gap-1.5">
+              <span className="eyebrow eyebrow-muted">YouTube URL or video ID (unlisted recommended)</span>
               <input
                 name="youtubeId"
                 defaultValue={str("youtubeId")}
@@ -73,8 +70,8 @@ export default async function UnitEditor({
                 className={inputClass}
               />
             </label>
-            <label className="grid gap-1 text-sm">
-              <span className="text-muted">Duration (seconds, optional)</span>
+            <label className="grid gap-1.5">
+              <span className="eyebrow eyebrow-muted">Duration (seconds, optional)</span>
               <input
                 name="durationSec"
                 type="number"
@@ -86,8 +83,8 @@ export default async function UnitEditor({
         )}
 
         {unit.type === "NOTES" && (
-          <label className="grid gap-1 text-sm">
-            <span className="text-muted">Notes content (Markdown supported)</span>
+          <label className="grid gap-1.5">
+            <span className="eyebrow eyebrow-muted">Notes content (Markdown supported)</span>
             <textarea
               name="contentMarkdown"
               defaultValue={str("contentMarkdown")}
@@ -99,8 +96,8 @@ export default async function UnitEditor({
 
         {unit.type === "LIVE_SESSION" && (
           <>
-            <label className="grid gap-1 text-sm">
-              <span className="text-muted">Microsoft Teams join URL</span>
+            <label className="grid gap-1.5">
+              <span className="eyebrow eyebrow-muted">Microsoft Teams join URL</span>
               <input
                 name="teamsJoinUrl"
                 defaultValue={str("teamsJoinUrl")}
@@ -109,8 +106,8 @@ export default async function UnitEditor({
               />
             </label>
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className="grid gap-1 text-sm">
-                <span className="text-muted">Starts at</span>
+              <label className="grid gap-1.5">
+                <span className="eyebrow eyebrow-muted">Starts at</span>
                 <input
                   name="startsAt"
                   type="datetime-local"
@@ -118,8 +115,8 @@ export default async function UnitEditor({
                   className={inputClass}
                 />
               </label>
-              <label className="grid gap-1 text-sm">
-                <span className="text-muted">Duration (minutes)</span>
+              <label className="grid gap-1.5">
+                <span className="eyebrow eyebrow-muted">Duration (minutes)</span>
                 <input
                   name="durationMin"
                   type="number"
@@ -128,8 +125,8 @@ export default async function UnitEditor({
                 />
               </label>
             </div>
-            <label className="grid gap-1 text-sm">
-              <span className="text-muted">Replay video URL (optional)</span>
+            <label className="grid gap-1.5">
+              <span className="eyebrow eyebrow-muted">Replay video URL (optional)</span>
               <input
                 name="replayUrl"
                 defaultValue={str("replayUrl")}
@@ -137,7 +134,7 @@ export default async function UnitEditor({
                 className={inputClass}
               />
             </label>
-            <p className="rounded-lg border border-border bg-surface px-3 py-2 text-xs text-muted">
+            <p className="border border-border bg-[rgba(10,12,17,0.6)] px-3 py-2 font-mono text-[11px] text-muted">
               Paste a Teams link you created in Teams/Outlook. Automatic meeting
               creation (Microsoft Graph) is a later phase.
             </p>
@@ -146,8 +143,8 @@ export default async function UnitEditor({
 
         {unit.type === "FILE_ASSIGNMENT" && (
           <>
-            <label className="grid gap-1 text-sm">
-              <span className="text-muted">Assignment prompt</span>
+            <label className="grid gap-1.5">
+              <span className="eyebrow eyebrow-muted">Assignment prompt</span>
               <textarea
                 name="prompt"
                 defaultValue={str("prompt")}
@@ -155,8 +152,8 @@ export default async function UnitEditor({
                 className={inputClass}
               />
             </label>
-            <label className="grid gap-1 text-sm">
-              <span className="text-muted">Allowed file types</span>
+            <label className="grid gap-1.5">
+              <span className="eyebrow eyebrow-muted">Allowed file types</span>
               <input
                 name="allowedFileTypes"
                 defaultValue={str("allowedFileTypes")}
@@ -168,8 +165,8 @@ export default async function UnitEditor({
         )}
 
         {unit.type === "CERTIFICATE" && (
-          <label className="grid gap-1 text-sm">
-            <span className="text-muted">Certificate template</span>
+          <label className="grid gap-1.5">
+            <span className="eyebrow eyebrow-muted">Certificate template</span>
             <input
               name="templateId"
               defaultValue={str("templateId") || "default"}
@@ -179,13 +176,13 @@ export default async function UnitEditor({
         )}
 
         {unit.type === "QUIZ" && (
-          <p className="rounded-lg border border-border bg-surface px-4 py-3 text-sm text-muted">
+          <p className="panel rule-top px-4 py-3 text-[15px] text-muted">
             Configure the test questions in the builder below.
           </p>
         )}
 
         <div className="flex items-center gap-2">
-          <button className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-[#04212b] hover:bg-accent-strong">
+          <button className="btn btn-primary btn-sm">
             Save unit
           </button>
         </div>
@@ -196,15 +193,15 @@ export default async function UnitEditor({
       ) : null}
 
       {unit.type === "LIVE_SESSION" ? (
-        <form action={sendLiveSessionReminders} className="mt-8 rounded-lg border border-border bg-surface p-4">
+        <form action={sendLiveSessionReminders} className="panel rule-top mt-8 p-4">
           <input type="hidden" name="unitId" value={unit.id} />
           <input type="hidden" name="courseId" value={courseId} />
-          <p className="text-sm text-foreground">Reminders</p>
-          <p className="mt-1 text-xs text-muted">
+          <p className="eyebrow eyebrow-muted">Reminders</p>
+          <p className="mt-2 font-mono text-[11px] text-muted">
             Email all enrolled learners a reminder with the schedule and Teams join
             link for this session.
           </p>
-          <button className="mt-3 rounded-lg border border-accent/50 px-4 py-2 text-sm font-semibold text-accent hover:bg-accent/10">
+          <button className="btn btn-ghost btn-sm mt-3">
             Send reminder to enrolled learners
           </button>
         </form>
@@ -213,7 +210,7 @@ export default async function UnitEditor({
       <form action={deleteUnit} className="mt-8">
         <input type="hidden" name="id" value={unit.id} />
         <input type="hidden" name="courseId" value={courseId} />
-        <button className="rounded-lg border border-danger/40 px-3 py-1.5 text-sm text-danger hover:bg-danger/10">
+        <button className="btn btn-ghost btn-sm border-danger/40 text-danger hover:border-danger hover:bg-[rgba(239,68,68,0.08)] hover:text-danger">
           Delete unit
         </button>
       </form>

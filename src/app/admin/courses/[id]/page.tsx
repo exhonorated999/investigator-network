@@ -40,21 +40,21 @@ export default async function CourseEditor({
   const published = course.status === "PUBLISHED";
 
   return (
-    <div className="max-w-4xl">
-      <Link href="/admin/courses" className="text-sm text-accent hover:underline">
+    <div className="reveal max-w-4xl">
+      <Link href="/admin/courses" className="eyebrow eyebrow-muted transition hover:text-accent-bright">
         ← All courses
       </Link>
 
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-semibold text-foreground">
+          <h1 className="display-lg text-foreground">
             {course.title}
           </h1>
           <span
-            className={`rounded-full border px-2.5 py-0.5 text-xs ${
+            className={`inline-block shrink-0 border px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.14em] ${
               published
-                ? "border-success/30 bg-success/15 text-success"
-                : "border-warning/30 bg-warning/15 text-warning"
+                ? "border-success/40 text-success bg-[rgba(74,222,128,0.08)]"
+                : "border-gold/40 text-gold bg-[rgba(244,162,97,0.08)]"
             }`}
           >
             {course.status}
@@ -68,13 +68,13 @@ export default async function CourseEditor({
               name="status"
               value={published ? "DRAFT" : "PUBLISHED"}
             />
-            <button className="rounded-lg border border-border px-3 py-1.5 text-sm text-foreground hover:border-accent">
+            <button className="btn btn-ghost btn-sm">
               {published ? "Unpublish" : "Publish"}
             </button>
           </form>
           <form action={deleteCourse}>
             <input type="hidden" name="id" value={course.id} />
-            <button className="rounded-lg border border-danger/40 px-3 py-1.5 text-sm text-danger hover:bg-danger/10">
+            <button className="btn btn-ghost btn-sm border-danger/40 text-danger hover:border-danger hover:bg-[rgba(239,68,68,0.08)] hover:text-danger">
               Delete
             </button>
           </form>
@@ -82,26 +82,26 @@ export default async function CourseEditor({
       </div>
 
       {/* Meta */}
-      <section className="mt-6 rounded-2xl border border-border bg-surface p-5">
-        <h2 className="text-sm font-semibold text-foreground">Details</h2>
-        <form action={updateCourse} className="mt-3 grid gap-3">
+      <section className="panel rule-top mt-6 p-5">
+        <p className="eyebrow eyebrow-muted">01 / Details</p>
+        <form action={updateCourse} className="mt-4 grid gap-4">
           <input type="hidden" name="id" value={course.id} />
-          <label className="grid gap-1 text-sm">
-            <span className="text-muted">Title</span>
+          <label className="grid gap-1.5">
+            <span className="eyebrow eyebrow-muted">Title</span>
             <input
               name="title"
               defaultValue={course.title}
-              className="rounded-lg border border-border bg-surface-2 px-3 py-2 text-foreground outline-none focus:border-accent"
+              className="field"
             />
           </label>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="grid gap-1 text-sm">
-              <span className="text-muted">Category</span>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="grid gap-1.5">
+              <span className="eyebrow eyebrow-muted">Category</span>
               <input
                 name="category"
                 list="cats"
                 defaultValue={course.category?.name ?? ""}
-                className="rounded-lg border border-border bg-surface-2 px-3 py-2 text-foreground outline-none focus:border-accent"
+                className="field"
               />
               <datalist id="cats">
                 {categories.map((c) => (
@@ -109,27 +109,27 @@ export default async function CourseEditor({
                 ))}
               </datalist>
             </label>
-            <label className="grid gap-1 text-sm">
-              <span className="text-muted">Cover image URL</span>
+            <label className="grid gap-1.5">
+              <span className="eyebrow eyebrow-muted">Cover image URL</span>
               <input
                 name="coverImage"
                 defaultValue={course.coverImage ?? ""}
                 placeholder="https://…"
-                className="rounded-lg border border-border bg-surface-2 px-3 py-2 text-foreground outline-none focus:border-accent"
+                className="field"
               />
             </label>
           </div>
-          <label className="grid gap-1 text-sm">
-            <span className="text-muted">Description</span>
+          <label className="grid gap-1.5">
+            <span className="eyebrow eyebrow-muted">Description</span>
             <textarea
               name="description"
               defaultValue={course.description}
               rows={3}
-              className="rounded-lg border border-border bg-surface-2 px-3 py-2 text-foreground outline-none focus:border-accent"
+              className="field"
             />
           </label>
           <div>
-            <button className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-[#04212b] hover:bg-accent-strong">
+            <button className="btn btn-primary btn-sm">
               Save details
             </button>
           </div>
@@ -138,31 +138,32 @@ export default async function CourseEditor({
 
       {/* Curriculum */}
       <section className="mt-6">
-        <h2 className="text-sm font-semibold text-foreground">Curriculum</h2>
+        <p className="eyebrow eyebrow-gold">02 / Curriculum</p>
 
-        <div className="mt-3 grid gap-4">
-          {course.sections.map((section) => (
+        <div className="mt-4 grid gap-4">
+          {course.sections.map((section, si) => (
             <div
               key={section.id}
-              className="rounded-2xl border border-border bg-surface p-4"
+              className="panel rule-top p-4"
             >
               <div className="flex items-center justify-between gap-3">
                 <form action={renameSection} className="flex flex-1 items-center gap-2">
                   <input type="hidden" name="id" value={section.id} />
                   <input type="hidden" name="courseId" value={course.id} />
+                  <span className="font-mono text-[11px] text-accent">S{String(si + 1).padStart(2, "0")}</span>
                   <input
                     name="title"
                     defaultValue={section.title}
-                    className="flex-1 rounded-lg border border-transparent bg-transparent px-2 py-1 font-medium text-foreground hover:border-border focus:border-accent focus:bg-surface-2 outline-none"
+                    className="flex-1 border border-transparent bg-transparent px-2 py-1 font-display text-[14px] font-semibold uppercase tracking-[0.04em] text-foreground outline-none transition hover:border-border focus:border-accent focus:bg-[rgba(10,12,17,0.85)]"
                   />
-                  <button className="rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-foreground">
+                  <button className="btn btn-ghost btn-sm">
                     Rename
                   </button>
                 </form>
                 <form action={deleteSection}>
                   <input type="hidden" name="id" value={section.id} />
                   <input type="hidden" name="courseId" value={course.id} />
-                  <button className="rounded-md border border-danger/40 px-2 py-1 text-xs text-danger hover:bg-danger/10">
+                  <button className="btn btn-ghost btn-sm border-danger/40 text-danger hover:border-danger hover:bg-[rgba(239,68,68,0.08)] hover:text-danger">
                     Delete section
                   </button>
                 </form>
@@ -173,10 +174,10 @@ export default async function CourseEditor({
                   <li key={unit.id}>
                     <Link
                       href={`/admin/courses/${course.id}/units/${unit.id}`}
-                      className="flex items-center justify-between rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm transition hover:border-accent"
+                      className="flex items-center justify-between border border-border bg-[rgba(10,12,17,0.6)] px-3 py-2 transition hover:border-border-strong"
                     >
-                      <span className="text-foreground">{unit.title}</span>
-                      <span className="text-xs text-muted">
+                      <span className="text-[15px] text-foreground">{unit.title}</span>
+                      <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">
                         {UNIT_LABEL[unit.type]}
                       </span>
                     </Link>
@@ -196,11 +197,11 @@ export default async function CourseEditor({
                 <input
                   name="title"
                   placeholder="New unit title"
-                  className="flex-1 min-w-40 rounded-lg border border-border bg-surface-2 px-3 py-1.5 text-sm text-foreground outline-none focus:border-accent"
+                  className="field min-w-40 flex-1"
                 />
                 <select
                   name="type"
-                  className="rounded-lg border border-border bg-surface-2 px-3 py-1.5 text-sm text-foreground outline-none focus:border-accent"
+                  className="field w-auto"
                 >
                   {UNIT_TYPES.map((t) => (
                     <option key={t.type} value={t.type}>
@@ -208,7 +209,7 @@ export default async function CourseEditor({
                     </option>
                   ))}
                 </select>
-                <button className="rounded-lg border border-accent/50 px-3 py-1.5 text-sm text-accent hover:bg-accent/10">
+                <button className="btn btn-ghost btn-sm">
                   Add unit
                 </button>
               </form>
@@ -221,9 +222,9 @@ export default async function CourseEditor({
           <input
             name="title"
             placeholder="New section title"
-            className="flex-1 rounded-lg border border-border bg-surface-2 px-3 py-2 text-foreground outline-none focus:border-accent"
+            className="field flex-1"
           />
-          <button className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-[#04212b] hover:bg-accent-strong">
+          <button className="btn btn-primary btn-sm">
             Add section
           </button>
         </form>
