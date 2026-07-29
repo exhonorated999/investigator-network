@@ -1,0 +1,32 @@
+[
+  {
+    "content": "[5-1] Quiz admin actions: updateQuiz, add/update/deleteQuestion, add/setCorrect/deleteChoice",
+    "id": "p5-1",
+    "status": "completed"
+  },
+  {
+    "content": "[5-2] Quiz builder UI on QUIZ unit editor",
+    "id": "p5-2",
+    "status": "completed"
+  },
+  {
+    "content": "[5-3] Learner take-quiz: QUIZ renderer + submitAttempt (auto-grade MC, doc upload)",
+    "id": "p5-3",
+    "status": "completed"
+  },
+  {
+    "content": "[5-4] File download route /api/files/[id] (owner/admin)",
+    "id": "p5-4",
+    "status": "completed"
+  },
+  {
+    "content": "[5-5] Admin grading queue + grade/finalize action (pass/fail, mark complete)",
+    "id": "p5-5",
+    "status": "completed"
+  },
+  {
+    "content": "[5-6] Typecheck, E2E, commit",
+    "id": "p5-6",
+    "status": "in_progress"
+  }
+]

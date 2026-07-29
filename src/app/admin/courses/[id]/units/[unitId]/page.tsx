@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { UNIT_LABEL } from "@/lib/units";
 import { updateUnit, deleteUnit } from "../../../actions";
+import { ensureQuiz } from "../../../quiz-actions";
+import { QuizBuilder } from "@/components/quiz-builder";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +19,16 @@ export default async function UnitEditor({
   const { id: courseId, unitId } = await params;
   const unit = await prisma.unit.findUnique({ where: { id: unitId } });
   if (!unit) notFound();
+
+  // For QUIZ units, ensure a Quiz exists and load its questions/choices.
+  let quiz = null;
+  if (unit.type === "QUIZ") {
+    await ensureQuiz(unit.id, unit.title);
+    quiz = await prisma.quiz.findUnique({
+      where: { unitId: unit.id },
+      include: { questions: { include: { choices: true } } },
+    });
+  }
 
   const d = (unit.data as Record<string, unknown>) ?? {};
   const str = (k: string) => (d[k] == null ? "" : String(d[k]));
@@ -167,8 +179,7 @@ export default async function UnitEditor({
 
         {unit.type === "QUIZ" && (
           <p className="rounded-lg border border-border bg-surface px-4 py-3 text-sm text-muted">
-            The test builder (multiple-choice + document-upload questions) is
-            implemented in Phase 5. This unit is a placeholder for now.
+            Configure the test questions in the builder below.
           </p>
         )}
 
@@ -178,6 +189,10 @@ export default async function UnitEditor({
           </button>
         </div>
       </form>
+
+      {unit.type === "QUIZ" && quiz ? (
+        <QuizBuilder quiz={quiz} courseId={courseId} unitId={unit.id} />
+      ) : null}
 
       <form action={deleteUnit} className="mt-8">
         <input type="hidden" name="id" value={unit.id} />

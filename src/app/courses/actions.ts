@@ -77,6 +77,111 @@ export async function setUnitComplete(formData: FormData) {
   revalidatePath("/dashboard");
 }
 
+/** Learner submits a quiz attempt. Auto-grades MC; DOC answers await manual grading. */
+export async function submitAttempt(formData: FormData) {
+  const session = await requireUser();
+  const userId = session.user.id;
+  const unitId = String(formData.get("unitId") || "");
+  const slug = String(formData.get("slug") || "");
+
+  const unit = await prisma.unit.findUnique({
+    where: { id: unitId },
+    include: {
+      section: { include: { course: true } },
+      quiz: { include: { questions: { include: { choices: true } } } },
+    },
+  });
+  if (!unit || !unit.quiz) redirect("/dashboard");
+  const courseId = unit.section.course.id;
+  const quiz = unit.quiz;
+
+  const enrolled = await prisma.enrollment.findUnique({
+    where: { userId_courseId: { userId, courseId } },
+  });
+  if (!enrolled) redirect(`/courses/${slug}`);
+
+  // Block resubmission if a passed or pending attempt already exists.
+  const latest = await prisma.attempt.findFirst({
+    where: { quizId: quiz.id, userId },
+    orderBy: { submittedAt: "desc" },
+  });
+  if (latest && (latest.status === "PENDING_GRADING" || latest.passed)) {
+    redirect(`/courses/${slug}/units/${unitId}`);
+  }
+
+  const attempt = await prisma.attempt.create({
+    data: { quizId: quiz.id, userId, status: "PENDING_GRADING" },
+  });
+
+  let needsGrading = false;
+  let earned = 0;
+  const totalPoints = quiz.questions.reduce((n, q) => n + q.points, 0) || 1;
+
+  for (const q of quiz.questions) {
+    if (q.type === "MULTIPLE_CHOICE") {
+      const choiceId = String(formData.get(`q_${q.id}`) || "");
+      const choice = q.choices.find((c) => c.id === choiceId);
+      const awarded = choice?.isCorrect ? q.points : 0;
+      earned += awarded;
+      await prisma.answer.create({
+        data: {
+          attemptId: attempt.id,
+          questionId: q.id,
+          selectedChoiceId: choice ? choice.id : null,
+          awardedPoints: awarded,
+        },
+      });
+    } else {
+      // DOCUMENT_UPLOAD
+      needsGrading = true;
+      const file = formData.get(`file_${q.id}`);
+      let uploadedFileId: string | null = null;
+      if (file instanceof File && file.size > 0) {
+        const stored = await saveFile(file as File, `attempts/${attempt.id}`);
+        const rec = await prisma.fileUpload.create({
+          data: {
+            ownerUserId: userId,
+            path: stored.path,
+            filename: stored.filename,
+            mimeType: stored.mimeType,
+            sizeBytes: stored.sizeBytes,
+            purpose: `attempt:${attempt.id}`,
+          },
+        });
+        uploadedFileId = rec.id;
+      }
+      await prisma.answer.create({
+        data: {
+          attemptId: attempt.id,
+          questionId: q.id,
+          uploadedFileId,
+          awardedPoints: null,
+        },
+      });
+    }
+  }
+
+  if (!needsGrading) {
+    const score = Math.round((earned / totalPoints) * 100);
+    const passed = score >= quiz.passScore;
+    await prisma.attempt.update({
+      where: { id: attempt.id },
+      data: { status: "GRADED", score, passed },
+    });
+    if (passed) {
+      await prisma.unitProgress.upsert({
+        where: { userId_unitId: { userId, unitId } },
+        update: { status: "COMPLETE", completedAt: new Date() },
+        create: { userId, unitId, status: "COMPLETE", completedAt: new Date() },
+      });
+    }
+  }
+
+  revalidatePath(`/courses/${slug}/units/${unitId}`);
+  revalidatePath("/dashboard");
+  redirect(`/courses/${slug}/units/${unitId}`);
+}
+
 /** Learner uploads a document for a FILE_ASSIGNMENT unit. */
 export async function submitAssignment(formData: FormData) {
   const session = await requireUser();

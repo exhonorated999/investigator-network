@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { SignOutButton } from "@/components/sign-out";
 import { UnitView } from "@/components/unit-view";
+import { QuizTaker } from "@/components/quiz-taker";
 import {
   loadCourseBySlug,
   flattenUnits,
@@ -117,11 +118,15 @@ export default async function CoursePlayer({
           <h1 className="mt-1 text-2xl font-semibold text-foreground">{current.title}</h1>
 
           <div className="mt-6">
-            <UnitView unit={current} slug={slug} />
+            {current.type === "QUIZ" ? (
+              <QuizTaker unitId={current.id} slug={slug} userId={user.id} />
+            ) : (
+              <UnitView unit={current} slug={slug} />
+            )}
           </div>
 
           {/* Completion */}
-          {current.type !== "FILE_ASSIGNMENT" ? (
+          {current.type !== "FILE_ASSIGNMENT" && current.type !== "QUIZ" ? (
             <form action={setUnitComplete} className="mt-6">
               <input type="hidden" name="unitId" value={current.id} />
               <input type="hidden" name="slug" value={slug} />
@@ -136,7 +141,7 @@ export default async function CoursePlayer({
                 {isDone ? "✓ Completed — mark incomplete" : "Mark as complete"}
               </button>
             </form>
-          ) : isDone ? (
+          ) : current.type === "FILE_ASSIGNMENT" && isDone ? (
             <p className="mt-6 text-sm text-success">✓ Assignment submitted.</p>
           ) : null}
 
