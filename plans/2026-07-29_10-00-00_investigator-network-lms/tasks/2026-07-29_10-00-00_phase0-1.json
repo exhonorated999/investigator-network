@@ -17,16 +17,16 @@
   {
     "content": "[P1-1] User model + Auth.js credentials, bcrypt, seed admin",
     "id": "P1-1",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "[P1-2] Register form (name/agency/email/pw) -> PENDING user",
     "id": "P1-2",
-    "status": "pending"
+    "status": "completed"
   },
   {
-    "content": "[P1-3] Login gating (block non-APPROVED) + RBAC proxy.ts",
+    "content": "[P1-3] Login gating (block non-APPROVED) + RBAC layout guards",
     "id": "P1-3",
-    "status": "pending"
+    "status": "completed"
   }
 ]
