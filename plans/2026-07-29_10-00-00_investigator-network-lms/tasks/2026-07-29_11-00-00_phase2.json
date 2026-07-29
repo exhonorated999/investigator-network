@@ -2,26 +2,26 @@
   {
     "content": "[P2-1] Admin shell: sidebar nav + header chrome in admin layout",
     "id": "P2-1",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "[P2-2] Email helper (lib/email.ts) with graceful dev fallback",
     "id": "P2-2",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "[P2-3] Users list page: search + status filter (async searchParams)",
     "id": "P2-3",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "[P2-4] Approve/deny/suspend/reactivate server actions + emails",
     "id": "P2-4",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "[P2-5] Verify approval flow end-to-end (pending -> approved can log in)",
     "id": "P2-5",
-    "status": "pending"
+    "status": "completed"
   }
 ]
