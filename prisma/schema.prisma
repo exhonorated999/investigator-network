@@ -52,6 +52,8 @@ model User {
   uploads       FileUpload[]
   certificates  Certificate[]
   gradedAnswers Answer[]        @relation("GradedBy")
+  dashboardPref DashboardPref?
+  favorites     CourseFavorite[]
 
   @@index([status])
 }
@@ -95,6 +97,7 @@ model Course {
   sections     Section[]
   enrollments  Enrollment[]
   certificates Certificate[]
+  favorites    CourseFavorite[]
 }
 
 model Section {
@@ -272,4 +275,30 @@ model Certificate {
   serial   String   @unique
 
   @@unique([userId, courseId])
+}
+
+// ---------------------------------------------------------------------------
+// Personalised dashboard
+// ---------------------------------------------------------------------------
+
+/// Per-user dashboard layout. `widgets` is an ordered array of widget ids;
+/// unknown ids are ignored so widgets can be removed safely in future.
+model DashboardPref {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  widgets   Json     @default("[]")
+  updatedAt DateTime @updatedAt
+}
+
+model CourseFavorite {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, courseId])
+  @@index([userId])
 }

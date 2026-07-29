@@ -1,0 +1,32 @@
+[
+  {
+    "content": "[p7-1] Schema: DashboardPref + CourseFavorite models, migrate",
+    "id": "p7-1",
+    "status": "completed"
+  },
+  {
+    "content": "[p7-2] lib/dashboard.ts widget registry + prefs loader; lib/notifications.ts feed builder",
+    "id": "p7-2",
+    "status": "in_progress"
+  },
+  {
+    "content": "[p7-3] Server actions: saveWidgets, toggleFavorite; coverImage field in course editor",
+    "id": "p7-3",
+    "status": "pending"
+  },
+  {
+    "content": "[p7-4] Course album carousel component (assigned/available/completed toggle, artwork, %)",
+    "id": "p7-4",
+    "status": "pending"
+  },
+  {
+    "content": "[p7-5] Widget cards: notifications, favorites, completed, stats, resources, announcements/messages stubs + customize panel",
+    "id": "p7-5",
+    "status": "pending"
+  },
+  {
+    "content": "[p7-6] Rebuild dashboard page as widget grid; typecheck + E2E verify; commit",
+    "id": "p7-6",
+    "status": "pending"
+  }
+]

@@ -41,7 +41,7 @@ jar["preview_uid"] = learner.id;
 const previewDash = strip(await (await jarFetch(`${BASE}/dashboard`, {}, jar)).text());
 r.preview_banner = /previewing as/i.test(previewDash) && previewDash.includes("Dana Reyes");
 r.preview_learner_course = previewDash.includes("Financial Crimes Investigation Fundamentals");
-r.preview_available = previewDash.includes("Available training");
+r.preview_available = previewDash.includes("Available");
 
 // A non-admin cannot impersonate: learner jar with preview cookie set to admin id is ignored
 const ljar = {};
