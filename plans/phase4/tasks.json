@@ -1,0 +1,32 @@
+[
+  {
+    "content": "[4-1] Course/progress helpers: ordered units, progress map, % complete",
+    "id": "p4-1",
+    "status": "completed"
+  },
+  {
+    "content": "[4-2] Learner actions: enroll, markComplete, submitAssignment (file upload)",
+    "id": "p4-2",
+    "status": "completed"
+  },
+  {
+    "content": "[4-3] Learner dashboard: enrolled + available published courses",
+    "id": "p4-3",
+    "status": "completed"
+  },
+  {
+    "content": "[4-4] Course overview /courses/[slug] with enroll",
+    "id": "p4-4",
+    "status": "completed"
+  },
+  {
+    "content": "[4-5] Course player /courses/[slug]/units/[unitId]: outline + renderers + prev/next + complete",
+    "id": "p4-5",
+    "status": "in_progress"
+  },
+  {
+    "content": "[4-6] Typecheck, E2E test, commit",
+    "id": "p4-6",
+    "status": "pending"
+  }
+]

@@ -2,31 +2,31 @@
   {
     "content": "[P3-1] Course actions: create/update/publish/delete + slug util + categories",
     "id": "P3-1",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "[P3-2] Admin courses list + create course form",
     "id": "P3-2",
-    "status": "pending"
+    "status": "completed"
   },
   {
-    "content": "[P3-3] Section + unit actions (add/rename/delete/reorder)",
+    "content": "[P3-3] Section + unit actions (add/rename/delete)",
     "id": "P3-3",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "[P3-4] Course editor page: meta, sections, units, publish toggle",
     "id": "P3-4",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "[P3-5] Unit editor: type-specific forms (video/notes/live/file/cert)",
     "id": "P3-5",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "[P3-6] Typecheck + verify build a course end-to-end",
     "id": "P3-6",
-    "status": "pending"
+    "status": "completed"
   }
 ]
