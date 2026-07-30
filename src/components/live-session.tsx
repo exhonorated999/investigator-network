@@ -37,7 +37,7 @@ export function LiveSession({
   type Phase = "pending" | "upcoming" | "soon" | "live" | "ended";
   let phase: Phase = "pending";
   if (now != null && start != null && end != null) {
-    if (now < start) phase = start - now <= 15 * 60_000 ? "soon" : "upcoming";
+    if (now < start) phase = start - now <= 30 * 60_000 ? "soon" : "upcoming";
     else if (now <= end) phase = "live";
     else phase = "ended";
   }
@@ -169,7 +169,7 @@ export function LiveSession({
 
       {teamsJoinUrl && !canJoin && phase !== "ended" ? (
         <p className="mt-3 font-mono text-[11px] text-muted">
-          The join button activates 15 minutes before start. It opens Teams in a
+          The join button activates 30 minutes before start. It opens Teams in a
           floating window so you can keep the course open beside it.
         </p>
       ) : null}
