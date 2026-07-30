@@ -5,6 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import { toggleFavorite } from "@/app/dashboard/actions";
 
 export type Shelf = "assigned" | "available" | "completed";
+/** Tabs shown in the library: the three shelves plus a cross-cutting star view. */
+type View = Shelf | "favorites";
 
 export interface AlbumCourse {
   id: string;
@@ -20,10 +22,11 @@ export interface AlbumCourse {
   shelf: Shelf;
 }
 
-const SHELVES: { id: Shelf; label: string }[] = [
+const SHELVES: { id: View; label: string }[] = [
   { id: "assigned", label: "Assigned" },
   { id: "available", label: "Available" },
   { id: "completed", label: "Completed" },
+  { id: "favorites", label: "Favorites" },
 ];
 
 /** Deterministic hue per course so procedural artwork is stable. */
@@ -92,18 +95,22 @@ export function CourseAlbum({ courses }: { courses: AlbumCourse[] }) {
       assigned: courses.filter((c) => c.shelf === "assigned").length,
       available: courses.filter((c) => c.shelf === "available").length,
       completed: courses.filter((c) => c.shelf === "completed").length,
+      favorites: courses.filter((c) => c.favorite).length,
     }),
     [courses]
   );
 
   const firstNonEmpty =
-    (SHELVES.find((s) => counts[s.id] > 0)?.id as Shelf | undefined) ?? "assigned";
+    (SHELVES.find((s) => counts[s.id] > 0)?.id as View | undefined) ?? "assigned";
 
-  const [shelf, setShelf] = useState<Shelf>(firstNonEmpty);
+  const [shelf, setShelf] = useState<View>(firstNonEmpty);
   const [index, setIndex] = useState(0);
 
   const list = useMemo(
-    () => courses.filter((c) => c.shelf === shelf),
+    () =>
+      shelf === "favorites"
+        ? courses.filter((c) => c.favorite)
+        : courses.filter((c) => c.shelf === shelf),
     [courses, shelf]
   );
 
@@ -170,7 +177,9 @@ export function CourseAlbum({ courses }: { courses: AlbumCourse[] }) {
             ? "No active enrollments. Switch to Available to open your first case file."
             : shelf === "completed"
               ? "Nothing completed yet — finish a course to see it here."
-              : "You are enrolled in everything currently published."}
+              : shelf === "favorites"
+                ? "No favorites yet — tap the ☆ on any course to pin it here."
+                : "You are enrolled in everything currently published."}
         </p>
       ) : (
         <div className="mt-6 flex flex-1 flex-col gap-6 sm:flex-row">

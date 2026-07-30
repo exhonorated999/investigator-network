@@ -8,7 +8,6 @@ import { CustomizePanel } from "@/components/widgets/customize-panel";
 import {
   CourseRow,
   WidgetCard,
-  WidgetEmpty,
   WidgetStub,
 } from "@/components/widgets/widget-shell";
 import { loadNotifications } from "@/lib/notifications";
@@ -148,9 +147,6 @@ export default async function DashboardPage() {
 
   const albums = [...enrolledAlbums, ...availableAlbums];
   const inProgress = enrolledAlbums.filter((c) => c.shelf === "assigned");
-  const finished = enrolledAlbums.filter((c) => c.shelf === "completed");
-  const favoriteCourses = albums.filter((c) => c.favorite);
-  const certBySlug = new Map(certificates.map((c) => [c.course.slug, c.serial]));
 
   const totalUnitsDone = completedSet.size;
   const passRate =
@@ -185,80 +181,6 @@ export default async function DashboardPage() {
                 </div>
               ))}
             </div>
-          </WidgetCard>
-        );
-
-      case "favorites":
-        return (
-          <WidgetCard
-            number="04"
-            eyebrow="Starred"
-            title="Favorites"
-            count={favoriteCourses.length}
-            tone="gold"
-          >
-            {favoriteCourses.length === 0 ? (
-              <WidgetEmpty>
-                Star a course from the library card to pin it here.
-              </WidgetEmpty>
-            ) : (
-              <div>
-                {favoriteCourses.slice(0, 6).map((c) => (
-                  <CourseRow
-                    key={c.id}
-                    href={`/courses/${c.slug}`}
-                    title={c.title}
-                    meta={c.category ?? "Training"}
-                    right={
-                      <span
-                        className={`shrink-0 font-display text-sm font-bold ${
-                          c.pct === 100 ? "text-gold" : "text-accent-bright"
-                        }`}
-                      >
-                        {c.shelf === "available" ? "—" : `${c.pct}%`}
-                      </span>
-                    }
-                  />
-                ))}
-              </div>
-            )}
-          </WidgetCard>
-        );
-
-      case "completed":
-        return (
-          <WidgetCard
-            number="05"
-            eyebrow="On the record"
-            title="Completed"
-            count={finished.length}
-            tone="gold"
-          >
-            {finished.length === 0 ? (
-              <WidgetEmpty>
-                Finish every unit in a course to close the file and earn a
-                certificate.
-              </WidgetEmpty>
-            ) : (
-              <div>
-                {finished.slice(0, 6).map((c) => {
-                  const serial = certBySlug.get(c.slug);
-                  return (
-                    <CourseRow
-                      key={c.id}
-                      href={serial ? `/certificates/${serial}` : `/courses/${c.slug}`}
-                      title={c.title}
-                      meta={serial ?? "Certificate pending"}
-                      right={
-                        <span className="shrink-0 text-gold">
-                          {serial ? "🏅" : "✓"}
-                        </span>
-                      }
-                    />
-                  );
-                })}
-              </div>
-            )}
           </WidgetCard>
         );
 

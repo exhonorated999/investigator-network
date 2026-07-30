@@ -6,8 +6,6 @@ export type WidgetId =
   | "courses"
   | "notifications"
   | "stats"
-  | "favorites"
-  | "completed"
   | "resources"
   | "news"
   | "messages"
@@ -43,18 +41,6 @@ export const WIDGETS: WidgetMeta[] = [
     label: "Progress snapshot",
     description: "Units completed, active courses, certificates, pass rate.",
     span: 6,
-  },
-  {
-    id: "favorites",
-    label: "Favorites",
-    description: "Courses you starred for quick access.",
-    span: 2,
-  },
-  {
-    id: "completed",
-    label: "Completed courses",
-    description: "Everything you have finished, with certificate links.",
-    span: 2,
   },
   {
     id: "resources",
@@ -93,8 +79,6 @@ export const OPTIONAL_WIDGETS: WidgetMeta[] = WIDGETS.filter((w) => !w.permanent
 export const DEFAULT_WIDGETS: WidgetId[] = [
   "stats",
   "news",
-  "favorites",
-  "completed",
   "resources",
 ];
 
