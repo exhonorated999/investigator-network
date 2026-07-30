@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getViewerUser } from "@/lib/viewer";
+import { requireViewer } from "@/lib/viewer";
 import { SiteHeader } from "@/components/site-header";
 import { hostOf, loadArticle, paragraphs } from "@/lib/news";
 
@@ -12,7 +12,7 @@ export default async function ArticlePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [viewer, article] = await Promise.all([getViewerUser(), loadArticle(id)]);
+  const [viewer, article] = await Promise.all([requireViewer(), loadArticle(id)]);
   if (!article) notFound();
 
   const source = article.sourceName || hostOf(article.sourceUrl);

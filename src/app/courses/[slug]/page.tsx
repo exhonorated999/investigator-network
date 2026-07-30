@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { getViewerUser } from "@/lib/viewer";
+import { requireViewer } from "@/lib/viewer";
 import { SiteHeader } from "@/components/site-header";
 import {
   loadCourseBySlug,
@@ -21,7 +21,7 @@ export default async function CourseOverview({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const user = (await getViewerUser())!;
+  const user = await requireViewer();
 
   const course = await loadCourseBySlug(slug);
   if (!course) notFound();

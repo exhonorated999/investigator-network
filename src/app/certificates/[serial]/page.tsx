@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/rbac";
-import { getViewerUser } from "@/lib/viewer";
+import { requireViewer } from "@/lib/viewer";
 import { prisma } from "@/lib/prisma";
 import { PrintButton } from "@/components/print-button";
 
@@ -15,7 +15,7 @@ export default async function CertificatePage({
 }) {
   await requireUser();
   const { serial } = await params;
-  const viewer = (await getViewerUser())!;
+  const viewer = await requireViewer();
 
   const cert = await prisma.certificate.findUnique({
     where: { serial },

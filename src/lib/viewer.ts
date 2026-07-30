@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import type { Role } from "@/generated/prisma";
@@ -64,4 +65,19 @@ export async function getViewerUser(): Promise<Viewer | null> {
     impersonating: false,
     realAdminId: null,
   };
+}
+
+/**
+ * Same as `getViewerUser`, but redirects to the login page instead of
+ * returning null.
+ *
+ * Pages must call this rather than asserting the result of `getViewerUser`
+ * is non-null. A parent layout's `requireUser()` guard is NOT enough: Next
+ * renders layouts and pages concurrently, so a page still executes (and would
+ * crash on a null viewer) before the layout's redirect takes effect.
+ */
+export async function requireViewer(): Promise<Viewer> {
+  const viewer = await getViewerUser();
+  if (!viewer) redirect("/login");
+  return viewer;
 }

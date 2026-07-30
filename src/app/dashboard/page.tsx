@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { getViewerUser } from "@/lib/viewer";
+import { requireViewer } from "@/lib/viewer";
 import { SiteHeader } from "@/components/site-header";
 import { CourseAlbum, type AlbumCourse } from "@/components/course-album";
 import { NotificationsCard } from "@/components/widgets/notifications-card";
@@ -47,7 +47,7 @@ const RESOURCES: { label: string; note: string; href: string }[] = [
 ];
 
 export default async function DashboardPage() {
-  const viewer = (await getViewerUser())!;
+  const viewer = await requireViewer();
   const user = viewer;
   const isAdmin = viewer.role === "ADMIN";
 

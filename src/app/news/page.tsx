@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getViewerUser } from "@/lib/viewer";
+import { requireViewer } from "@/lib/viewer";
 import { SiteHeader } from "@/components/site-header";
 import { TopicPicker } from "@/components/widgets/topic-picker";
 import {
@@ -97,7 +97,7 @@ export default async function NewsIndexPage({
   searchParams: Promise<{ topic?: string }>;
 }) {
   const { topic } = await searchParams;
-  const viewer = (await getViewerUser())!;
+  const viewer = await requireViewer();
 
   const [topics, selected] = await Promise.all([
     loadTopics(),

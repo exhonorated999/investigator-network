@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { getViewerUser } from "@/lib/viewer";
+import { requireViewer } from "@/lib/viewer";
 import { SignOutButton } from "@/components/sign-out";
 import { UnitView } from "@/components/unit-view";
 import { QuizTaker } from "@/components/quiz-taker";
@@ -24,7 +24,7 @@ export default async function CoursePlayer({
   params: Promise<{ slug: string; unitId: string }>;
 }) {
   const { slug, unitId } = await params;
-  const user = (await getViewerUser())!;
+  const user = await requireViewer();
   const isAdmin = user.role === "ADMIN";
 
   const course = await loadCourseBySlug(slug);
