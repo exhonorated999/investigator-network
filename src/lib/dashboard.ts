@@ -52,7 +52,7 @@ export const WIDGETS: WidgetMeta[] = [
     id: "news",
     label: "News feed",
     description: "Curated articles from staff in the topics you follow.",
-    span: 3,
+    span: 4,
   },
   {
     id: "messages",
