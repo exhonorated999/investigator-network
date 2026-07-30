@@ -160,7 +160,7 @@ async function main() {
             title: "Course Introduction",
             type: "VIDEO",
             order: 0,
-            data: { youtubeId: "", durationSec: 238 },
+            data: { provider: "bunny", videoId: "", libraryId: "", durationSec: 238 },
           },
           {
             title: "Personal Introductions",
@@ -207,7 +207,7 @@ async function main() {
             title,
             type: "VIDEO",
             order: i,
-            data: { youtubeId: "", durationSec },
+            data: { provider: "bunny", videoId: "", libraryId: "", durationSec },
           })),
           {
             title: "Course Notes",

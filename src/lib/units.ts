@@ -32,7 +32,7 @@ export const UNIT_LABEL: Record<UnitType, string> = Object.fromEntries(
 export function defaultUnitData(type: UnitType): Record<string, unknown> {
   switch (type) {
     case "VIDEO":
-      return { youtubeId: "", durationSec: 0 };
+      return { provider: "bunny", videoId: "", libraryId: "", durationSec: 0 };
     case "NOTES":
       return { contentMarkdown: "" };
     case "LIVE_SESSION":

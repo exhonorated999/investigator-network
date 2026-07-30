@@ -1,5 +1,6 @@
 import { marked } from "marked";
 import { unitData, type LoadedUnit } from "@/lib/course";
+import { parseVideoRef, videoEmbed, formatDuration } from "@/lib/video";
 import { submitAssignment } from "@/app/courses/actions";
 
 function fmtDateTime(iso: string): string {
@@ -22,22 +23,37 @@ export function UnitView({
   const d = unitData(unit);
 
   if (unit.type === "VIDEO") {
-    const youtubeId = String(d.youtubeId || "");
-    if (!youtubeId) {
-      return <Empty>No video has been added to this unit yet.</Empty>;
+    const ref = parseVideoRef(d);
+    const embed = videoEmbed(ref);
+    if (!embed) {
+      return ref.videoId ? (
+        <Empty>
+          This video is hosted on Bunny Stream but no library is configured on
+          the server yet.
+        </Empty>
+      ) : (
+        <Empty>No video has been added to this unit yet.</Empty>
+      );
     }
+    const duration = formatDuration(ref.durationSec);
     return (
       <div className="bracket scanlines relative">
         <span className="tag-chip tag-chip-cyan absolute -top-3 left-4 z-10">
           // PLAYBACK
         </span>
+        {duration ? (
+          <span className="absolute -top-3 right-4 z-10 border border-border-strong bg-surface px-2 py-0.5 font-mono text-[10px] tracking-[0.14em] text-muted">
+            {duration}
+          </span>
+        ) : null}
         <div className="overflow-hidden border border-border bg-black">
           <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
             <iframe
               className="absolute inset-0 h-full w-full"
-              src={`https://www.youtube-nocookie.com/embed/${youtubeId}`}
+              src={embed.src}
               title={unit.title}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              loading="lazy"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
               allowFullScreen
             />
           </div>

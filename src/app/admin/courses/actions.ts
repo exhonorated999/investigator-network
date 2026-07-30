@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/rbac";
 import { slugify, withSuffix } from "@/lib/slug";
 import { defaultUnitData } from "@/lib/units";
+import { parseVideoInput, type VideoProvider } from "@/lib/video";
 import { sendLiveSessionReminder } from "@/lib/email";
 import type { UnitType, Prisma } from "@/generated/prisma";
 
@@ -159,12 +160,24 @@ export async function updateUnit(formData: FormData) {
   // Build type-specific data payload from the submitted fields.
   let data: Record<string, unknown> = {};
   switch (unit.type) {
-    case "VIDEO":
+    case "VIDEO": {
+      const provider: VideoProvider =
+        String(formData.get("provider") || "") === "youtube"
+          ? "youtube"
+          : "bunny";
+      const parsed = parseVideoInput(
+        String(formData.get("videoRef") || ""),
+        provider
+      );
       data = {
-        youtubeId: extractYouTubeId(String(formData.get("youtubeId") || "")),
+        provider,
+        videoId: parsed.videoId,
+        libraryId:
+          String(formData.get("libraryId") || "").trim() || parsed.libraryId,
         durationSec: Number(formData.get("durationSec") || 0),
       };
       break;
+    }
     case "NOTES":
       data = { contentMarkdown: String(formData.get("contentMarkdown") || "") };
       break;
@@ -239,21 +252,4 @@ export async function sendLiveSessionReminders(formData: FormData) {
   );
 
   revalidatePath(`/admin/courses/${courseId}/units/${unitId}`);
-}
-
-// Accept a full YouTube URL or a bare ID and normalise to the 11-char ID.
-function extractYouTubeId(input: string): string {
-  const s = input.trim();
-  if (!s) return "";
-  const patterns = [
-    /(?:youtube\.com\/watch\?v=)([\w-]{11})/,
-    /(?:youtu\.be\/)([\w-]{11})/,
-    /(?:youtube\.com\/embed\/)([\w-]{11})/,
-  ];
-  for (const p of patterns) {
-    const m = s.match(p);
-    if (m) return m[1];
-  }
-  if (/^[\w-]{11}$/.test(s)) return s;
-  return s;
 }

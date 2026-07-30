@@ -2,6 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { UNIT_LABEL } from "@/lib/units";
+import {
+  parseVideoRef,
+  formatDuration,
+  bunnyConfigured,
+  VIDEO_PROVIDERS,
+} from "@/lib/video";
 import { updateUnit, deleteUnit } from "../../../actions";
 import { sendLiveSessionReminders } from "../../../actions";
 import { ensureQuiz } from "../../../quiz-actions";
@@ -33,6 +39,8 @@ export default async function UnitEditor({
   const d = (unit.data as Record<string, unknown>) ?? {};
   const str = (k: string) => (d[k] == null ? "" : String(d[k]));
   const num = (k: string) => (d[k] == null ? "" : String(d[k]));
+  const video = parseVideoRef(d);
+  const bunnyReady = bunnyConfigured();
 
   return (
     <div className="reveal max-w-3xl">
@@ -62,16 +70,56 @@ export default async function UnitEditor({
         {unit.type === "VIDEO" && (
           <>
             <label className="grid gap-1.5">
-              <span className="eyebrow eyebrow-muted">YouTube URL or video ID (unlisted recommended)</span>
+              <span className="eyebrow eyebrow-muted">Host</span>
+              <select
+                name="provider"
+                defaultValue={video.provider}
+                className={inputClass}
+              >
+                {VIDEO_PROVIDERS.map((p) => (
+                  <option key={p.value} value={p.value}>
+                    {p.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="grid gap-1.5">
+              <span className="eyebrow eyebrow-muted">Video URL or ID</span>
               <input
-                name="youtubeId"
-                defaultValue={str("youtubeId")}
-                placeholder="https://youtu.be/… or 11-char ID"
+                name="videoRef"
+                defaultValue={video.videoId}
+                placeholder="Paste the Bunny embed URL, share link, or GUID"
+                className={inputClass}
+              />
+              <span className="font-mono text-[11px] text-muted">
+                Bunny: paste the embed/share URL or the video GUID. YouTube:
+                paste the watch URL or the 11-character ID.
+              </span>
+            </label>
+            {!bunnyReady && video.provider === "bunny" ? (
+              <p className="border border-gold/40 bg-[rgba(244,162,97,0.08)] px-3 py-2 font-mono text-[11px] text-gold">
+                BUNNY_STREAM_LIBRARY_ID is not set on the server, so Bunny
+                videos will not play yet.
+              </p>
+            ) : null}
+            <label className="grid gap-1.5">
+              <span className="eyebrow eyebrow-muted">
+                Library ID (optional — only if this video lives in a second
+                Bunny library)
+              </span>
+              <input
+                name="libraryId"
+                defaultValue={video.libraryId}
                 className={inputClass}
               />
             </label>
             <label className="grid gap-1.5">
-              <span className="eyebrow eyebrow-muted">Duration (seconds, optional)</span>
+              <span className="eyebrow eyebrow-muted">
+                Duration (seconds, optional)
+                {video.durationSec
+                  ? ` — currently ${formatDuration(video.durationSec)}`
+                  : ""}
+              </span>
               <input
                 name="durationSec"
                 type="number"
