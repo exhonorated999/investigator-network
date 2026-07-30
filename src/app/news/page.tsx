@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireViewer } from "@/lib/viewer";
 import { SiteHeader } from "@/components/site-header";
 import { TopicPicker } from "@/components/widgets/topic-picker";
+import { ArticleReader } from "@/components/widgets/article-reader";
 import {
   hostOf,
   loadArticles,
@@ -85,9 +86,9 @@ function Card({ a, lead }: { a: FeedArticle; lead?: boolean }) {
       {body}
     </a>
   ) : (
-    <Link href={href} className={cls}>
+    <ArticleReader id={a.id} className={`${cls} w-full text-left`}>
       {body}
-    </Link>
+    </ArticleReader>
   );
 }
 

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { TopicPicker } from "@/components/widgets/topic-picker";
+import { ArticleReader } from "@/components/widgets/article-reader";
 import { hostOf, type FeedArticle, type Topic } from "@/lib/news";
 
 function stamp(d: Date): string {
@@ -54,9 +55,9 @@ export function ArticleRow({ a }: { a: FeedArticle }) {
       {inner}
     </a>
   ) : (
-    <Link href={`/news/${a.id}`} className={cls}>
+    <ArticleReader id={a.id} className={`${cls} w-full text-left`}>
       {inner}
-    </Link>
+    </ArticleReader>
   );
 }
 
@@ -97,18 +98,33 @@ export function NewsCard({
         ) : (
           <>
             {lead.imageUrl ? (
-              <Link
-                href={articleHref(lead)}
-                target={!lead.hasBody && lead.sourceUrl ? "_blank" : undefined}
-                className="bracket group mb-3 block aspect-[16/7] overflow-hidden"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={lead.imageUrl}
-                  alt=""
-                  className="h-full w-full object-cover opacity-80 transition duration-500 group-hover:scale-[1.03] group-hover:opacity-100"
-                />
-              </Link>
+              lead.hasBody || !lead.sourceUrl ? (
+                <ArticleReader
+                  id={lead.id}
+                  className="bracket group mb-3 block aspect-[16/7] w-full overflow-hidden"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={lead.imageUrl}
+                    alt=""
+                    className="h-full w-full object-cover opacity-80 transition duration-500 group-hover:scale-[1.03] group-hover:opacity-100"
+                  />
+                </ArticleReader>
+              ) : (
+                <a
+                  href={lead.sourceUrl}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="bracket group mb-3 block aspect-[16/7] overflow-hidden"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={lead.imageUrl}
+                    alt=""
+                    className="h-full w-full object-cover opacity-80 transition duration-500 group-hover:scale-[1.03] group-hover:opacity-100"
+                  />
+                </a>
+              )
             ) : null}
 
             <div>
