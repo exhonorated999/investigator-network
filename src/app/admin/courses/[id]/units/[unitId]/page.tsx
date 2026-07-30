@@ -8,6 +8,7 @@ import {
   bunnyConfigured,
   VIDEO_PROVIDERS,
 } from "@/lib/video";
+import { parseEmbedRef, embedLabel } from "@/lib/embed";
 import { updateUnit, deleteUnit } from "../../../actions";
 import { sendLiveSessionReminders } from "../../../actions";
 import { ensureQuiz } from "../../../quiz-actions";
@@ -40,6 +41,7 @@ export default async function UnitEditor({
   const str = (k: string) => (d[k] == null ? "" : String(d[k]));
   const num = (k: string) => (d[k] == null ? "" : String(d[k]));
   const video = parseVideoRef(d);
+  const embed = parseEmbedRef(d);
   const bunnyReady = bunnyConfigured();
 
   return (
@@ -131,15 +133,52 @@ export default async function UnitEditor({
         )}
 
         {unit.type === "NOTES" && (
-          <label className="grid gap-1.5">
-            <span className="eyebrow eyebrow-muted">Notes content (Markdown supported)</span>
-            <textarea
-              name="contentMarkdown"
-              defaultValue={str("contentMarkdown")}
-              rows={14}
-              className={`${inputClass} font-mono text-sm`}
-            />
-          </label>
+          <>
+            <label className="grid gap-1.5">
+              <span className="eyebrow eyebrow-muted">
+                Presentation / flipbook embed (optional)
+              </span>
+              <textarea
+                name="embedInput"
+                defaultValue={embed.url}
+                rows={3}
+                placeholder="Paste the whole <iframe …> snippet, or just the URL"
+                className={`${inputClass} font-mono text-xs`}
+              />
+              <span className="font-mono text-[11px] text-muted">
+                Works with Heyzine, Issuu, AnyFlip, Google Slides, Canva, and
+                PowerPoint on OneDrive/SharePoint. Renders above the notes.
+                Clear the box to remove it.
+              </span>
+            </label>
+            {embed.url ? (
+              <p className="border border-border bg-[rgba(10,12,17,0.6)] px-3 py-2 font-mono text-[11px] text-accent-bright">
+                {embedLabel(embed.url)} · {embed.url}
+              </p>
+            ) : null}
+            <label className="grid gap-1.5">
+              <span className="eyebrow eyebrow-muted">
+                Embed height in px (optional — blank uses a sensible default)
+              </span>
+              <input
+                name="embedHeight"
+                type="number"
+                defaultValue={embed.height || ""}
+                className={inputClass}
+              />
+            </label>
+            <label className="grid gap-1.5">
+              <span className="eyebrow eyebrow-muted">
+                Notes content (Markdown supported)
+              </span>
+              <textarea
+                name="contentMarkdown"
+                defaultValue={str("contentMarkdown")}
+                rows={14}
+                className={`${inputClass} font-mono text-sm`}
+              />
+            </label>
+          </>
         )}
 
         {unit.type === "LIVE_SESSION" && (

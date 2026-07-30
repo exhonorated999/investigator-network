@@ -34,7 +34,7 @@ export function defaultUnitData(type: UnitType): Record<string, unknown> {
     case "VIDEO":
       return { provider: "bunny", videoId: "", libraryId: "", durationSec: 0 };
     case "NOTES":
-      return { contentMarkdown: "" };
+      return { contentMarkdown: "", embedUrl: "", embedHeight: 0, embedTitle: "" };
     case "LIVE_SESSION":
       return { teamsJoinUrl: "", startsAt: "", durationMin: 60, replayUrl: "" };
     case "FILE_ASSIGNMENT":

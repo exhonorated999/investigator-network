@@ -7,6 +7,7 @@ import { requireAdmin } from "@/lib/rbac";
 import { slugify, withSuffix } from "@/lib/slug";
 import { defaultUnitData } from "@/lib/units";
 import { parseVideoInput, type VideoProvider } from "@/lib/video";
+import { parseEmbedInput } from "@/lib/embed";
 import { sendLiveSessionReminder } from "@/lib/email";
 import type { UnitType, Prisma } from "@/generated/prisma";
 
@@ -178,9 +179,17 @@ export async function updateUnit(formData: FormData) {
       };
       break;
     }
-    case "NOTES":
-      data = { contentMarkdown: String(formData.get("contentMarkdown") || "") };
+    case "NOTES": {
+      const parsed = parseEmbedInput(String(formData.get("embedInput") || ""));
+      const override = Number(formData.get("embedHeight") || 0) || 0;
+      data = {
+        contentMarkdown: String(formData.get("contentMarkdown") || ""),
+        embedUrl: parsed.url,
+        embedHeight: override || parsed.height,
+        embedTitle: "",
+      };
       break;
+    }
     case "LIVE_SESSION":
       data = {
         teamsJoinUrl: String(formData.get("teamsJoinUrl") || "").trim(),

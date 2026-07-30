@@ -1,7 +1,55 @@
 import { marked } from "marked";
 import { unitData, type LoadedUnit } from "@/lib/course";
 import { parseVideoRef, videoEmbed, formatDuration } from "@/lib/video";
+import {
+  parseEmbedRef,
+  embedLabel,
+  embedHeight,
+  type EmbedRef,
+} from "@/lib/embed";
 import { submitAssignment } from "@/app/courses/actions";
+
+const PROSE =
+  "panel rule-top max-w-none p-6 text-foreground [&_a]:text-accent [&_a]:underline [&_a]:transition [&_a:hover]:text-accent-bright [&_blockquote]:border-l-2 [&_blockquote]:border-accent/40 [&_blockquote]:pl-4 [&_blockquote]:text-muted [&_code]:rounded [&_code]:bg-surface-2 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-sm [&_code]:text-accent-bright [&_h1]:mb-4 [&_h1]:mt-6 [&_h1]:font-display [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:uppercase [&_h1]:tracking-wide [&_h2]:mb-3 [&_h2]:mt-6 [&_h2]:font-display [&_h2]:text-xl [&_h2]:font-bold [&_h2]:uppercase [&_h2]:tracking-wide [&_h2]:text-accent-bright [&_h3]:mb-2 [&_h3]:mt-4 [&_h3]:font-display [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:uppercase [&_h3]:tracking-wide [&_li]:my-1 [&_li]:relative [&_li]:pl-5 [&_li]:before:absolute [&_li]:before:left-0 [&_li]:before:text-accent [&_li]:before:content-['▸'] [&_p]:my-3 [&_p]:max-w-[68ch] [&_pre]:my-4 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:border [&_pre]:border-border [&_pre]:bg-[rgba(10,12,17,0.85)] [&_pre]:p-4 [&_pre]:font-mono [&_pre]:text-sm [&_strong]:text-foreground [&_table]:my-4 [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-border [&_td]:px-3 [&_td]:py-2 [&_th]:border [&_th]:border-border [&_th]:bg-surface-2 [&_th]:px-3 [&_th]:py-2 [&_th]:text-left [&_th]:font-display [&_th]:text-[11px] [&_th]:uppercase [&_th]:tracking-[0.14em] [&_th]:text-accent-bright [&_ul]:my-3 [&_ul]:list-none";
+
+/** Flipbook / slide deck frame. Sized generously — a 400px deck is unreadable. */
+function DocEmbed({
+  embed,
+  fallbackTitle,
+}: {
+  embed: EmbedRef;
+  fallbackTitle: string;
+}) {
+  const height = embedHeight(embed);
+  const title = embed.title || fallbackTitle;
+  return (
+    <div className="bracket relative">
+      <span className="tag-chip tag-chip-cyan absolute -top-3 left-4 z-10">
+        // {embedLabel(embed.url).toUpperCase()}
+      </span>
+      <a
+        href={embed.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="absolute -top-3 right-4 z-10 border border-border-strong bg-surface px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-muted transition hover:border-accent hover:text-accent-bright"
+      >
+        Full screen ↗
+      </a>
+      <div className="overflow-hidden border border-border bg-[rgba(10,12,17,0.85)]">
+        <iframe
+          src={embed.url}
+          title={title}
+          loading="lazy"
+          scrolling="no"
+          allow="autoplay; fullscreen; clipboard-write"
+          allowFullScreen
+          className="block w-full"
+          style={{ height: `min(${height}px, 80vh)`, border: "none" }}
+        />
+      </div>
+    </div>
+  );
+}
 
 function fmtDateTime(iso: string): string {
   if (!iso) return "";
@@ -64,13 +112,25 @@ export function UnitView({
 
   if (unit.type === "NOTES") {
     const md = String(d.contentMarkdown || "");
-    if (!md.trim()) return <Empty>No notes have been added yet.</Empty>;
-    const html = marked.parse(md, { async: false }) as string;
+    const embed = parseEmbedRef(d);
+    if (!md.trim() && !embed.url) {
+      return <Empty>No notes have been added yet.</Empty>;
+    }
+    const html = md.trim()
+      ? (marked.parse(md, { async: false }) as string)
+      : "";
     return (
-      <article
-        className="panel rule-top max-w-none p-6 text-foreground [&_a]:text-accent [&_a]:underline [&_a]:transition [&_a:hover]:text-accent-bright [&_blockquote]:border-l-2 [&_blockquote]:border-accent/40 [&_blockquote]:pl-4 [&_blockquote]:text-muted [&_code]:rounded [&_code]:bg-surface-2 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-sm [&_code]:text-accent-bright [&_h1]:mb-4 [&_h1]:mt-6 [&_h1]:font-display [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:uppercase [&_h1]:tracking-wide [&_h2]:mb-3 [&_h2]:mt-6 [&_h2]:font-display [&_h2]:text-xl [&_h2]:font-bold [&_h2]:uppercase [&_h2]:tracking-wide [&_h2]:text-accent-bright [&_h3]:mb-2 [&_h3]:mt-4 [&_h3]:font-display [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:uppercase [&_h3]:tracking-wide [&_li]:my-1 [&_li]:relative [&_li]:pl-5 [&_li]:before:absolute [&_li]:before:left-0 [&_li]:before:text-accent [&_li]:before:content-['▸'] [&_p]:my-3 [&_p]:max-w-[68ch] [&_pre]:my-4 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:border [&_pre]:border-border [&_pre]:bg-[rgba(10,12,17,0.85)] [&_pre]:p-4 [&_pre]:font-mono [&_pre]:text-sm [&_strong]:text-foreground [&_ul]:my-3 [&_ul]:list-none"
-        dangerouslySetInnerHTML={{ __html: html }}
-      />
+      <div className="grid gap-6">
+        {embed.url ? (
+          <DocEmbed embed={embed} fallbackTitle={unit.title} />
+        ) : null}
+        {html ? (
+          <article
+            className={PROSE}
+            dangerouslySetInnerHTML={{ __html: html }}
+          />
+        ) : null}
+      </div>
     );
   }
 
