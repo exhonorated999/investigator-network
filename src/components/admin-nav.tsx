@@ -8,6 +8,7 @@ const links = [
   { href: "/admin", label: "Dashboard", exact: true },
   { href: "/admin/users", label: "Users & approvals" },
   { href: "/admin/courses", label: "Courses" },
+  { href: "/admin/news", label: "Newsroom" },
   { href: "/admin/grading", label: "Grading" },
   { href: "/admin/preview", label: "View as learner" },
 ];

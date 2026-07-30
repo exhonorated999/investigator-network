@@ -12,6 +12,8 @@ import {
   WidgetStub,
 } from "@/components/widgets/widget-shell";
 import { loadNotifications } from "@/lib/notifications";
+import { NewsCard } from "@/components/widgets/news-card";
+import { loadNewsFeed, loadNewsTopics, loadTopics } from "@/lib/news";
 import { loadEnabledWidgets } from "@/lib/dashboard-prefs";
 import {
   SPAN_CLASS,
@@ -49,7 +51,7 @@ export default async function DashboardPage() {
   const user = viewer;
   const isAdmin = viewer.role === "ADMIN";
 
-  const [enrollments, favorites, certificates, enabled, notifications] =
+  const [enrollments, favorites, certificates, enabled, notifications, news, topics, newsTopics] =
     await Promise.all([
       prisma.enrollment.findMany({
         where: { userId: user.id },
@@ -74,6 +76,9 @@ export default async function DashboardPage() {
       }),
       loadEnabledWidgets(user.id),
       loadNotifications(user.id),
+      loadNewsFeed(user.id, 5),
+      loadTopics(),
+      loadNewsTopics(user.id),
     ]);
 
   const favoriteIds = new Set(favorites.map((f) => f.courseId));
@@ -279,13 +284,13 @@ export default async function DashboardPage() {
           </WidgetCard>
         );
 
-      case "announcements":
+      case "news":
         return (
-          <WidgetStub
+          <NewsCard
             number="07"
-            eyebrow="Bulletin"
-            title="News feed"
-            blurb="Staff announcements will publish here once the newsroom is wired up in the admin console."
+            articles={news}
+            topics={topics}
+            selected={newsTopics}
           />
         );
 

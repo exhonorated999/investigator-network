@@ -37,6 +37,12 @@ export function SiteHeader({
           >
             My Training
           </Link>
+          <Link
+            href="/news"
+            className="eyebrow eyebrow-muted hidden transition hover:text-accent-bright sm:block"
+          >
+            Feed
+          </Link>
           {isAdmin ? (
             <Link
               href="/admin"

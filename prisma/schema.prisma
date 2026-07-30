@@ -54,6 +54,7 @@ model User {
   gradedAnswers Answer[]        @relation("GradedBy")
   dashboardPref DashboardPref?
   favorites     CourseFavorite[]
+  articles      NewsArticle[]
 
   @@index([status])
 }
@@ -77,9 +78,10 @@ enum UnitType {
 }
 
 model Category {
-  id      String   @id @default(cuid())
-  name    String   @unique
-  courses Course[]
+  id       String        @id @default(cuid())
+  name     String        @unique
+  courses  Course[]
+  articles NewsArticle[]
 }
 
 model Course {
@@ -288,6 +290,9 @@ model DashboardPref {
   userId    String   @unique
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   widgets   Json     @default("[]")
+  /// Category ids the learner subscribes to in the news feed. An empty array
+  /// means "everything" so new categories surface automatically.
+  newsTopics Json    @default("[]")
   updatedAt DateTime @updatedAt
 }
 
@@ -301,4 +306,32 @@ model CourseFavorite {
 
   @@unique([userId, courseId])
   @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// Curated news feed
+// ---------------------------------------------------------------------------
+
+/// An article curated by staff. `body` holds pasted article text (plain text,
+/// blank lines separate paragraphs); when empty the card links straight out to
+/// `sourceUrl`.
+model NewsArticle {
+  id         String    @id @default(cuid())
+  title      String
+  summary    String    @default("")
+  body       String    @default("")
+  sourceName String    @default("")
+  sourceUrl  String    @default("")
+  imageUrl   String?
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  authorId   String?
+  author     User?     @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  published  Boolean   @default(true)
+  publishedAt DateTime @default(now())
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([published, publishedAt])
+  @@index([categoryId])
 }

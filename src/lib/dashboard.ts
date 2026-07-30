@@ -9,7 +9,7 @@ export type WidgetId =
   | "favorites"
   | "completed"
   | "resources"
-  | "announcements"
+  | "news"
   | "messages"
   | "network";
 
@@ -63,11 +63,10 @@ export const WIDGETS: WidgetMeta[] = [
     span: 2,
   },
   {
-    id: "announcements",
+    id: "news",
     label: "News feed",
-    description: "Announcements from Investigator Network staff.",
+    description: "Curated articles from staff in the topics you follow.",
     span: 3,
-    comingSoon: true,
   },
   {
     id: "messages",
@@ -93,10 +92,19 @@ export const OPTIONAL_WIDGETS: WidgetMeta[] = WIDGETS.filter((w) => !w.permanent
 
 export const DEFAULT_WIDGETS: WidgetId[] = [
   "stats",
+  "news",
   "favorites",
   "completed",
   "resources",
 ];
+
+/**
+ * Old ids kept working after a rename so saved layouts survive.
+ * `announcements` was the pre-Phase-8 name of the news feed.
+ */
+export const WIDGET_ALIASES: Record<string, WidgetId> = {
+  announcements: "news",
+};
 
 const VALID = new Set<string>(WIDGETS.map((w) => w.id));
 

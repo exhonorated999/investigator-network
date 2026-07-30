@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/rbac";
 import {
+  DEFAULT_WIDGETS,
   OPTIONAL_WIDGETS,
   type WidgetId,
 } from "@/lib/dashboard";
@@ -37,6 +38,38 @@ export async function saveWidgets(formData: FormData) {
   });
 
   revalidatePath("/dashboard");
+}
+
+/**
+ * Persists which news topics the learner follows. An empty selection is stored
+ * as `[]`, which the feed reads as "follow everything".
+ */
+export async function saveNewsTopics(formData: FormData) {
+  const session = await requireUser();
+  const userId = session.user!.id;
+
+  const requested = formData
+    .getAll("topic")
+    .filter((v): v is string => typeof v === "string");
+
+  // Only keep ids that still exist, so deleted categories drop out silently.
+  const known =
+    requested.length > 0
+      ? await prisma.category.findMany({
+          where: { id: { in: requested } },
+          select: { id: true },
+        })
+      : [];
+  const newsTopics = known.map((c) => c.id);
+
+  await prisma.dashboardPref.upsert({
+    where: { userId },
+    create: { userId, widgets: DEFAULT_WIDGETS, newsTopics },
+    update: { newsTopics },
+  });
+
+  revalidatePath("/dashboard");
+  revalidatePath("/news");
 }
 
 /** Star / unstar a course. */
