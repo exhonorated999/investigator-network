@@ -359,8 +359,17 @@ export default async function DashboardPage() {
           </div>
         </section>
 
+        {/* ---------------------------------------- pinned snapshot (top) */}
+        {enabled.includes("stats") ? (
+          <div className="reveal reveal-2 mt-9">{renderWidget("stats")}</div>
+        ) : null}
+
         {/* --------------------------------------------------- widget canvas */}
-        <div className="reveal reveal-2 mt-9 grid gap-5 lg:grid-cols-6">
+        <div
+          className={`reveal reveal-2 grid gap-5 lg:grid-cols-6 ${
+            enabled.includes("stats") ? "mt-5" : "mt-9"
+          }`}
+        >
           <div className={SPAN_CLASS[widgetMeta("courses").span]}>
             <CourseAlbum courses={albums} />
           </div>
@@ -368,11 +377,13 @@ export default async function DashboardPage() {
             <NotificationsCard items={notifications} />
           </div>
 
-          {enabled.map((id) => (
-            <div key={id} className={SPAN_CLASS[widgetMeta(id).span]}>
-              {renderWidget(id)}
-            </div>
-          ))}
+          {enabled
+            .filter((id) => id !== "stats")
+            .map((id) => (
+              <div key={id} className={SPAN_CLASS[widgetMeta(id).span]}>
+                {renderWidget(id)}
+              </div>
+            ))}
         </div>
 
         {enabled.length === 0 ? (
