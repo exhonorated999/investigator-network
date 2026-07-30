@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { requireAdmin } from "@/lib/rbac";
 import { AdminNav } from "@/components/admin-nav";
 import { SignOutButton } from "@/components/sign-out";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 // Admin-only area: require an authenticated ADMIN session, then render the shell.
 export default async function AdminLayout({
@@ -17,7 +18,7 @@ export default async function AdminLayout({
         <AdminNav />
       </aside>
       <div className="flex flex-col">
-        <header className="flex items-center justify-between border-b border-border bg-[rgba(13,15,20,0.82)] px-5 py-3 backdrop-blur-md md:px-6">
+        <header className="flex items-center justify-between border-b border-border bg-[var(--header-bg)] px-5 py-3 backdrop-blur-md md:px-6">
           <span className="tag-chip tag-chip-cyan">// ADMIN CONSOLE</span>
           <div className="flex items-center gap-4">
             <span className="hidden items-center gap-2 sm:flex">
@@ -26,6 +27,7 @@ export default async function AdminLayout({
               </span>
               <span className="text-sm text-muted">{session.user.name}</span>
             </span>
+            <ThemeToggle />
             <SignOutButton />
           </div>
         </header>

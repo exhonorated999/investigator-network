@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireViewer } from "@/lib/viewer";
 import { SignOutButton } from "@/components/sign-out";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { UnitView } from "@/components/unit-view";
 import { QuizTaker } from "@/components/quiz-taker";
 import {
@@ -138,6 +139,7 @@ export default async function CoursePlayer({
             <span className="font-mono text-xs text-muted">
               UNIT {String(index + 1).padStart(2, "0")} OF {String(total).padStart(2, "0")}
             </span>
+            <ThemeToggle />
             <SignOutButton />
           </div>
         </header>

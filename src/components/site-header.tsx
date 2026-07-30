@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { SignOutButton } from "@/components/sign-out";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export function SiteHeader({
   name,
@@ -10,7 +11,7 @@ export function SiteHeader({
   isAdmin?: boolean;
 }) {
   return (
-    <header className="sticky top-0 z-30 border-b border-border bg-[rgba(13,15,20,0.82)] backdrop-blur-md">
+    <header className="sticky top-0 z-30 border-b border-border bg-[var(--header-bg)] backdrop-blur-md">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-3">
         <Link href="/dashboard" className="group flex items-center gap-3">
           <Image
@@ -59,6 +60,7 @@ export function SiteHeader({
               <span className="text-sm text-muted">{name}</span>
             </span>
           ) : null}
+          <ThemeToggle />
           <SignOutButton />
         </nav>
       </div>

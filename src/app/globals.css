@@ -31,6 +31,67 @@
 
   --glow-blue: rgba(0, 180, 216, 0.35);
   --glow-cyan: rgba(144, 224, 239, 0.25);
+
+  --header-bg: rgba(13, 15, 20, 0.82);
+}
+
+/* -------------------------------------------------------------- light mode */
+/*
+  The whole system is variable-driven, so light mode is mostly a palette
+  swap. Accent hues are deepened for legible contrast on white, and the few
+  utilities with hardcoded dark surfaces are flipped below.
+*/
+:root[data-theme="light"] {
+  --void: #0d0f14; /* kept dark: used as text on cyan ::selection */
+  --background: #e9edf3;
+  --deep-navy: #d9e2ee;
+  --surface: #ffffff;
+  --surface-2: #eef2f8;
+  --foreground: #14212e;
+  --muted: #566676;
+  --border: rgba(0, 120, 155, 0.22);
+  --border-strong: rgba(0, 130, 165, 0.42);
+
+  --accent: #0088b0;
+  --accent-strong: #006d8f;
+  --accent-bright: #0284a6;
+  --gold: #b26a12;
+
+  --glow-blue: rgba(0, 140, 180, 0.2);
+  --glow-cyan: rgba(0, 150, 190, 0.15);
+
+  --header-bg: rgba(255, 255, 255, 0.85);
+}
+
+:root[data-theme="light"] .panel {
+  background: linear-gradient(160deg, #ffffff, #eef3f9);
+}
+:root[data-theme="light"] .field {
+  background: #ffffff;
+}
+:root[data-theme="light"] .field::placeholder {
+  color: rgba(86, 102, 118, 0.7);
+}
+:root[data-theme="light"] .tag-chip {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(178, 106, 18, 0.4);
+}
+:root[data-theme="light"] .pill {
+  background: rgba(0, 136, 176, 0.08);
+}
+:root[data-theme="light"] ::-webkit-scrollbar-track {
+  background: #dce3ec;
+}
+:root[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: #b6c2d0;
+  border-color: #dce3ec;
+}
+
+html,
+body {
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
 }
 
 @theme inline {
