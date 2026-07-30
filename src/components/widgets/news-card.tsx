@@ -50,11 +50,7 @@ export function ArticleRow({ a }: { a: FeedArticle }) {
   const cls =
     "group block border-b border-border py-3 first:pt-0 last:border-b-0 last:pb-0";
 
-  return external ? (
-    <a href={a.sourceUrl} target="_blank" rel="noreferrer noopener" className={cls}>
-      {inner}
-    </a>
-  ) : (
+  return (
     <ArticleReader id={a.id} className={`${cls} w-full text-left`}>
       {inner}
     </ArticleReader>
@@ -98,33 +94,17 @@ export function NewsCard({
         ) : (
           <>
             {lead.imageUrl ? (
-              lead.hasBody || !lead.sourceUrl ? (
-                <ArticleReader
-                  id={lead.id}
-                  className="bracket group mb-3 block aspect-[16/7] w-full overflow-hidden"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={lead.imageUrl}
-                    alt=""
-                    className="h-full w-full object-cover opacity-80 transition duration-500 group-hover:scale-[1.03] group-hover:opacity-100"
-                  />
-                </ArticleReader>
-              ) : (
-                <a
-                  href={lead.sourceUrl}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className="bracket group mb-3 block aspect-[16/7] overflow-hidden"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={lead.imageUrl}
-                    alt=""
-                    className="h-full w-full object-cover opacity-80 transition duration-500 group-hover:scale-[1.03] group-hover:opacity-100"
-                  />
-                </a>
-              )
+              <ArticleReader
+                id={lead.id}
+                className="bracket group mb-3 block aspect-[16/7] w-full overflow-hidden"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={lead.imageUrl}
+                  alt=""
+                  className="h-full w-full object-cover opacity-80 transition duration-500 group-hover:scale-[1.03] group-hover:opacity-100"
+                />
+              </ArticleReader>
             ) : null}
 
             <div>

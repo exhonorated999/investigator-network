@@ -13,6 +13,7 @@ export interface ModalArticle {
   paras: string[];
   sourceUrl: string;
   sourceName: string;
+  hasBody: boolean;
 }
 
 /**
@@ -24,6 +25,7 @@ export async function fetchArticle(id: string): Promise<ModalArticle | null> {
   const a = await loadArticle(id);
   if (!a) return null;
 
+  const paras = paragraphs(a.body);
   return {
     id: a.id,
     title: a.title,
@@ -35,8 +37,9 @@ export async function fetchArticle(id: string): Promise<ModalArticle | null> {
     }),
     summary: a.summary,
     imageUrl: a.imageUrl,
-    paras: paragraphs(a.body),
+    paras,
     sourceUrl: a.sourceUrl,
     sourceName: a.sourceName || hostOf(a.sourceUrl),
+    hasBody: paras.length > 0,
   };
 }

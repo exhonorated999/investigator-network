@@ -23,7 +23,6 @@ function stamp(d: Date): string {
 
 function Card({ a, lead }: { a: FeedArticle; lead?: boolean }) {
   const external = !a.hasBody && !!a.sourceUrl;
-  const href = external ? a.sourceUrl : `/news/${a.id}`;
   const source = a.sourceName || hostOf(a.sourceUrl);
 
   const body = (
@@ -81,11 +80,7 @@ function Card({ a, lead }: { a: FeedArticle; lead?: boolean }) {
 
   const cls = "panel panel-hover rule-top group block overflow-hidden";
 
-  return external ? (
-    <a href={href} target="_blank" rel="noreferrer noopener" className={cls}>
-      {body}
-    </a>
-  ) : (
+  return (
     <ArticleReader id={a.id} className={`${cls} w-full text-left`}>
       {body}
     </ArticleReader>
