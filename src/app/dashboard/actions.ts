@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/rbac";
+import { requireViewer } from "@/lib/viewer";
 import { DEFAULT_LAYOUT, SLOTS, isSlotChoice } from "@/lib/dashboard";
 import { loadLayout } from "@/lib/dashboard-prefs";
 
@@ -10,10 +11,15 @@ import { loadLayout } from "@/lib/dashboard-prefs";
  * Sets a single dashboard slot to a chosen widget (or "empty"). The picker in
  * each card posts `index` + `choice`; we load the current layout, patch the one
  * slot, and persist the whole array.
+ *
+ * Uses the *effective viewer* (not the raw signed-in user) so the write matches
+ * what the dashboard renders. Otherwise, when an admin is previewing as a
+ * learner, the change would save to the admin's own prefs and the previewed
+ * dashboard would appear to do nothing.
  */
 export async function setSlot(formData: FormData) {
-  const session = await requireUser();
-  const userId = session.user!.id;
+  const viewer = await requireViewer();
+  const userId = viewer.id;
 
   const index = Number(formData.get("index"));
   const choice = String(formData.get("choice") ?? "empty");
