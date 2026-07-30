@@ -56,6 +56,12 @@ model User {
   favorites     CourseFavorite[]
   articles      NewsArticle[]
 
+  posts        Post[]
+  postComments PostComment[]
+  reactions    PostReaction[]
+  convoParts   ConversationParticipant[]
+  messagesSent Message[]
+
   @@index([status])
 }
 
@@ -334,4 +340,112 @@ model NewsArticle {
 
   @@index([published, publishedAt])
   @@index([categoryId])
+}
+
+// ---------------------------------------------------------------------------
+// Community feed — a topic-tabbed social wall (DFIR / ICAC / General Invest.)
+// where members post questions, answer each other, and react. `topic` is a
+// code-level constant (see lib/community.ts), not a Category, so the community
+// taxonomy stays independent of course/news categories.
+// ---------------------------------------------------------------------------
+
+model Post {
+  id        String   @id @default(cuid())
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  topic     String
+  body      String
+  imageUrl  String?
+  /// Soft-hidden by an admin. Hidden posts disappear from the feed but are not
+  /// destroyed, so moderation is reversible.
+  hidden    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  comments  PostComment[]
+  reactions PostReaction[]
+
+  @@index([topic, hidden, createdAt])
+  @@index([authorId])
+}
+
+model PostComment {
+  id        String       @id @default(cuid())
+  postId    String
+  post      Post         @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  /// Null for a top-level answer; set for a threaded reply to another comment.
+  parentId  String?
+  parent    PostComment? @relation("CommentThread", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   PostComment[] @relation("CommentThread")
+  body      String
+  hidden    Boolean      @default(false)
+  createdAt DateTime     @default(now())
+
+  reactions PostReaction[]
+
+  @@index([postId, createdAt])
+  @@index([parentId])
+}
+
+/// A single reaction (kind = helpful / insightful / thanks) on either a post or
+/// a comment. One target column is set; the other is null. Uniqueness (one
+/// reaction per user per target) is enforced in the server action, since
+/// Postgres treats NULLs as distinct in composite unique indexes.
+model PostReaction {
+  id        String       @id @default(cuid())
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      String
+  postId    String?
+  post      Post?        @relation(fields: [postId], references: [id], onDelete: Cascade)
+  commentId String?
+  comment   PostComment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  createdAt DateTime     @default(now())
+
+  @@index([postId])
+  @@index([commentId])
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// Direct messages — 1:1 conversations between any two members (incl. staff).
+// ---------------------------------------------------------------------------
+
+model Conversation {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  /// Bumped whenever a new message lands, so the inbox sorts by recency.
+  updatedAt DateTime @updatedAt
+
+  participants ConversationParticipant[]
+  messages     Message[]
+
+  @@index([updatedAt])
+}
+
+model ConversationParticipant {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// When this participant last opened the thread — drives the unread badge.
+  lastReadAt     DateTime     @default(now())
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  body           String
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
 }

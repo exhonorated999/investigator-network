@@ -8,6 +8,7 @@ export type WidgetId =
   | "stats"
   | "resources"
   | "news"
+  | "community"
   | "messages"
   | "network";
 
@@ -55,11 +56,16 @@ export const WIDGETS: WidgetMeta[] = [
     span: 4,
   },
   {
+    id: "community",
+    label: "Community",
+    description: "Topic-tabbed feed — ask questions, answer peers, react.",
+    span: 3,
+  },
+  {
     id: "messages",
     label: "Messages",
-    description: "Direct messages from instructors and administrators.",
+    description: "Direct messages with peers and instructors.",
     span: 3,
-    comingSoon: true,
   },
   {
     id: "network",
@@ -133,8 +139,8 @@ export const DEFAULT_LAYOUT: SlotChoice[] = [
   "notifications",
   "resources",
   "news",
-  "empty",
-  "empty",
+  "community",
+  "messages",
 ];
 
 /** The choices offered in each slot's picker dropdown. */
@@ -144,7 +150,8 @@ export const SLOT_CHOICES: { id: SlotChoice; label: string }[] = [
   { id: "stats", label: "Progress snapshot" },
   { id: "resources", label: "Tools & resources" },
   { id: "news", label: "News feed" },
-  { id: "messages", label: "Messages (soon)" },
+  { id: "community", label: "Community" },
+  { id: "messages", label: "Messages" },
   { id: "network", label: "Network activity (soon)" },
   { id: "empty", label: "Empty" },
 ];

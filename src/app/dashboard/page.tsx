@@ -13,6 +13,15 @@ import {
 import { loadNotifications } from "@/lib/notifications";
 import { NewsCard } from "@/components/widgets/news-card";
 import { loadNewsFeed, loadNewsTopics, loadTopics } from "@/lib/news";
+import { CommunityCard } from "@/components/widgets/community-card";
+import { MessagesCard } from "@/components/widgets/messages-card";
+import {
+  COMMUNITY_TOPICS,
+  loadFeed,
+  loadTopicCounts,
+  type FeedPost,
+} from "@/lib/community";
+import { loadInbox, loadUnreadCount } from "@/lib/messages";
 import { loadLayout } from "@/lib/dashboard-prefs";
 import { SLOTS, SPAN_CLASS, type SlotChoice } from "@/lib/dashboard";
 
@@ -103,6 +112,20 @@ export default async function DashboardPage() {
     prisma.attempt.count({ where: { userId: user.id, status: "GRADED" } }),
     prisma.attempt.count({ where: { userId: user.id, status: "GRADED", passed: true } }),
   ]);
+
+  // ---------------------------------------------------- community + messages
+  const [communityFeeds, communityCounts, inbox, unread] = await Promise.all([
+    Promise.all(
+      COMMUNITY_TOPICS.map((t) => loadFeed(user.id, t.id, isAdmin))
+    ),
+    loadTopicCounts(),
+    loadInbox(user.id),
+    loadUnreadCount(user.id),
+  ]);
+  const feeds: Record<string, FeedPost[]> = {};
+  COMMUNITY_TOPICS.forEach((t, i) => {
+    feeds[t.id] = communityFeeds[i];
+  });
 
   // ------------------------------------------------------------- album data
   const enrolledAlbums: AlbumCourse[] = enrollments.map((e) => {
@@ -218,15 +241,18 @@ export default async function DashboardPage() {
           />
         );
 
-      case "messages":
+      case "community":
         return (
-          <WidgetStub
+          <CommunityCard
+            feeds={feeds}
+            counts={communityCounts}
+            isAdmin={isAdmin}
             number="08"
-            eyebrow="Comms"
-            title="Messages"
-            blurb="Direct messages from instructors and administrators. Waiting on your call: broadcast-only, or two-way threads."
           />
         );
+
+      case "messages":
+        return <MessagesCard inbox={inbox} unread={unread} number="09" />;
 
       case "network":
         return (

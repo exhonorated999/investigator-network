@@ -1,0 +1,32 @@
+[
+  {
+    "content": "Schema + migrate",
+    "id": "1",
+    "status": "completed"
+  },
+  {
+    "content": "lib/community.ts + lib/messages.ts",
+    "id": "2",
+    "status": "completed"
+  },
+  {
+    "content": "Server actions",
+    "id": "3",
+    "status": "completed"
+  },
+  {
+    "content": "CommunityCard widget",
+    "id": "4",
+    "status": "completed"
+  },
+  {
+    "content": "MessagesCard widget: conversation list, thread, composer, new-DM directory",
+    "id": "5",
+    "status": "in_progress"
+  },
+  {
+    "content": "Register widgets in dashboard.ts + wire renderWidget/data; typecheck + commit",
+    "id": "6",
+    "status": "pending"
+  }
+]
