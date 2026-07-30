@@ -20,13 +20,13 @@
     "status": "completed"
   },
   {
-    "content": "MessagesCard widget: conversation list, thread, composer, new-DM directory",
+    "content": "MessagesCard widget",
     "id": "5",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
-    "content": "Register widgets in dashboard.ts + wire renderWidget/data; typecheck + commit",
+    "content": "Register widgets + wire dashboard; typecheck + commit",
     "id": "6",
-    "status": "pending"
+    "status": "completed"
   }
 ]

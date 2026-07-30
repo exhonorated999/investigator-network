@@ -2,14 +2,21 @@ import Link from "next/link";
 import Image from "next/image";
 import { SignOutButton } from "@/components/sign-out";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { getViewerUser } from "@/lib/viewer";
+import { loadUnreadCount } from "@/lib/messages";
 
-export function SiteHeader({
+export async function SiteHeader({
   name,
   isAdmin,
 }: {
   name?: string | null;
   isAdmin?: boolean;
 }) {
+  // Self-contained unread badge so every page's header stays in sync without
+  // each caller having to thread the count through.
+  const viewer = await getViewerUser();
+  const unread = viewer ? await loadUnreadCount(viewer.id) : 0;
+
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-[var(--header-bg)] backdrop-blur-md">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-3">
@@ -43,6 +50,23 @@ export function SiteHeader({
             className="eyebrow eyebrow-muted hidden transition hover:text-accent-bright sm:block"
           >
             Feed
+          </Link>
+          <Link
+            href="/community"
+            className="eyebrow eyebrow-muted hidden transition hover:text-accent-bright sm:block"
+          >
+            Community
+          </Link>
+          <Link
+            href="/messages"
+            className="eyebrow eyebrow-muted relative hidden transition hover:text-accent-bright sm:block"
+          >
+            Messages
+            {unread > 0 ? (
+              <span className="absolute -right-3 -top-2 grid h-4 min-w-4 place-items-center rounded-full bg-accent-bright px-1 font-mono text-[10px] font-bold leading-none text-void">
+                {unread}
+              </span>
+            ) : null}
           </Link>
           {isAdmin ? (
             <Link
