@@ -4,6 +4,19 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/rbac";
+import { fetchLinkPreview, type LinkPreviewResult } from "@/lib/link-preview";
+
+/**
+ * Scrape a pasted URL so the composer can fill itself in. Admin-only because
+ * it makes an outbound request on the server's behalf.
+ */
+export async function previewLink(
+  url: string,
+  withBody: boolean
+): Promise<LinkPreviewResult> {
+  await requireAdmin();
+  return fetchLinkPreview(url, { withBody });
+}
 
 /** Reuses the course taxonomy so news topics and course categories match. */
 async function resolveCategoryId(name: string | null): Promise<string | null> {

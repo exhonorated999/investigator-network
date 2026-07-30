@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { createArticle, toggleArticlePublished } from "./actions";
+import { ArticleForm } from "./article-form";
 
 export const dynamic = "force-dynamic";
 
@@ -38,79 +39,21 @@ export default async function AdminNewsPage() {
       <div className="panel rule-top mt-6 p-5">
         <p className="eyebrow eyebrow-muted">File a new article</p>
 
-        <form action={createArticle} className="mt-4 grid gap-3">
-          <input
-            name="title"
-            required
-            placeholder="Headline"
-            className="field"
+        <div className="mt-4">
+          <ArticleForm
+            action={createArticle}
+            categories={categories.map((c) => c.name)}
+            suggestions={[
+              "ICAC",
+              "Sex Offender",
+              "Digital Forensics",
+              "Narcotics",
+              "General",
+            ]}
+            submitLabel="File article"
+            compact
           />
-
-          <div className="grid gap-3 sm:grid-cols-[1fr_1fr_200px]">
-            <input
-              name="sourceUrl"
-              type="url"
-              placeholder="Source URL (https://…)"
-              className="field"
-            />
-            <input
-              name="sourceName"
-              placeholder="Source name (e.g. DOJ, Wired)"
-              className="field"
-            />
-            <input
-              name="category"
-              list="news-cats"
-              placeholder="Topic"
-              className="field"
-            />
-            <datalist id="news-cats">
-              {categories.map((c) => (
-                <option key={c.id} value={c.name} />
-              ))}
-              {["ICAC", "Sex Offender", "Digital Forensics", "Narcotics", "General"]
-                .filter((n) => !categories.some((c) => c.name === n))
-                .map((n) => (
-                  <option key={n} value={n} />
-                ))}
-            </datalist>
-          </div>
-
-          <textarea
-            name="summary"
-            rows={2}
-            placeholder="Summary / why it matters (shown on the card)"
-            className="field resize-y"
-          />
-
-          <textarea
-            name="body"
-            rows={8}
-            placeholder="Paste the article text here (optional). Blank lines separate paragraphs. Leave empty to link straight out to the source."
-            className="field resize-y font-mono text-[13px]"
-          />
-
-          <div className="grid gap-3 sm:grid-cols-[1fr_220px_auto] sm:items-center">
-            <input
-              name="imageUrl"
-              type="url"
-              placeholder="Image URL (optional)"
-              className="field"
-            />
-            <label className="flex items-center gap-2.5 font-mono text-[11px] uppercase tracking-wider text-muted">
-              <input
-                type="checkbox"
-                name="published"
-                defaultChecked
-                className="h-4 w-4 accent-[var(--accent)]"
-              />
-              Publish now
-            </label>
-            <button type="submit" className="btn btn-primary">
-              File article
-            </button>
-          </div>
-        </form>
+        </div>
       </div>
 
       {/* ------------------------------------------------------------- list */}
