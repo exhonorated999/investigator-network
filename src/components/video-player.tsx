@@ -51,8 +51,9 @@ export function VideoPlayer({
                 Playing in pop-out
               </span>
               <p className="max-w-xs font-mono text-xs text-muted">
-                The video is docked in a floating window — browse to your Course
-                Notes and keep watching. Move or resize it from its header.
+                The video opened in a floating window that stays on top — move it
+                anywhere, even outside the browser, and keep watching while you
+                read your Course Notes.
               </p>
               <button
                 type="button"

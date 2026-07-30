@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { createPortal } from "react-dom";
 
 /* ------------------------------------------------------------------ context */
 
@@ -35,10 +36,29 @@ export function usePlayerDock(): DockCtx {
   return c;
 }
 
+/* --------------------------------------------- Document Picture-in-Picture */
+
+interface DocumentPiP {
+  requestWindow(opts?: { width?: number; height?: number }): Promise<Window>;
+  window: Window | null;
+}
+
+/** The Document PiP entry point, when the browser supports it (Chrome/Edge). */
+function getDocumentPiP(): DocumentPiP | null {
+  if (typeof window === "undefined") return null;
+  return (
+    (window as unknown as { documentPictureInPicture?: DocumentPiP })
+      .documentPictureInPicture ?? null
+  );
+}
+
 /**
- * Hosts a persistent, draggable mini-player. Mounted once in the course
- * layout so the Bunny iframe survives navigation between units — the learner
- * can pop a video out, walk over to the Course Notes, and keep watching.
+ * Hosts a persistent mini-player. When the browser supports the Document
+ * Picture-in-Picture API (Chrome/Edge), popping out opens a REAL floating OS
+ * window that stays on top of everything — even other apps — so the learner
+ * can watch while working elsewhere. Browsers without the API fall back to the
+ * in-page draggable dock. Either way the player is mounted once in the course
+ * layout, so it survives navigation between units.
  */
 export function PlayerDockProvider({
   children,
@@ -46,14 +66,157 @@ export function PlayerDockProvider({
   children: React.ReactNode;
 }) {
   const [active, setActive] = useState<DockVideo | null>(null);
-  const open = useCallback((v: DockVideo) => setActive(v), []);
-  const close = useCallback(() => setActive(null), []);
+  const [pipContainer, setPipContainer] = useState<HTMLElement | null>(null);
+  const [pipPending, setPipPending] = useState(false);
+  const pipRef = useRef<Window | null>(null);
+
+  const close = useCallback(() => {
+    if (pipRef.current) {
+      try {
+        pipRef.current.close();
+      } catch {
+        /* window already gone */
+      }
+    }
+    pipRef.current = null;
+    setPipContainer(null);
+    setPipPending(false);
+    setActive(null);
+  }, []);
+
+  const open = useCallback((v: DockVideo) => {
+    setActive(v);
+
+    const dpip = getDocumentPiP();
+    if (!dpip?.requestWindow) return; // no API → in-page dock fallback
+
+    setPipPending(true);
+    // Must be called during the click gesture; requestWindow() is invoked
+    // synchronously here, we just await the returned promise.
+    dpip
+      .requestWindow({ width: 480, height: 300 })
+      .then((w) => {
+        const style = w.document.createElement("style");
+        style.textContent =
+          "*{box-sizing:border-box}html,body{margin:0;height:100%;background:#000;" +
+          "overflow:hidden;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}";
+        w.document.head.appendChild(style);
+
+        const container = w.document.createElement("div");
+        container.style.cssText =
+          "position:fixed;inset:0;display:flex;flex-direction:column";
+        w.document.body.appendChild(container);
+
+        w.addEventListener("pagehide", () => {
+          pipRef.current = null;
+          setPipContainer(null);
+          setPipPending(false);
+          setActive(null);
+        });
+
+        pipRef.current = w;
+        setPipContainer(container);
+        setPipPending(false);
+      })
+      .catch(() => {
+        // Denied / not allowed → keep the in-page dock.
+        setPipPending(false);
+      });
+  }, []);
+
+  // Close the pop-out window if the provider itself unmounts.
+  useEffect(() => {
+    return () => {
+      if (pipRef.current) {
+        try {
+          pipRef.current.close();
+        } catch {
+          /* noop */
+        }
+      }
+    };
+  }, []);
 
   return (
     <Ctx.Provider value={{ active, open, close }}>
       {children}
-      <PlayerDock active={active} onClose={close} />
+      {active && pipContainer
+        ? createPortal(<PipPlayer video={active} onClose={close} />, pipContainer)
+        : active && !pipPending
+          ? <PlayerDock active={active} onClose={close} />
+          : null}
     </Ctx.Provider>
+  );
+}
+
+/** Player rendered inside the real PiP window. Inline styles only — that
+ *  document has no Tailwind. */
+function PipPlayer({
+  video,
+  onClose,
+}: {
+  video: DockVideo;
+  onClose: () => void;
+}) {
+  return (
+    <>
+      <div
+        style={{
+          height: 34,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 8,
+          padding: "0 10px",
+          background: "#0a0c11",
+          borderBottom: "1px solid rgba(0,180,216,0.28)",
+        }}
+      >
+        <span
+          style={{
+            color: "#8899aa",
+            fontSize: 11,
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+        >
+          {video.title}
+        </span>
+        <button
+          type="button"
+          onClick={onClose}
+          style={{
+            flexShrink: 0,
+            background: "transparent",
+            border: "1px solid rgba(0,180,216,0.4)",
+            color: "#90e0ef",
+            fontSize: 10,
+            letterSpacing: "0.12em",
+            textTransform: "uppercase",
+            padding: "3px 8px",
+            cursor: "pointer",
+          }}
+        >
+          ⇤ Return inline
+        </button>
+      </div>
+      <div style={{ position: "relative", flex: 1, background: "#000" }}>
+        <iframe
+          src={video.src}
+          title={video.title}
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            border: 0,
+          }}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+          allowFullScreen
+        />
+      </div>
+    </>
   );
 }
 
