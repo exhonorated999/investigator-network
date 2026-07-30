@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState, useTransition, type ReactNode } from "react";
 import { setSlot } from "@/app/dashboard/actions";
 import { SLOT_CHOICES, slotLabel, type SlotChoice } from "@/lib/dashboard";
 
@@ -19,7 +19,21 @@ export function SlotCard({
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const [pending, startTransition] = useTransition();
   const isEmpty = choice === "empty";
+
+  function pick(choiceId: string) {
+    // Call the server action directly instead of relying on native form
+    // submission — closing the menu unmounts the <form> synchronously, which
+    // would otherwise cancel the submit ("form is not connected").
+    const fd = new FormData();
+    fd.set("index", String(index));
+    fd.set("choice", choiceId);
+    startTransition(async () => {
+      await setSlot(fd);
+    });
+    setOpen(false);
+  }
 
   return (
     <div className="relative h-full">
@@ -58,12 +72,10 @@ export function SlotCard({
         </button>
 
         {open ? (
-          <form
-            action={setSlot}
+          <div
             className="panel absolute right-0 z-50 mt-2 w-56 p-1.5"
             style={{ boxShadow: "0 24px 60px -20px rgba(0,0,0,0.85)" }}
           >
-            <input type="hidden" name="index" value={index} />
             <p className="eyebrow eyebrow-muted px-2 py-1.5 text-[9px]">
               Show in this card
             </p>
@@ -73,11 +85,10 @@ export function SlotCard({
                 return (
                   <button
                     key={c.id}
-                    type="submit"
-                    name="choice"
-                    value={c.id}
-                    onClick={() => setOpen(false)}
-                    className={`flex w-full items-center justify-between gap-2 px-2 py-2 text-left font-display text-[11px] font-bold uppercase tracking-[0.12em] transition ${
+                    type="button"
+                    disabled={pending}
+                    onClick={() => pick(c.id)}
+                    className={`flex w-full items-center justify-between gap-2 px-2 py-2 text-left font-display text-[11px] font-bold uppercase tracking-[0.12em] transition disabled:opacity-50 ${
                       active
                         ? "bg-[rgba(0,180,216,0.16)] text-accent-bright"
                         : "text-muted hover:bg-[rgba(0,180,216,0.06)] hover:text-foreground"
@@ -89,7 +100,7 @@ export function SlotCard({
                 );
               })}
             </div>
-          </form>
+          </div>
         ) : null}
       </div>
 
