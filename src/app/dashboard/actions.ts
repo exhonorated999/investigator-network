@@ -3,38 +3,30 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/rbac";
-import {
-  DEFAULT_WIDGETS,
-  OPTIONAL_WIDGETS,
-  type WidgetId,
-} from "@/lib/dashboard";
-
-const OPTIONAL_IDS = new Set<string>(OPTIONAL_WIDGETS.map((w) => w.id));
+import { DEFAULT_LAYOUT, SLOTS, isSlotChoice } from "@/lib/dashboard";
+import { loadLayout } from "@/lib/dashboard-prefs";
 
 /**
- * Persists the learner's chosen optional widgets. Checkbox values arrive as
- * repeated `widget` entries; order follows the registry so the layout stays
- * predictable.
+ * Sets a single dashboard slot to a chosen widget (or "empty"). The picker in
+ * each card posts `index` + `choice`; we load the current layout, patch the one
+ * slot, and persist the whole array.
  */
-export async function saveWidgets(formData: FormData) {
+export async function setSlot(formData: FormData) {
   const session = await requireUser();
   const userId = session.user!.id;
 
-  const chosen = new Set(
-    formData
-      .getAll("widget")
-      .filter((v): v is string => typeof v === "string")
-      .filter((v) => OPTIONAL_IDS.has(v))
-  );
+  const index = Number(formData.get("index"));
+  const choice = String(formData.get("choice") ?? "empty");
+  if (!Number.isInteger(index) || index < 0 || index >= SLOTS.length) return;
+  if (!isSlotChoice(choice)) return;
 
-  const widgets: WidgetId[] = OPTIONAL_WIDGETS.filter((w) => chosen.has(w.id)).map(
-    (w) => w.id
-  );
+  const layout = await loadLayout(userId);
+  layout[index] = choice;
 
   await prisma.dashboardPref.upsert({
     where: { userId },
-    create: { userId, widgets },
-    update: { widgets },
+    create: { userId, widgets: layout },
+    update: { widgets: layout },
   });
 
   revalidatePath("/dashboard");
@@ -64,7 +56,7 @@ export async function saveNewsTopics(formData: FormData) {
 
   await prisma.dashboardPref.upsert({
     where: { userId },
-    create: { userId, widgets: DEFAULT_WIDGETS, newsTopics },
+    create: { userId, widgets: DEFAULT_LAYOUT, newsTopics },
     update: { newsTopics },
   });
 

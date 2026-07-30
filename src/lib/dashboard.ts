@@ -106,3 +106,55 @@ export const SPAN_CLASS: Record<WidgetMeta["span"], string> = {
   4: "lg:col-span-4",
   6: "lg:col-span-6",
 };
+
+/* ------------------------------------------------------------------ slots --
+ * The dashboard is a fixed grid of positioned slots. We own the layout
+ * (positions + widths); the learner picks which widget fills each slot — any
+ * widget, repeated as often as they like, or "empty".
+ */
+
+export type SlotChoice = WidgetId | "empty";
+
+/** Fixed slot geometry on the 6-column desktop grid. Order = render order. */
+export const SLOTS: { span: WidgetMeta["span"] }[] = [
+  { span: 6 }, // 0 — full-width banner row
+  { span: 4 }, // 1 ─┐ main row
+  { span: 2 }, // 2 ─┘
+  { span: 2 }, // 3 ─┐ secondary row
+  { span: 4 }, // 4 ─┘
+  { span: 3 }, // 5 ─┐ open row
+  { span: 3 }, // 6 ─┘
+];
+
+/** Seeded layout for a learner who has never customised. */
+export const DEFAULT_LAYOUT: SlotChoice[] = [
+  "stats",
+  "courses",
+  "notifications",
+  "resources",
+  "news",
+  "empty",
+  "empty",
+];
+
+/** The choices offered in each slot's picker dropdown. */
+export const SLOT_CHOICES: { id: SlotChoice; label: string }[] = [
+  { id: "courses", label: "Course library" },
+  { id: "notifications", label: "Notifications" },
+  { id: "stats", label: "Progress snapshot" },
+  { id: "resources", label: "Tools & resources" },
+  { id: "news", label: "News feed" },
+  { id: "messages", label: "Messages (soon)" },
+  { id: "network", label: "Network activity (soon)" },
+  { id: "empty", label: "Empty" },
+];
+
+const VALID_CHOICE = new Set<string>([...WIDGETS.map((w) => w.id), "empty"]);
+
+export function isSlotChoice(value: string): value is SlotChoice {
+  return VALID_CHOICE.has(value);
+}
+
+export function slotLabel(choice: SlotChoice): string {
+  return SLOT_CHOICES.find((c) => c.id === choice)?.label ?? "Empty";
+}

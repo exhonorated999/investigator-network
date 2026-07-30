@@ -4,7 +4,7 @@ import { requireViewer } from "@/lib/viewer";
 import { SiteHeader } from "@/components/site-header";
 import { CourseAlbum, type AlbumCourse } from "@/components/course-album";
 import { NotificationsCard } from "@/components/widgets/notifications-card";
-import { CustomizePanel } from "@/components/widgets/customize-panel";
+import { SlotCard } from "@/components/widgets/slot-card";
 import {
   CourseRow,
   WidgetCard,
@@ -13,12 +13,8 @@ import {
 import { loadNotifications } from "@/lib/notifications";
 import { NewsCard } from "@/components/widgets/news-card";
 import { loadNewsFeed, loadNewsTopics, loadTopics } from "@/lib/news";
-import { loadEnabledWidgets } from "@/lib/dashboard-prefs";
-import {
-  SPAN_CLASS,
-  widgetMeta,
-  type WidgetId,
-} from "@/lib/dashboard";
+import { loadLayout } from "@/lib/dashboard-prefs";
+import { SLOTS, SPAN_CLASS, type SlotChoice } from "@/lib/dashboard";
 
 export const dynamic = "force-dynamic";
 
@@ -50,7 +46,7 @@ export default async function DashboardPage() {
   const user = viewer;
   const isAdmin = viewer.role === "ADMIN";
 
-  const [enrollments, favorites, certificates, enabled, notifications, news, topics, newsTopics] =
+  const [enrollments, favorites, certificates, layout, notifications, news, topics, newsTopics] =
     await Promise.all([
       prisma.enrollment.findMany({
         where: { userId: user.id },
@@ -73,7 +69,7 @@ export default async function DashboardPage() {
         orderBy: { issuedAt: "desc" },
         include: { course: { select: { title: true, slug: true } } },
       }),
-      loadEnabledWidgets(user.id),
+      loadLayout(user.id),
       loadNotifications(user.id),
       loadNewsFeed(user.id, 5),
       loadTopics(),
@@ -155,8 +151,14 @@ export default async function DashboardPage() {
   const nextUp = inProgress[0] ?? null;
 
   // ------------------------------------------------------------ widget map
-  function renderWidget(id: WidgetId) {
+  function renderWidget(id: SlotChoice) {
     switch (id) {
+      case "courses":
+        return <CourseAlbum courses={albums} />;
+
+      case "notifications":
+        return <NotificationsCard items={notifications} />;
+
       case "stats":
         return (
           <WidgetCard number="03" eyebrow="Snapshot" title="Progress">
@@ -277,43 +279,21 @@ export default async function DashboardPage() {
                 Resume training
               </Link>
             ) : null}
-            <CustomizePanel enabled={enabled} />
           </div>
         </section>
 
-        {/* ---------------------------------------- pinned snapshot (top) */}
-        {enabled.includes("stats") ? (
-          <div className="reveal reveal-2 mt-9">{renderWidget("stats")}</div>
-        ) : null}
-
-        {/* --------------------------------------------------- widget canvas */}
-        <div
-          className={`reveal reveal-2 grid gap-5 lg:grid-cols-6 ${
-            enabled.includes("stats") ? "mt-5" : "mt-9"
-          }`}
-        >
-          <div className={SPAN_CLASS[widgetMeta("courses").span]}>
-            <CourseAlbum courses={albums} />
-          </div>
-          <div className={SPAN_CLASS[widgetMeta("notifications").span]}>
-            <NotificationsCard items={notifications} />
-          </div>
-
-          {enabled
-            .filter((id) => id !== "stats")
-            .map((id) => (
-              <div key={id} className={SPAN_CLASS[widgetMeta(id).span]}>
-                {renderWidget(id)}
-              </div>
-            ))}
+        {/* ---------------------------------------------------- slot canvas --
+            We own the grid geometry; each slot's gear picker lets the learner
+            choose which widget fills it (duplicates + Empty allowed). */}
+        <div className="reveal reveal-2 mt-9 grid gap-5 lg:grid-cols-6">
+          {layout.map((choice, i) => (
+            <div key={i} className={SPAN_CLASS[SLOTS[i].span]}>
+              <SlotCard index={i} choice={choice}>
+                {renderWidget(choice)}
+              </SlotCard>
+            </div>
+          ))}
         </div>
-
-        {enabled.length === 0 ? (
-          <p className="mt-6 text-center text-sm text-muted">
-            Want more on this page? Use{" "}
-            <span className="text-accent-bright">Customize</span> to add cards.
-          </p>
-        ) : null}
       </main>
     </div>
   );
