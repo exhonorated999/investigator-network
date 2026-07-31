@@ -2,13 +2,17 @@
 
 import { useState } from "react";
 import type { KnowledgeCheckBlock } from "@/lib/blocks";
+import { useInteractions } from "@/components/blocks/interaction-store";
+import { PROSE_INLINE } from "@/components/blocks/prose";
 
 /**
  * Knowledge check client component.
  *
- * Ungraded self-check — nothing is sent to the server. The user picks a
- * choice, clicks "Check answer", and correct/incorrect styling is revealed
- * along with the explanation. Retry is always available.
+ * Self-check — the chosen answer is saved to the server via the interaction
+ * store. On mount, if a previous choice exists in the store, the component
+ * renders in the already-answered state showing that choice and the
+ * explanation. "Try again" clears the local reveal state; the next "Check
+ * answer" re-saves.
  *
  * The explanation is pre-rendered to HTML on the server and passed as a prop,
  * so marked never enters the client bundle.
@@ -23,27 +27,52 @@ export function KnowledgeCheckBlockView({
 }) {
   const question = block.question.trim();
   const choices = block.choices.filter((c) => c.text.trim());
+  const { answers, save } = useInteractions();
 
-  const [selected, setSelected] = useState<string | null>(null);
-  const [checked, setChecked] = useState(false);
+  // Seed from the store: if a previous choice exists, start in revealed state.
+  const savedChoiceId = answers[block.id]?.payload.choiceId ?? null;
+
+  const [selected, setSelected] = useState<string | null>(savedChoiceId);
+  const [checked, setChecked] = useState<boolean>(!!savedChoiceId);
 
   if (!question || !choices.length) return null;
 
   const selectedChoice = choices.find((c) => c.id === selected);
   const isCorrect = checked && selectedChoice?.correct === true;
 
+  // For required edge treatment: satisfied when checked and (if requireCorrect) correct.
+  const satisfied = block.required
+    ? checked && (block.requireCorrect ? isCorrect : true)
+    : false;
+
+  const requiredEdge = block.required
+    ? satisfied
+      ? "border-l-2 border-l-success"
+      : "border-l-2 border-l-gold"
+    : "";
+
   const reset = () => {
     setSelected(null);
     setChecked(false);
   };
 
+  const checkAnswer = () => {
+    if (selected) {
+      save(block.id, { choiceId: selected });
+    }
+    setChecked(true);
+  };
+
   return (
-    <div className="panel rule-top p-5">
+    <div className={`panel rule-top p-5 ${requiredEdge}`}>
       <div className="mb-3 flex items-center gap-2">
         <span className="font-mono text-sm text-accent" aria-hidden>
           ?
         </span>
-        <span className="eyebrow eyebrow-muted">KNOWLEDGE CHECK · UNGRADED</span>
+        <span className="eyebrow eyebrow-muted">
+          KNOWLEDGE CHECK
+          {block.required ? " · REQUIRED" : ""}
+        </span>
       </div>
       <p className="mb-4 font-display text-sm font-semibold uppercase tracking-wide text-foreground">
         {question}
@@ -110,7 +139,7 @@ export function KnowledgeCheckBlockView({
         {!checked ? (
           <button
             type="button"
-            onClick={() => setChecked(true)}
+            onClick={checkAnswer}
             disabled={!selected}
             className="btn btn-primary btn-sm"
           >
@@ -135,9 +164,14 @@ export function KnowledgeCheckBlockView({
           </span>
         ) : null}
       </div>
+      {checked && block.requireCorrect && !isCorrect ? (
+        <p className="mt-3 font-mono text-xs uppercase tracking-[0.14em] text-gold">
+          A correct answer is required to complete this unit.
+        </p>
+      ) : null}
       {checked && explanationHtml ? (
         <div
-          className="mt-4 border-t border-border pt-4 text-sm text-foreground [&_a]:text-accent [&_a]:underline [&_p]:my-2 [&_p]:max-w-[68ch] [&_strong]:text-foreground [&_code]:rounded [&_code]:bg-surface-2 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-sm [&_code]:text-accent-bright"
+          className={`mt-4 border-t border-border pt-4 text-sm ${PROSE_INLINE}`}
           dangerouslySetInnerHTML={{ __html: explanationHtml }}
         />
       ) : null}

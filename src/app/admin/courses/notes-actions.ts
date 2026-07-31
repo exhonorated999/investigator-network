@@ -142,10 +142,14 @@ function reid(block: Block): Block {
       break;
     case "fileList":
     case "checklist":
+    case "ordering":
       block.items = block.items.map((i) => ({ ...i, id: newBlockId() })) as typeof block.items;
       break;
     case "knowledgeCheck":
       block.choices = block.choices.map((c) => ({ ...c, id: newBlockId() }));
+      break;
+    case "scenario":
+      block.options = block.options.map((o) => ({ ...o, id: newBlockId() }));
       break;
     default:
       break;
@@ -350,8 +354,21 @@ export async function addNoteItem(formData: FormData) {
     case "checklist":
       target.items.push({ id: newBlockId(), text: "" });
       break;
+    case "ordering":
+      // Appended at the end, which is where it belongs in the answer key —
+      // the authored order IS the correct order.
+      target.items.push({ id: newBlockId(), text: "" });
+      break;
     case "knowledgeCheck":
       target.choices.push({ id: newBlockId(), text: "", correct: false });
+      break;
+    case "scenario":
+      target.options.push({
+        id: newBlockId(),
+        text: "",
+        outcomeMarkdown: "",
+        correct: false,
+      });
       break;
     case "columns":
       if (target.columns.length < 3) target.columns.push([]);
@@ -379,8 +396,16 @@ export async function deleteNoteItem(formData: FormData) {
     case "checklist":
       target.items.splice(index, 1);
       break;
+    case "ordering":
+      // Two items is the minimum that can be "in an order" at all.
+      if (target.items.length > 2) target.items.splice(index, 1);
+      break;
     case "knowledgeCheck":
       target.choices.splice(index, 1);
+      break;
+    case "scenario":
+      // A decision point with one option is not a decision.
+      if (target.options.length > 2) target.options.splice(index, 1);
       break;
     case "columns":
       // Never drop below two columns — one column is just a stack, and the

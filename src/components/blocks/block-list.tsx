@@ -26,6 +26,8 @@ import {
   ChecklistBlockView,
   KnowledgeCheckBlockView,
   RevealCardBlockView,
+  ScenarioBlockView,
+  OrderingBlockView,
 } from "./interactive";
 
 /**
@@ -87,6 +89,10 @@ function BlockRenderer({ block, depth }: { block: Block; depth: number }) {
       return <KnowledgeCheckBlockView block={block} />;
     case "revealCard":
       return <RevealCardBlockView block={block} />;
+    case "scenario":
+      return <ScenarioBlockView block={block} />;
+    case "ordering":
+      return <OrderingBlockView block={block} />;
     case "html":
       return <HtmlBlockView block={block} />;
     default: {

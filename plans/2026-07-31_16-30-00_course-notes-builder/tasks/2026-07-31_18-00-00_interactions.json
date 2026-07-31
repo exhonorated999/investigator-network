@@ -1,0 +1,32 @@
+[
+  {
+    "content": "[interact-1] Extend blocks.ts: required flags, scenario + ordering types, completion predicate",
+    "id": "1",
+    "status": "completed"
+  },
+  {
+    "content": "[interact-2] BlockInteraction schema + migration + lib/interactions.ts server helpers",
+    "id": "2",
+    "status": "completed"
+  },
+  {
+    "content": "[interact-3] /api/interactions route + client interaction store/context",
+    "id": "3",
+    "status": "completed"
+  },
+  {
+    "content": "[interact-4] Rewire checklist/knowledgeCheck/revealCard to persist; build scenario + ordering views",
+    "id": "4",
+    "status": "completed"
+  },
+  {
+    "content": "[interact-5] Gated completion: client gate button + server enforcement in setUnitComplete",
+    "id": "5",
+    "status": "completed"
+  },
+  {
+    "content": "[interact-6] Builder fields for new blocks + required toggles; verify end to end",
+    "id": "6",
+    "status": "completed"
+  }
+]

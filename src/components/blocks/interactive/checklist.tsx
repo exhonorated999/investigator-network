@@ -1,75 +1,76 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useCallback } from "react";
 import type { ChecklistBlock } from "@/lib/blocks";
+import { useInteractions } from "@/components/blocks/interaction-store";
 
 /**
  * Checklist client component.
  *
- * Tickable items with state persisted to localStorage, keyed by the block id.
- * Must not crash during SSR — localStorage access is guarded in an effect, not
- * during render.
+ * Tickable items with state persisted to the server via the interaction store.
+ * Initial ticks arrive from the provider (seeded with server data), so there is
+ * no hydration mismatch to guard against. The store is already optimistic, so
+ * no local state is needed — ticks are derived directly from the store and
+ * written back on every toggle.
  */
 export function ChecklistBlockView({ block }: { block: ChecklistBlock }) {
   const items = block.items.filter((it) => it.text.trim());
   const title = block.title.trim();
-  const storageKey = `checklist:${block.id}`;
+  const { answers, save } = useInteractions();
 
-  const [checked, setChecked] = useState<Set<string>>(new Set());
-  const [mounted, setMounted] = useState(false);
+  // Derive checked set from the store on every render — no local copy.
+  const checkedIds = answers[block.id]?.payload.checked ?? [];
+  const checked = new Set(checkedIds);
 
-  // Load from localStorage after mount — never during render/SSR.
-  useEffect(() => {
-    setMounted(true);
-    try {
-      const raw = localStorage.getItem(storageKey);
-      if (raw) {
-        const ids: string[] = JSON.parse(raw);
-        setChecked(new Set(ids));
-      }
-    } catch {
-      // localStorage may be disabled or the JSON corrupt — silently ignore.
-    }
-  }, [storageKey]);
-
-  // Persist on change.
   const toggle = useCallback(
     (id: string) => {
-      setChecked((prev) => {
-        const next = new Set(prev);
-        if (next.has(id)) next.delete(id);
-        else next.add(id);
-        try {
-          localStorage.setItem(storageKey, JSON.stringify([...next]));
-        } catch {
-          // Ignore write failures.
-        }
-        return next;
-      });
+      const next = new Set(checked);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      save(block.id, { checked: [...next] });
     },
-    [storageKey],
+    [block.id, checked, save],
   );
 
   if (!items.length) return null;
 
-  const completed = mounted ? checked.size : 0;
+  const completed = checked.size;
   const total = items.length;
+  const allDone = completed === total;
+
+  // Required edge treatment: amber when outstanding, green when satisfied.
+  const requiredEdge = block.required
+    ? allDone
+      ? "border-l-2 border-l-success"
+      : "border-l-2 border-l-gold"
+    : "";
 
   return (
-    <div className="panel rule-top p-5">
+    <div className={`panel rule-top p-5 ${requiredEdge}`}>
       <div className="mb-4 flex items-center justify-between">
-        {title ? (
-          <span className="tag-chip">// {title.toUpperCase()}</span>
-        ) : (
-          <span className="eyebrow eyebrow-muted">CHECKLIST</span>
-        )}
+        <span className="flex items-center gap-2">
+          {title ? (
+            <span className="tag-chip">// {title.toUpperCase()}</span>
+          ) : (
+            <span className="eyebrow eyebrow-muted">CHECKLIST</span>
+          )}
+          {block.required ? (
+            <span
+              className={`font-mono text-[10px] uppercase tracking-[0.14em] ${
+                allDone ? "text-success" : "text-gold"
+              }`}
+            >
+              REQUIRED
+            </span>
+          ) : null}
+        </span>
         <span className="font-mono text-xs uppercase tracking-[0.14em] text-muted">
           {completed} / {total} complete
         </span>
       </div>
       <ul className="grid gap-2">
         {items.map((item) => {
-          const isChecked = mounted && checked.has(item.id);
+          const isChecked = checked.has(item.id);
           return (
             <li key={item.id}>
               <label

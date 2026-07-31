@@ -389,8 +389,19 @@ function Check({
   );
 }
 
-function SaveRow() {
+/**
+ * Divider above the completion-gating controls. These change whether a learner
+ * can finish the unit, so they are visually separated from the content fields.
+ */
+function RequiredNote() {
   return (
+    <div className="mt-1 border-t border-border pt-3">
+      <span className="eyebrow eyebrow-muted">Completion gating</span>
+    </div>
+  );
+}
+
+function SaveRow() {  return (
     <div className="mt-1">
       <button className="btn btn-primary btn-sm">Save block</button>
     </div>
@@ -937,6 +948,12 @@ function BlockFields({ ctx, block }: { ctx: Ctx; block: Block }) {
                 value={item.text}
               />
             ))}
+            <RequiredNote />
+            <Check
+              name="required"
+              label="Required — every item must be ticked before the unit can be completed"
+              value={block.required}
+            />
           </Fields>
           <div className="mt-3 grid gap-2">
             {block.items.map((item, i) => (
@@ -981,6 +998,17 @@ function BlockFields({ ctx, block }: { ctx: Ctx; block: Block }) {
               value={block.explanation}
               rows={3}
             />
+            <RequiredNote />
+            <Check
+              name="required"
+              label="Required — must be answered before the unit can be completed"
+              value={block.required}
+            />
+            <Check
+              name="requireCorrect"
+              label="…and the answer must be correct"
+              value={block.requireCorrect}
+            />
           </Fields>
           <div className="mt-3 grid gap-2">
             {block.choices.map((choice, i) => (
@@ -1007,7 +1035,121 @@ function BlockFields({ ctx, block }: { ctx: Ctx; block: Block }) {
             value={block.backMarkdown}
             rows={4}
           />
+          <RequiredNote />
+          <Check
+            name="required"
+            label="Required — must be revealed before the unit can be completed"
+            value={block.required}
+          />
         </Fields>
+      );
+
+    case "scenario":
+      return (
+        <>
+          <Fields ctx={ctx} blockId={block.id}>
+            <Text name="title" label="Title" value={block.title} />
+            <Area
+              name="promptMarkdown"
+              label="The situation (markdown)"
+              value={block.promptMarkdown}
+              rows={5}
+              placeholder="You arrive at the address and the door is ajar…"
+            />
+            {block.options.map((option, i) => (
+              <div
+                key={option.id}
+                className="grid gap-2 border border-border p-3"
+              >
+                <Text
+                  name={`options.${i}.text`}
+                  label={`Option ${String.fromCharCode(65 + i)}`}
+                  value={option.text}
+                />
+                <Area
+                  name={`options.${i}.outcomeMarkdown`}
+                  label="Consequence shown when chosen"
+                  value={option.outcomeMarkdown}
+                  rows={3}
+                />
+                <Check
+                  name={`options.${i}.correct`}
+                  label="This is a defensible course of action"
+                  value={option.correct}
+                />
+              </div>
+            ))}
+            <RequiredNote />
+            <Check
+              name="required"
+              label="Required — a decision must be made before the unit can be completed"
+              value={block.required}
+            />
+            <Check
+              name="requireCorrect"
+              label="…and it must be a defensible one (leave off for open judgement calls)"
+              value={block.requireCorrect}
+            />
+          </Fields>
+          <div className="mt-3 grid gap-2">
+            {block.options.map((option, i) => (
+              <ItemHeader
+                key={option.id}
+                ctx={ctx}
+                blockId={block.id}
+                index={i}
+                title="Option"
+              />
+            ))}
+          </div>
+          <AddItem ctx={ctx} blockId={block.id} label="Add option" />
+        </>
+      );
+
+    case "ordering":
+      return (
+        <>
+          <Fields ctx={ctx} blockId={block.id}>
+            <Text name="title" label="Title" value={block.title} />
+            <Area
+              name="promptMarkdown"
+              label="Instructions (markdown)"
+              value={block.promptMarkdown}
+              rows={3}
+              placeholder="Arrange these steps into the correct sequence."
+            />
+            <p className="text-xs text-muted">
+              Enter the steps in the <strong>correct</strong> order. Learners see
+              them shuffled.
+            </p>
+            {block.items.map((item, i) => (
+              <Text
+                key={item.id}
+                name={`items.${i}.text`}
+                label={`Step ${i + 1}`}
+                value={item.text}
+              />
+            ))}
+            <RequiredNote />
+            <Check
+              name="required"
+              label="Required — the correct order must be reached before the unit can be completed"
+              value={block.required}
+            />
+          </Fields>
+          <div className="mt-3 grid gap-2">
+            {block.items.map((item, i) => (
+              <ItemHeader
+                key={item.id}
+                ctx={ctx}
+                blockId={block.id}
+                index={i}
+                title="Step"
+              />
+            ))}
+          </div>
+          <AddItem ctx={ctx} blockId={block.id} label="Add step" />
+        </>
       );
 
     case "html":

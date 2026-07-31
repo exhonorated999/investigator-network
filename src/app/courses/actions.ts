@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/rbac";
+import { readNotesDoc } from "@/lib/blocks";
+import { computeGate, loadInteractions } from "@/lib/interactions";
 import { saveFile } from "@/lib/storage";
 import { maybeIssueCertificate } from "@/lib/certificate";
 
@@ -58,6 +60,22 @@ export async function setUnitComplete(formData: FormData) {
     where: { userId_courseId: { userId, courseId } },
   });
   if (!enrolled) redirect(`/courses/${slug}`);
+
+  // A NOTES unit can require its interactive blocks to be answered first. The
+  // button is already disabled client-side, but the gate is re-checked here
+  // because a disabled button is a courtesy, not a control.
+  if (complete && unit.type === "NOTES") {
+    const blocks = readNotesDoc(
+      (unit.data as Record<string, unknown>) ?? {}
+    ).blocks;
+    const answers = await loadInteractions(userId, unitId);
+    if (!computeGate(blocks, answers).passed) {
+      // Nothing to tell the user that the page does not already show — just
+      // refuse the write and let the re-render restate what is outstanding.
+      revalidatePath(`/courses/${slug}/units/${unitId}`);
+      return;
+    }
+  }
 
   await prisma.unitProgress.upsert({
     where: { userId_unitId: { userId, unitId } },

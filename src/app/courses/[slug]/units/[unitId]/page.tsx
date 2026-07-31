@@ -7,6 +7,10 @@ import { SignOutButton } from "@/components/sign-out";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UnitView } from "@/components/unit-view";
 import { QuizTaker } from "@/components/quiz-taker";
+import { CompletionGate } from "@/components/completion-gate";
+import { InteractionProvider } from "@/components/blocks/interaction-store";
+import { readNotesDoc } from "@/lib/blocks";
+import { computeGate, loadInteractions } from "@/lib/interactions";
 import {
   loadCourseBySlug,
   flattenUnits,
@@ -47,6 +51,22 @@ export default async function CoursePlayer({
   const { prevId, nextId, index, total } = neighbors(course, unitId);
   const isDone = completed.has(unitId);
   const doneCount = completed.size;
+
+  // Interactive blocks in a NOTES unit record per-learner answers, and can be
+  // marked required — in which case they gate completion. Load that state here
+  // rather than inside UnitView, because the completion button sits outside the
+  // unit body and has to react to the same store.
+  const notesBlocks =
+    current.type === "NOTES"
+      ? readNotesDoc((current.data as Record<string, unknown>) ?? {}).blocks
+      : [];
+  // An admin previewing without an enrollment has no record to load and must
+  // never be gated by it.
+  const isPreview = !enrollment && isAdmin;
+  const answers = isPreview ? {} : await loadInteractions(user.id, current.id);
+  const gate = isPreview
+    ? { outstanding: [], total: 0, satisfied: 0, passed: true }
+    : computeGate(notesBlocks, answers);
 
   return (
     <div className="min-h-screen md:grid md:grid-cols-[320px_1fr]">
@@ -150,34 +170,36 @@ export default async function CoursePlayer({
           </span>
           <h1 className="display-lg mt-4">{current.title}</h1>
 
-          <div className="mt-8">
-            {current.type === "QUIZ" ? (
-              <QuizTaker unitId={current.id} slug={slug} userId={user.id} />
-            ) : (
-              <UnitView unit={current} slug={slug} />
-            )}
-          </div>
+          {/* The provider spans the unit body AND the completion control, so
+              answering the last required block enables the button without a
+              round trip. */}
+          <InteractionProvider
+            unitId={current.id}
+            initialAnswers={answers}
+            initialOutstanding={gate.outstanding}
+            requiredTotal={gate.total}
+            preview={isPreview}
+          >
+            <div className="mt-8">
+              {current.type === "QUIZ" ? (
+                <QuizTaker unitId={current.id} slug={slug} userId={user.id} />
+              ) : (
+                <UnitView unit={current} slug={slug} />
+              )}
+            </div>
 
-          {/* Completion */}
-          {current.type !== "FILE_ASSIGNMENT" && current.type !== "QUIZ" ? (
-            <form action={setUnitComplete} className="mt-8">
-              <input type="hidden" name="unitId" value={current.id} />
-              <input type="hidden" name="slug" value={slug} />
-              <input type="hidden" name="complete" value={isDone ? "false" : "true"} />
-              <button
-                className={isDone ? "btn btn-ghost btn-sm" : "btn btn-primary btn-sm"}
-                style={
-                  isDone
-                    ? { color: "var(--success)", borderColor: "rgba(74,222,128,0.4)" }
-                    : undefined
-                }
-              >
-                {isDone ? "✓ Completed — mark incomplete" : "Mark as complete"}
-              </button>
-            </form>
-          ) : current.type === "FILE_ASSIGNMENT" && isDone ? (
-            <p className="mt-8 text-sm text-success">✓ Assignment submitted.</p>
-          ) : null}
+            {/* Completion */}
+            {current.type !== "FILE_ASSIGNMENT" && current.type !== "QUIZ" ? (
+              <CompletionGate
+                unitId={current.id}
+                slug={slug}
+                isDone={isDone}
+                action={setUnitComplete}
+              />
+            ) : current.type === "FILE_ASSIGNMENT" && isDone ? (
+              <p className="mt-8 text-sm text-success">✓ Assignment submitted.</p>
+            ) : null}
+          </InteractionProvider>
 
           {/* Prev / next */}
           <div className="mt-12 flex items-center justify-between border-t border-border pt-6">

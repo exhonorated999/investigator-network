@@ -45,6 +45,8 @@ export type BlockType =
   | "checklist"
   | "knowledgeCheck"
   | "revealCard"
+  | "scenario"
+  | "ordering"
   // escape hatch
   | "html";
 
@@ -203,6 +205,8 @@ export interface ChecklistItem {
 export interface ChecklistBlock extends Base<"checklist"> {
   title: string;
   items: ChecklistItem[];
+  /** Must be satisfied before the unit can be marked complete. */
+  required: boolean;
 }
 
 export interface KnowledgeChoice {
@@ -212,20 +216,62 @@ export interface KnowledgeChoice {
 }
 
 /**
- * A self-check, deliberately NOT graded and NOT recorded — graded assessment
- * belongs to the QUIZ unit type. This exists so a notes page can keep a reader
- * honest without creating gradebook noise.
+ * A self-check. Answers are recorded per learner (see `lib/interactions.ts`) so
+ * a notes page can gate completion and surface "most-missed question" stats,
+ * but it stays out of the gradebook — graded assessment is the QUIZ unit type.
  */
 export interface KnowledgeCheckBlock extends Base<"knowledgeCheck"> {
   question: string;
   choices: KnowledgeChoice[];
   explanation: string;
+  required: boolean;
+  /** When true, answering is not enough — the answer must be right. */
+  requireCorrect: boolean;
 }
 
 export interface RevealCardBlock extends Base<"revealCard"> {
   front: string;
   /** Markdown, revealed on click. */
   backMarkdown: string;
+  required: boolean;
+}
+
+export interface ScenarioOption {
+  id: string;
+  text: string;
+  /** Markdown consequence shown once this option is chosen. */
+  outcomeMarkdown: string;
+  /** Marks this as a defensible decision. */
+  correct: boolean;
+}
+
+/**
+ * A decision point. The learner picks one course of action and is shown the
+ * consequence — the closest thing in the block set to real judgement practice.
+ */
+export interface ScenarioBlock extends Base<"scenario"> {
+  title: string;
+  promptMarkdown: string;
+  options: ScenarioOption[];
+  required: boolean;
+  /** When true, gating is only satisfied by choosing a `correct` option. */
+  requireCorrect: boolean;
+}
+
+export interface OrderingItem {
+  id: string;
+  text: string;
+}
+
+/**
+ * Drag-to-order. The authored order IS the correct order; the learner is shown
+ * a shuffled copy and has to restore it.
+ */
+export interface OrderingBlock extends Base<"ordering"> {
+  title: string;
+  promptMarkdown: string;
+  items: OrderingItem[];
+  required: boolean;
 }
 
 export interface HtmlBlock extends Base<"html"> {
@@ -253,6 +299,8 @@ export type Block =
   | ChecklistBlock
   | KnowledgeCheckBlock
   | RevealCardBlock
+  | ScenarioBlock
+  | OrderingBlock
   | HtmlBlock;
 
 /** Block types that hold other blocks — the editor needs to know for nesting. */
@@ -265,6 +313,32 @@ export const CONTAINER_TYPES: BlockType[] = [
 
 export function isContainer(block: Block): boolean {
   return CONTAINER_TYPES.includes(block.type);
+}
+
+/**
+ * Block types that record per-learner state on the server. Each one has a
+ * `required` flag; when set, the unit cannot be marked complete until the
+ * learner has satisfied it.
+ */
+export const INTERACTIVE_TYPES = [
+  "checklist",
+  "knowledgeCheck",
+  "revealCard",
+  "scenario",
+  "ordering",
+] as const;
+
+export type InteractiveType = (typeof INTERACTIVE_TYPES)[number];
+
+export type InteractiveBlock =
+  | ChecklistBlock
+  | KnowledgeCheckBlock
+  | RevealCardBlock
+  | ScenarioBlock
+  | OrderingBlock;
+
+export function isInteractive(block: Block): block is InteractiveBlock {
+  return (INTERACTIVE_TYPES as readonly string[]).includes(block.type);
 }
 
 // ---------------------------------------------------------------------------
@@ -301,9 +375,11 @@ export const BLOCK_CATALOG: BlockMeta[] = [
   { type: "tabs", label: "Tabs", description: "Tabbed panels sharing one area.", group: "Layout", icon: "▭" },
   { type: "card", label: "Card", description: "A bordered container around other blocks.", group: "Layout", icon: "▢" },
 
-  { type: "checklist", label: "Checklist", description: "Tickable list; ticks persist in the browser.", group: "Interactive", icon: "☑" },
-  { type: "knowledgeCheck", label: "Knowledge check", description: "Ungraded self-check with a revealed answer.", group: "Interactive", icon: "?" },
+  { type: "checklist", label: "Checklist", description: "Tickable list; ticks are saved to the learner's record.", group: "Interactive", icon: "☑" },
+  { type: "knowledgeCheck", label: "Knowledge check", description: "Self-check with a revealed answer and explanation.", group: "Interactive", icon: "?" },
   { type: "revealCard", label: "Reveal card", description: "Click to flip and show the answer.", group: "Interactive", icon: "⇄" },
+  { type: "scenario", label: "Scenario", description: "Decision point — pick a course of action, see the consequence.", group: "Interactive", icon: "⑂" },
+  { type: "ordering", label: "Put in order", description: "Drag shuffled steps back into the correct sequence.", group: "Interactive", icon: "⇅" },
 
   { type: "html", label: "Raw HTML", description: "Escape hatch for anything not covered above.", group: "Advanced", icon: "</>" },
 ];
@@ -586,6 +662,7 @@ function parseBlock(raw: unknown, depth: number): Block | null {
           const i = rec(it);
           return { id: idOf(i.id), text: str(i.text) };
         }),
+        required: bool(o.required, false),
       };
 
     case "knowledgeCheck":
@@ -602,6 +679,8 @@ function parseBlock(raw: unknown, depth: number): Block | null {
           };
         }),
         explanation: str(o.explanation),
+        required: bool(o.required, false),
+        requireCorrect: bool(o.requireCorrect, false),
       };
 
     case "revealCard":
@@ -610,6 +689,39 @@ function parseBlock(raw: unknown, depth: number): Block | null {
         type: "revealCard",
         front: str(o.front),
         backMarkdown: str(o.backMarkdown),
+        required: bool(o.required, false),
+      };
+
+    case "scenario":
+      return {
+        id,
+        type: "scenario",
+        title: str(o.title),
+        promptMarkdown: str(o.promptMarkdown),
+        options: arr(o.options).map((c) => {
+          const i = rec(c);
+          return {
+            id: idOf(i.id),
+            text: str(i.text),
+            outcomeMarkdown: str(i.outcomeMarkdown),
+            correct: bool(i.correct, false),
+          };
+        }),
+        required: bool(o.required, false),
+        requireCorrect: bool(o.requireCorrect, false),
+      };
+
+    case "ordering":
+      return {
+        id,
+        type: "ordering",
+        title: str(o.title),
+        promptMarkdown: str(o.promptMarkdown),
+        items: arr(o.items).map((it) => {
+          const i = rec(it);
+          return { id: idOf(i.id), text: str(i.text) };
+        }),
+        required: bool(o.required, false),
       };
 
     case "html":
@@ -775,6 +887,7 @@ export function emptyBlock(type: BlockType): Block {
         type,
         title: "",
         items: [{ id: newBlockId(), text: "" }],
+        required: false,
       };
     case "knowledgeCheck":
       return {
@@ -786,9 +899,37 @@ export function emptyBlock(type: BlockType): Block {
           { id: newBlockId(), text: "", correct: false },
         ],
         explanation: "",
+        required: false,
+        requireCorrect: false,
       };
     case "revealCard":
-      return { id, type, front: "", backMarkdown: "" };
+      return { id, type, front: "", backMarkdown: "", required: false };
+    case "scenario":
+      return {
+        id,
+        type,
+        title: "",
+        promptMarkdown: "",
+        options: [
+          { id: newBlockId(), text: "", outcomeMarkdown: "", correct: true },
+          { id: newBlockId(), text: "", outcomeMarkdown: "", correct: false },
+        ],
+        required: false,
+        requireCorrect: false,
+      };
+    case "ordering":
+      return {
+        id,
+        type,
+        title: "",
+        promptMarkdown: "",
+        items: [
+          { id: newBlockId(), text: "" },
+          { id: newBlockId(), text: "" },
+          { id: newBlockId(), text: "" },
+        ],
+        required: false,
+      };
     case "html":
       return { id, type, html: "" };
   }
@@ -929,4 +1070,139 @@ export function countBlocks(blocks: Block[]): number {
     for (const list of childLists(b)) n += countBlocks(list);
   }
   return n;
+}
+
+// ---------------------------------------------------------------------------
+// Interactions — per-learner state recorded against a block
+// ---------------------------------------------------------------------------
+
+/**
+ * What a learner's answer looks like for each interactive block type. Stored
+ * verbatim in `BlockInteraction.payload`, so every field must survive a JSON
+ * round trip.
+ */
+export interface InteractionPayload {
+  /** checklist — ids of ticked items. */
+  checked?: string[];
+  /** knowledgeCheck — id of the chosen choice. */
+  choiceId?: string;
+  /** revealCard — whether the back has been shown. */
+  revealed?: boolean;
+  /** scenario — id of the chosen option. */
+  optionId?: string;
+  /** ordering — item ids in the learner's current arrangement. */
+  order?: string[];
+}
+
+export function parseInteractionPayload(value: unknown): InteractionPayload {
+  const o = rec(value);
+  const out: InteractionPayload = {};
+  if (Array.isArray(o.checked)) out.checked = o.checked.map((v) => str(v)).filter(Boolean);
+  if (o.choiceId !== undefined) out.choiceId = str(o.choiceId);
+  if (o.revealed !== undefined) out.revealed = bool(o.revealed, false);
+  if (o.optionId !== undefined) out.optionId = str(o.optionId);
+  if (Array.isArray(o.order)) out.order = o.order.map((v) => str(v)).filter(Boolean);
+  return out;
+}
+
+/**
+ * True when a block has enough authored content to actually render. An empty
+ * checklist or a question with no choices renders nothing, so it must never
+ * gate a learner out of completing the unit.
+ */
+export function isInteractiveRenderable(block: InteractiveBlock): boolean {
+  switch (block.type) {
+    case "checklist":
+      return block.items.some((i) => i.text.trim());
+    case "knowledgeCheck":
+      return (
+        !!block.question.trim() && block.choices.some((c) => c.text.trim())
+      );
+    case "revealCard":
+      return !!block.front.trim();
+    case "scenario":
+      return (
+        !!block.promptMarkdown.trim() &&
+        block.options.some((o) => o.text.trim())
+      );
+    case "ordering":
+      return block.items.filter((i) => i.text.trim()).length >= 2;
+  }
+}
+
+/**
+ * Decide whether an answer satisfies a block.
+ *
+ * This is deliberately pure and shared: the client calls it for instant
+ * feedback, and the API route calls it again before writing `complete`, so a
+ * crafted request cannot mark a required block done without a real answer.
+ */
+export function isInteractionComplete(
+  block: InteractiveBlock,
+  payload: InteractionPayload
+): boolean {
+  switch (block.type) {
+    case "checklist": {
+      const items = block.items.filter((i) => i.text.trim());
+      if (!items.length) return true;
+      const checked = new Set(payload.checked ?? []);
+      return items.every((i) => checked.has(i.id));
+    }
+
+    case "knowledgeCheck": {
+      const choice = block.choices.find((c) => c.id === payload.choiceId);
+      if (!choice) return false;
+      return block.requireCorrect ? choice.correct : true;
+    }
+
+    case "revealCard":
+      return payload.revealed === true;
+
+    case "scenario": {
+      const option = block.options.find((o) => o.id === payload.optionId);
+      if (!option) return false;
+      return block.requireCorrect ? option.correct : true;
+    }
+
+    case "ordering": {
+      // The authored sequence is the answer key.
+      const key = block.items.filter((i) => i.text.trim()).map((i) => i.id);
+      if (key.length < 2) return true;
+      const got = payload.order ?? [];
+      return (
+        got.length === key.length && key.every((id, i) => got[i] === id)
+      );
+    }
+  }
+}
+
+export interface InteractiveRef {
+  block: InteractiveBlock;
+  /** True when this block blocks unit completion until satisfied. */
+  required: boolean;
+}
+
+/**
+ * Every interactive block in the tree, in render order. Non-renderable blocks
+ * are skipped entirely so half-authored content never traps a learner.
+ */
+export function collectInteractive(blocks: Block[]): InteractiveRef[] {
+  const out: InteractiveRef[] = [];
+  const walk = (list: Block[]) => {
+    for (const b of list) {
+      if (isInteractive(b) && isInteractiveRenderable(b)) {
+        out.push({ block: b, required: b.required });
+      }
+      for (const child of childLists(b)) walk(child);
+    }
+  };
+  walk(blocks);
+  return out;
+}
+
+/** Ids of the blocks that must be satisfied before the unit can be completed. */
+export function requiredBlockIds(blocks: Block[]): string[] {
+  return collectInteractive(blocks)
+    .filter((r) => r.required)
+    .map((r) => r.block.id);
 }

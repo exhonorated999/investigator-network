@@ -48,6 +48,7 @@ model User {
 
   enrollments   Enrollment[]
   unitProgress  UnitProgress[]
+  interactions  BlockInteraction[]
   attempts      Attempt[]
   uploads       FileUpload[]
   certificates  Certificate[]
@@ -150,6 +151,7 @@ model Unit {
 
   quiz     Quiz?
   progress UnitProgress[]
+  interactions BlockInteraction[]
 
   @@index([sectionId])
 }
@@ -184,6 +186,35 @@ model UnitProgress {
   completedAt DateTime?
 
   @@unique([userId, unitId])
+}
+
+/// A learner's answer to one interactive block inside a NOTES unit.
+///
+/// Blocks live in a JSON document rather than their own table, so `blockId` is
+/// an opaque string with no foreign key — a block can be deleted or re-ordered
+/// by an admin at any time and the orphaned row simply stops being read. That
+/// looseness is deliberate; the alternative is a migration every time someone
+/// edits a page.
+///
+/// `complete` is derived from `payload` by `isInteractionComplete` in
+/// lib/blocks.ts and re-checked server-side on every write. It is denormalized
+/// so completion gating is one cheap query instead of re-parsing the document.
+model BlockInteraction {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  unitId    String
+  unit      Unit     @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  blockId   String
+  /// Block type at the time of answering, for analytics that outlive an edit.
+  kind      String
+  payload   Json     @default("{}")
+  complete  Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, unitId, blockId])
+  @@index([unitId, blockId])
+  @@index([userId, unitId])
 }
 
 // ---------------------------------------------------------------------------

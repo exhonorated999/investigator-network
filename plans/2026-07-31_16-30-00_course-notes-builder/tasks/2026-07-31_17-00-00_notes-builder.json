@@ -1,32 +1,32 @@
 [
   {
-    "id": "1",
     "content": "[core-1] lib/blocks.ts — types, tolerant parser, tree ops",
+    "id": "1",
     "status": "completed"
   },
   {
-    "id": "2",
     "content": "[render-1] Block renderers + recursive BlockList, wired into unit-view",
-    "status": "pending"
+    "id": "2",
+    "status": "completed"
   },
   {
-    "id": "3",
     "content": "[edit-1] Block editor UI on the unit editor page",
-    "status": "pending"
+    "id": "3",
+    "status": "completed"
   },
   {
-    "id": "4",
     "content": "[edit-2] Server actions for block CRUD + notes asset upload",
-    "status": "pending"
+    "id": "4",
+    "status": "completed"
   },
   {
-    "id": "5",
     "content": "[edit-3] JSON source view (agent authoring escape hatch)",
-    "status": "pending"
+    "id": "5",
+    "status": "completed"
   },
   {
-    "id": "6",
     "content": "[verify-1] Typecheck + headless admin/learner pass",
-    "status": "pending"
+    "id": "6",
+    "status": "completed"
   }
 ]
