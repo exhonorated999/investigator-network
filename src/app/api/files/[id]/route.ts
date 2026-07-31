@@ -22,7 +22,10 @@ export async function GET(
 
   const isOwner = file.ownerUserId === session.user.id;
   const isAdmin = session.user.role === "ADMIN";
-  if (!isOwner && !isAdmin) {
+  // Course covers are shared branding, not private evidence: any signed-in
+  // user may read them. Everything else stays owner-or-admin.
+  const isPublicAsset = file.purpose === "course-cover";
+  if (!isOwner && !isAdmin && !isPublicAsset) {
     return new NextResponse("Forbidden", { status: 403 });
   }
 

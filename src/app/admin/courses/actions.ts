@@ -9,6 +9,7 @@ import { defaultUnitData } from "@/lib/units";
 import { parseVideoInput, type VideoProvider } from "@/lib/video";
 import { parseEmbedInput } from "@/lib/embed";
 import { sendLiveSessionReminder } from "@/lib/email";
+import { saveFile } from "@/lib/storage";
 import type { UnitType, Prisma } from "@/generated/prisma";
 
 async function uniqueSlug(title: string): Promise<string> {
@@ -71,6 +72,58 @@ export async function updateCourse(formData: FormData) {
   });
   revalidatePath(`/admin/courses/${id}`);
   revalidatePath("/admin/courses");
+}
+
+/** Max cover image size. Covers are decorative; anything bigger is a mistake. */
+const MAX_COVER_BYTES = 8 * 1024 * 1024;
+const COVER_MIME = /^image\/(png|jpeg|jpg|webp|gif|avif)$/i;
+
+/**
+ * Upload a cover image and point the course at it.
+ *
+ * The file lands in UPLOAD_DIR via lib/storage and is served back through
+ * /api/files/[id], so the stored `coverImage` stays a plain URL string — the
+ * external-URL path keeps working untouched.
+ */
+export async function uploadCourseCover(formData: FormData) {
+  const session = await requireAdmin();
+  const id = String(formData.get("id"));
+  const file = formData.get("file");
+
+  if (!(file instanceof File) || file.size === 0) return;
+  if (!COVER_MIME.test(file.type)) return;
+  if (file.size > MAX_COVER_BYTES) return;
+
+  const stored = await saveFile(file, "course-cover");
+  const record = await prisma.fileUpload.create({
+    data: {
+      ownerUserId: session.user!.id!,
+      path: stored.path,
+      filename: stored.filename,
+      mimeType: stored.mimeType,
+      sizeBytes: stored.sizeBytes,
+      purpose: "course-cover",
+    },
+  });
+
+  await prisma.course.update({
+    where: { id },
+    data: { coverImage: `/api/files/${record.id}` },
+  });
+
+  revalidatePath(`/admin/courses/${id}`);
+  revalidatePath("/admin/courses");
+  revalidatePath("/dashboard");
+}
+
+/** Detach the cover image. Leaves the stored file alone (cheap, and undo-able). */
+export async function clearCourseCover(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id"));
+  await prisma.course.update({ where: { id }, data: { coverImage: null } });
+  revalidatePath(`/admin/courses/${id}`);
+  revalidatePath("/admin/courses");
+  revalidatePath("/dashboard");
 }
 
 export async function setCourseStatus(formData: FormData) {

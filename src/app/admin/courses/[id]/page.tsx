@@ -12,6 +12,8 @@ import {
   addUnit,
   moveUnit,
   moveSection,
+  uploadCourseCover,
+  clearCourseCover,
 } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -41,6 +43,11 @@ export default async function CourseEditor({
 
   const published = course.status === "PUBLISHED";
 
+  // First unit in reading order — the target for "Preview inside". Sections can
+  // legitimately be empty, so scan until we find one that has units.
+  const firstUnitId =
+    course.sections.flatMap((s) => s.units).at(0)?.id ?? null;
+
   return (
     <div className="reveal max-w-4xl">
       <Link href="/admin/courses" className="eyebrow eyebrow-muted transition hover:text-accent-bright">
@@ -68,10 +75,29 @@ export default async function CourseEditor({
             target="_blank"
             rel="noreferrer"
             className="btn btn-ghost btn-sm"
-            title="Open the learner view of this course in a new tab"
+            title="Open the learner's course overview page in a new tab"
           >
-            Preview as student ↗
+            Preview overview ↗
           </Link>
+          {firstUnitId ? (
+            <Link
+              href={`/courses/${course.slug}/units/${firstUnitId}`}
+              target="_blank"
+              rel="noreferrer"
+              className="btn btn-ghost btn-sm"
+              title="Open the course player at the first unit, exactly as a learner sees it"
+            >
+              Preview inside ↗
+            </Link>
+          ) : (
+            <span
+              className="btn btn-ghost btn-sm opacity-30"
+              title="Add a unit first"
+              aria-disabled="true"
+            >
+              Preview inside ↗
+            </span>
+          )}
           <form action={setCourseStatus}>
             <input type="hidden" name="id" value={course.id} />
             <input
@@ -145,6 +171,57 @@ export default async function CourseEditor({
             </button>
           </div>
         </form>
+
+        {/* Cover upload — a sibling form, since forms cannot nest. */}
+        <div className="mt-5 border-t border-border pt-5">
+          <span className="eyebrow eyebrow-muted">Cover image</span>
+          <div className="mt-3 flex flex-wrap items-start gap-4">
+            <div className="relative h-24 w-40 shrink-0 overflow-hidden border border-border bg-[rgba(10,12,17,0.6)]">
+              {course.coverImage ? (
+                /* Covers may be operator URLs or /api/files/… — plain img
+                   avoids next/image remote-pattern config. */
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={course.coverImage}
+                  alt=""
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+              ) : (
+                <span className="absolute inset-0 grid place-items-center font-mono text-[10px] uppercase tracking-[0.14em] text-muted">
+                  No cover
+                </span>
+              )}
+            </div>
+            <div className="grid gap-2">
+              <form
+                action={uploadCourseCover}
+                className="flex flex-wrap items-center gap-2"
+              >
+                <input type="hidden" name="id" value={course.id} />
+                <input
+                  type="file"
+                  name="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif,image/avif"
+                  required
+                  className="field w-auto file:mr-3 file:border-0 file:bg-transparent file:font-mono file:text-[11px] file:uppercase file:tracking-[0.14em] file:text-accent"
+                />
+                <button className="btn btn-primary btn-sm">Upload</button>
+              </form>
+              <p className="text-xs text-muted">
+                PNG, JPEG, WebP, GIF or AVIF — up to 8 MB. Uploading replaces
+                whatever is in the URL field above.
+              </p>
+              {course.coverImage ? (
+                <form action={clearCourseCover}>
+                  <input type="hidden" name="id" value={course.id} />
+                  <button className="btn btn-ghost btn-sm border-danger/40 text-danger hover:border-danger hover:bg-[rgba(239,68,68,0.08)] hover:text-danger">
+                    Remove cover
+                  </button>
+                </form>
+              ) : null}
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* Curriculum */}
@@ -224,6 +301,16 @@ export default async function CourseEditor({
                       </span>
                     </Link>
                     <div className="flex shrink-0 items-center gap-1">
+                      <Link
+                        href={`/courses/${course.slug}/units/${unit.id}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="btn btn-ghost btn-sm px-2"
+                        title={`Preview "${unit.title}" as a learner`}
+                        aria-label={`Preview ${unit.title} as a learner`}
+                      >
+                        ↗
+                      </Link>
                       <form action={moveUnit}>
                         <input type="hidden" name="id" value={unit.id} />
                         <input type="hidden" name="courseId" value={course.id} />

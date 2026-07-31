@@ -15,18 +15,18 @@
     "status": "completed"
   },
   {
-    "content": "[moderation] feed moderation actions + /admin/moderation page",
-    "id": "5",
-    "status": "in_progress"
-  },
-  {
     "content": "[page] /admin/analytics visual page + nav link",
     "id": "4",
-    "status": "in_progress"
+    "status": "completed"
+  },
+  {
+    "content": "[moderation] feed moderation actions + /admin/moderation page",
+    "id": "5",
+    "status": "completed"
   },
   {
     "content": "[cards] Dashboard cards: online, grading queue, messages, moderation",
     "id": "6",
-    "status": "pending"
+    "status": "completed"
   }
 ]
