@@ -9,6 +9,8 @@ import {
   VIDEO_PROVIDERS,
 } from "@/lib/video";
 import { parseEmbedRef, embedLabel } from "@/lib/embed";
+import { readNotesDoc } from "@/lib/blocks";
+import { NotesBuilder } from "@/components/notes-builder";
 import { updateUnit, deleteUnit } from "../../../actions";
 import { sendLiveSessionReminders } from "../../../actions";
 import { ensureQuiz } from "../../../quiz-actions";
@@ -43,6 +45,9 @@ export default async function UnitEditor({
   const video = parseVideoRef(d);
   const embed = parseEmbedRef(d);
   const bunnyReady = bunnyConfigured();
+  // Legacy contentMarkdown/embedUrl units are upgraded to blocks on read, so an
+  // older NOTES unit opens in the builder with its content already in place.
+  const notesBlocks = unit.type === "NOTES" ? readNotesDoc(d).blocks : [];
 
   return (
     <div className="reveal max-w-3xl">
@@ -133,52 +138,9 @@ export default async function UnitEditor({
         )}
 
         {unit.type === "NOTES" && (
-          <>
-            <label className="grid gap-1.5">
-              <span className="eyebrow eyebrow-muted">
-                Presentation / flipbook embed (optional)
-              </span>
-              <textarea
-                name="embedInput"
-                defaultValue={embed.url}
-                rows={3}
-                placeholder="Paste the whole <iframe …> snippet, or just the URL"
-                className={`${inputClass} font-mono text-xs`}
-              />
-              <span className="font-mono text-[11px] text-muted">
-                Works with Heyzine, Issuu, AnyFlip, Google Slides, Canva, and
-                PowerPoint on OneDrive/SharePoint. Renders above the notes.
-                Clear the box to remove it.
-              </span>
-            </label>
-            {embed.url ? (
-              <p className="border border-border bg-[rgba(10,12,17,0.6)] px-3 py-2 font-mono text-[11px] text-accent-bright">
-                {embedLabel(embed.url)} · {embed.url}
-              </p>
-            ) : null}
-            <label className="grid gap-1.5">
-              <span className="eyebrow eyebrow-muted">
-                Embed height in px (optional — blank uses a sensible default)
-              </span>
-              <input
-                name="embedHeight"
-                type="number"
-                defaultValue={embed.height || ""}
-                className={inputClass}
-              />
-            </label>
-            <label className="grid gap-1.5">
-              <span className="eyebrow eyebrow-muted">
-                Notes content (Markdown supported)
-              </span>
-              <textarea
-                name="contentMarkdown"
-                defaultValue={str("contentMarkdown")}
-                rows={14}
-                className={`${inputClass} font-mono text-sm`}
-              />
-            </label>
-          </>
+          <p className="panel rule-top px-4 py-3 text-[15px] text-muted">
+            Build the page content in the block builder below.
+          </p>
         )}
 
         {unit.type === "LIVE_SESSION" && (
@@ -274,6 +236,14 @@ export default async function UnitEditor({
           </button>
         </div>
       </form>
+
+      {unit.type === "NOTES" ? (
+        <NotesBuilder
+          unitId={unit.id}
+          courseId={courseId}
+          blocks={notesBlocks}
+        />
+      ) : null}
 
       {unit.type === "QUIZ" && quiz ? (
         <QuizBuilder quiz={quiz} courseId={courseId} unitId={unit.id} />

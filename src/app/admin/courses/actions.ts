@@ -266,14 +266,11 @@ export async function updateUnit(formData: FormData) {
       break;
     }
     case "NOTES": {
-      const parsed = parseEmbedInput(String(formData.get("embedInput") || ""));
-      const override = Number(formData.get("embedHeight") || 0) || 0;
-      data = {
-        contentMarkdown: String(formData.get("contentMarkdown") || ""),
-        embedUrl: parsed.url,
-        embedHeight: override || parsed.height,
-        embedTitle: "",
-      };
+      // Notes content is owned entirely by the block builder (see
+      // notes-actions.ts), which writes `{ version, blocks }`. This form only
+      // carries the unit title, so the existing data blob must survive
+      // untouched — rebuilding it here would silently delete the document.
+      data = (unit.data as Record<string, unknown>) ?? {};
       break;
     }
     case "LIVE_SESSION":

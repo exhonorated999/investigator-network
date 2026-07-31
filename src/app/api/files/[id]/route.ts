@@ -22,9 +22,11 @@ export async function GET(
 
   const isOwner = file.ownerUserId === session.user.id;
   const isAdmin = session.user.role === "ADMIN";
-  // Course covers are shared branding, not private evidence: any signed-in
-  // user may read them. Everything else stays owner-or-admin.
-  const isPublicAsset = file.purpose === "course-cover";
+  // Course covers and course notes assets are shared teaching material, not
+  // private evidence: any signed-in user may read them. Everything else —
+  // assignment submissions in particular — stays owner-or-admin.
+  const isPublicAsset =
+    file.purpose === "course-cover" || file.purpose === "course-asset";
   if (!isOwner && !isAdmin && !isPublicAsset) {
     return new NextResponse("Forbidden", { status: 403 });
   }
