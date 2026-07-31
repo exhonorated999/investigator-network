@@ -424,8 +424,18 @@ function int(v: unknown, fallback = 0): number {
   return Number.isFinite(n) ? Math.round(n) : fallback;
 }
 
+/**
+ * Normalize to a dense array.
+ *
+ * The densifying matters: `Array.prototype.map` skips holes but PRESERVES them,
+ * so a sparse input would carry `undefined` entries straight through every
+ * parser below and into the stored JSON — which Prisma rejects outright. A
+ * document that reaches here malformed must degrade, never throw at write time.
+ */
 function arr(v: unknown): unknown[] {
-  return Array.isArray(v) ? v : [];
+  // Array.from walks every index, so holes materialize as undefined and are
+  // then normalized to null. `some`/`map`/`forEach` would skip them.
+  return Array.isArray(v) ? Array.from(v, (x) => x ?? null) : [];
 }
 
 function oneOf<T extends string>(v: unknown, allowed: readonly T[], fallback: T): T {

@@ -218,41 +218,39 @@ function coerceField(field: string, raw: string): unknown {
 }
 
 /**
- * Apply a value at a dotted path, creating intermediate objects/arrays.
- * `items.0.title` becomes `{ items: [ { title: … } ] }`.
+ * Apply a value at a dotted path, creating intermediate objects.
+ * `items.0.title` becomes `{ items: { "0": { title: … } } }`.
+ *
+ * Numeric segments deliberately become STRING KEYS ON AN OBJECT rather than
+ * array indices. Building a real array here produced holes whenever a form
+ * posted a single non-zero index — the per-tab "Save tab" form sends only
+ * `items.1.label` — and a hole is `undefined`, which Prisma refuses to write
+ * into a Json column. Keeping the patch object-shaped also lets `deepMerge`
+ * recognise it as a partial update of the existing array instead of a
+ * wholesale replacement.
  */
 function setDeep(root: Record<string, unknown>, path: string, value: unknown) {
   const parts = path.split(".").filter(Boolean);
   if (parts.length === 0) return;
 
-  let node: Record<string, unknown> | unknown[] = root;
+  let node: Record<string, unknown> = root;
   for (let i = 0; i < parts.length - 1; i++) {
     const key = parts[i];
-    const nextIsIndex = /^\d+$/.test(parts[i + 1]);
-    const container = node as Record<string, unknown>;
-    const idx = /^\d+$/.test(key) ? Number(key) : null;
-
-    if (idx !== null && Array.isArray(node)) {
-      if (node[idx] == null) node[idx] = nextIsIndex ? [] : {};
-      node = node[idx] as Record<string, unknown>;
-    } else {
-      if (container[key] == null) container[key] = nextIsIndex ? [] : {};
-      node = container[key] as Record<string, unknown>;
-    }
+    if (node[key] == null || typeof node[key] !== "object") node[key] = {};
+    node = node[key] as Record<string, unknown>;
   }
 
-  const last = parts[parts.length - 1];
-  if (Array.isArray(node) && /^\d+$/.test(last)) {
-    (node as unknown[])[Number(last)] = value;
-  } else {
-    (node as Record<string, unknown>)[last] = value;
-  }
+  node[parts[parts.length - 1]] = value;
 }
 
 /**
- * Merge a patch onto a block. Arrays are merged element-wise rather than
- * replaced, so editing `items.0.title` leaves `items[0].blocks` — the nested
- * children the form never sends — untouched.
+ * Merge a patch onto a block. An index-keyed object patch is applied to the
+ * existing array element-wise rather than replacing it, so editing
+ * `items.0.title` leaves `items[0].blocks` — the nested children the form never
+ * sends — and every OTHER item untouched.
+ *
+ * A patch value that is a genuine array (only `attachments`, built by
+ * `coerceField`) is a whole-array replacement and is taken as-is.
  */
 function deepMerge(
   base: Record<string, unknown>,
@@ -264,34 +262,36 @@ function deepMerge(
 
   for (const [key, value] of Object.entries(patch)) {
     const prev = out[key];
+
     if (Array.isArray(value)) {
-      // A whole-array replacement (e.g. attachments) — take it as-is.
       out[key] = value;
-    } else if (
-      value &&
-      typeof value === "object" &&
-      prev &&
-      typeof prev === "object"
-    ) {
-      if (Array.isArray(prev)) {
-        const copy = [...prev];
-        for (const [i, sub] of Object.entries(value as Record<string, unknown>)) {
-          const n = Number(i);
-          copy[n] =
-            sub && typeof sub === "object" && copy[n] && typeof copy[n] === "object"
-              ? deepMerge(copy[n] as Record<string, unknown>, sub as Record<string, unknown>)
-              : sub;
-        }
-        out[key] = copy;
-      } else {
-        out[key] = deepMerge(
-          prev as Record<string, unknown>,
-          value as Record<string, unknown>
-        );
-      }
-    } else {
-      out[key] = value;
+      continue;
     }
+
+    if (value && typeof value === "object" && Array.isArray(prev)) {
+      // Index-keyed partial update of an existing array.
+      const copy = [...prev];
+      for (const [i, sub] of Object.entries(value as Record<string, unknown>)) {
+        const n = Number(i);
+        if (!Number.isInteger(n) || n < 0 || n >= copy.length) continue;
+        copy[n] =
+          sub && typeof sub === "object" && copy[n] && typeof copy[n] === "object"
+            ? deepMerge(copy[n] as Record<string, unknown>, sub as Record<string, unknown>)
+            : sub;
+      }
+      out[key] = copy;
+      continue;
+    }
+
+    if (value && typeof value === "object" && prev && typeof prev === "object") {
+      out[key] = deepMerge(
+        prev as Record<string, unknown>,
+        value as Record<string, unknown>
+      );
+      continue;
+    }
+
+    out[key] = value;
   }
   return out;
 }
