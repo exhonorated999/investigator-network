@@ -1072,6 +1072,88 @@ export function countBlocks(blocks: Block[]): number {
   return n;
 }
 
+/**
+ * Strip the markdown syntax a one-line preview would otherwise show as noise.
+ * Not a parser and not trying to be — this text is never rendered as HTML, it
+ * only has to read cleanly in a collapsed editor header.
+ */
+function plain(md: string): string {
+  return md
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, "")       // images
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")    // links -> their text
+    .replace(/```[\s\S]*?```/g, " ")            // fenced code
+    .replace(/[#>*_`~|-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function clamp(text: string, max = 72): string {
+  const t = plain(text);
+  if (t.length <= max) return t;
+  return `${t.slice(0, max - 1).trimEnd()}…`;
+}
+
+/**
+ * One line describing what a block actually contains, for the collapsed state
+ * of the builder. A header reading "Rich text" twelve times is useless; the
+ * author needs to recognise the block without opening it.
+ *
+ * Returns an empty string when there is nothing worth showing (a fresh block,
+ * a divider with no label) so the caller can omit the line entirely rather
+ * than print a placeholder.
+ */
+export function blockSummary(block: Block): string {
+  const count = (n: number, one: string) => `${n} ${one}${n === 1 ? "" : "s"}`;
+
+  switch (block.type) {
+    case "richText":
+      return clamp(block.markdown);
+    case "heading":
+      return clamp(block.text || block.eyebrow);
+    case "callout":
+      return clamp(block.title || block.markdown);
+    case "quote":
+      return clamp(block.text);
+    case "table":
+      return clamp(block.caption || block.markdown);
+    case "divider":
+      return clamp(block.label);
+    case "image":
+      return clamp(block.alt || block.caption || block.url);
+    case "video":
+      return clamp(block.title || block.videoId);
+    case "pdf":
+      return clamp(block.title || block.url);
+    case "embed":
+      return clamp(block.title || block.url);
+    case "fileList":
+      return clamp(block.title) || count(block.items.length, "file");
+    case "email":
+      return clamp(block.subject || block.from);
+    case "columns":
+      return count(block.columns.length, "column");
+    case "accordion":
+      return clamp(block.title) || count(block.items.length, "panel");
+    case "tabs":
+      return block.items.map((i) => i.label).filter(Boolean).join(" · ") ||
+        count(block.items.length, "tab");
+    case "card":
+      return clamp(block.title || block.eyebrow);
+    case "checklist":
+      return clamp(block.title) || count(block.items.length, "item");
+    case "knowledgeCheck":
+      return clamp(block.question);
+    case "revealCard":
+      return clamp(block.front);
+    case "scenario":
+      return clamp(block.title || block.promptMarkdown);
+    case "ordering":
+      return clamp(block.title || block.promptMarkdown);
+    case "html":
+      return clamp(block.html);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Interactions — per-learner state recorded against a block
 // ---------------------------------------------------------------------------

@@ -25,23 +25,27 @@ export function VideoPlayer({
         // PLAYBACK
       </span>
 
-      <button
-        type="button"
-        onClick={() =>
-          popped ? dock.close() : dock.open({ src, title, duration })
-        }
-        className="absolute -top-3 right-4 z-10 flex items-center gap-1.5 border border-border-strong bg-surface px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-muted transition hover:border-accent hover:text-accent-bright"
-      >
-        {popped ? (
-          <>
-            <span aria-hidden>⇤</span> Return inline
-          </>
-        ) : (
-          <>
-            <span aria-hidden>⧉</span> Pop out
-          </>
-        )}
-      </button>
+      {/* No dock mounted (e.g. the admin notes preview) means nowhere to pop
+          out to, so the control is omitted rather than shown inert. */}
+      {dock.available ? (
+        <button
+          type="button"
+          onClick={() =>
+            popped ? dock.close() : dock.open({ src, title, duration })
+          }
+          className="absolute -top-3 right-4 z-10 flex items-center gap-1.5 border border-border-strong bg-surface px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-muted transition hover:border-accent hover:text-accent-bright"
+        >
+          {popped ? (
+            <>
+              <span aria-hidden>⇤</span> Return inline
+            </>
+          ) : (
+            <>
+              <span aria-hidden>⧉</span> Pop out
+            </>
+          )}
+        </button>
+      ) : null}
 
       <div className="overflow-hidden border border-border bg-black">
         <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>

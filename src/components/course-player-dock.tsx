@@ -20,6 +20,8 @@ export interface DockVideo {
 
 interface DockCtx {
   active: DockVideo | null;
+  /** False when no provider is mounted — see `NO_DOCK` below. */
+  available: boolean;
   /** Pop a video out into the persistent floating window. */
   open: (v: DockVideo) => void;
   /** Close the floating window. */
@@ -28,12 +30,22 @@ interface DockCtx {
 
 const Ctx = createContext<DockCtx | null>(null);
 
+/**
+ * The dock is mounted by the course layout, but video blocks also render
+ * outside it — most notably in the admin notes preview, which shows the real
+ * learner components on an admin route. Rather than crash the host page, fall
+ * back to a dock that can never open. Callers use `available` to hide the
+ * pop-out control instead of offering a button that does nothing.
+ */
+const NO_DOCK: DockCtx = {
+  active: null,
+  available: false,
+  open: () => {},
+  close: () => {},
+};
+
 export function usePlayerDock(): DockCtx {
-  const c = useContext(Ctx);
-  if (!c) {
-    throw new Error("usePlayerDock must be used inside <PlayerDockProvider>");
-  }
-  return c;
+  return useContext(Ctx) ?? NO_DOCK;
 }
 
 /* --------------------------------------------- Document Picture-in-Picture */
@@ -138,7 +150,7 @@ export function PlayerDockProvider({
   }, []);
 
   return (
-    <Ctx.Provider value={{ active, open, close }}>
+    <Ctx.Provider value={{ active, available: true, open, close }}>
       {children}
       {active && pipContainer
         ? createPortal(<PipPlayer video={active} onClose={close} />, pipContainer)

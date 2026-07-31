@@ -4,6 +4,7 @@ import {
   BLOCK_CATALOG,
   BLOCK_GROUPS,
   BLOCK_LABEL,
+  blockSummary,
   countBlocks,
   encodePath,
 } from "@/lib/blocks";
@@ -20,6 +21,8 @@ import {
   uploadNoteAsset,
 } from "@/app/admin/courses/notes-actions";
 import { NotesJsonPanel } from "./notes-json-panel";
+import { BlockShell, NotesWorkspace } from "./notes-workspace";
+import { BlockList } from "./blocks/block-list";
 
 /**
  * Admin block builder for NOTES units.
@@ -75,7 +78,26 @@ export function NotesBuilder({
         blocks (columns, accordion, tabs, card) hold other blocks inside them.
       </p>
 
-      <BlockEditorList ctx={ctx} blocks={blocks} path={ROOT} depth={0} />
+      {/* The preview is the real learner components rendered against the saved
+          document — not a lookalike. It therefore refreshes when a block is
+          saved, not on every keystroke, which matches how the builder already
+          works (one server action per edit). */}
+      <NotesWorkspace
+        storageKey={unitId}
+        blockCount={total}
+        builder={
+          <BlockEditorList ctx={ctx} blocks={blocks} path={ROOT} depth={0} />
+        }
+        preview={
+          blocks.length ? (
+            <BlockList blocks={blocks} />
+          ) : (
+            <p className="text-sm text-muted">
+              Nothing to preview yet. Add a block.
+            </p>
+          )
+        }
+      />
 
       <NotesJsonPanel unitId={unitId} courseId={courseId} blocks={blocks} />
     </section>
@@ -221,61 +243,57 @@ function BlockEditor({
   );
 
   return (
-    <div className="border border-border bg-[rgba(10,12,17,0.55)]">
-      {/* Structural controls — siblings of the field form, never parents. */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
-        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-accent-bright">
-          {BLOCK_LABEL[block.type]}
-        </span>
-        <span className="font-mono text-[10px] text-muted">
-          {String(index + 1).padStart(2, "0")}
-        </span>
-        <span className="flex-1" />
-
-        <form action={moveNoteBlock}>
-          {hidden}
-          <input type="hidden" name="dir" value="up" />
-          <button
-            className="btn btn-ghost btn-sm px-2 disabled:opacity-25"
-            disabled={index === 0}
-            title="Move up"
-          >
-            ↑
-          </button>
-        </form>
-        <form action={moveNoteBlock}>
-          {hidden}
-          <input type="hidden" name="dir" value="down" />
-          <button
-            className="btn btn-ghost btn-sm px-2 disabled:opacity-25"
-            disabled={index === count - 1}
-            title="Move down"
-          >
-            ↓
-          </button>
-        </form>
-        <form action={duplicateNoteBlock}>
-          {hidden}
-          <button className="btn btn-ghost btn-sm px-2" title="Duplicate">
-            ⧉
-          </button>
-        </form>
-        <form action={deleteNoteBlock}>
-          {hidden}
-          <button
-            className="btn btn-ghost btn-sm px-2 border-danger/40 text-danger hover:border-danger hover:bg-[rgba(239,68,68,0.08)] hover:text-danger"
-            title="Delete block"
-          >
-            ✕
-          </button>
-        </form>
-      </div>
-
-      <div className="p-3">
-        <BlockFields ctx={ctx} block={block} />
-        <BlockChildren ctx={ctx} block={block} path={path} depth={depth} />
-      </div>
-    </div>
+    <BlockShell
+      blockId={block.id}
+      label={BLOCK_LABEL[block.type]}
+      index={String(index + 1).padStart(2, "0")}
+      summary={blockSummary(block)}
+      controls={
+        /* Structural controls — siblings of the field form, never parents. */
+        <>
+          <form action={moveNoteBlock}>
+            {hidden}
+            <input type="hidden" name="dir" value="up" />
+            <button
+              className="btn btn-ghost btn-sm px-2 disabled:opacity-25"
+              disabled={index === 0}
+              title="Move up"
+            >
+              ↑
+            </button>
+          </form>
+          <form action={moveNoteBlock}>
+            {hidden}
+            <input type="hidden" name="dir" value="down" />
+            <button
+              className="btn btn-ghost btn-sm px-2 disabled:opacity-25"
+              disabled={index === count - 1}
+              title="Move down"
+            >
+              ↓
+            </button>
+          </form>
+          <form action={duplicateNoteBlock}>
+            {hidden}
+            <button className="btn btn-ghost btn-sm px-2" title="Duplicate">
+              ⧉
+            </button>
+          </form>
+          <form action={deleteNoteBlock}>
+            {hidden}
+            <button
+              className="btn btn-ghost btn-sm px-2 border-danger/40 text-danger hover:border-danger hover:bg-[rgba(239,68,68,0.08)] hover:text-danger"
+              title="Delete block"
+            >
+              ✕
+            </button>
+          </form>
+        </>
+      }
+    >
+      <BlockFields ctx={ctx} block={block} />
+      <BlockChildren ctx={ctx} block={block} path={path} depth={depth} />
+    </BlockShell>
   );
 }
 

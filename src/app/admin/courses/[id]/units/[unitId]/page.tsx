@@ -49,8 +49,13 @@ export default async function UnitEditor({
   // older NOTES unit opens in the builder with its content already in place.
   const notesBlocks = unit.type === "NOTES" ? readNotesDoc(d).blocks : [];
 
+  const isNotes = unit.type === "NOTES";
+
   return (
-    <div className="reveal max-w-3xl">
+    // A NOTES unit gets the full width so the builder can put a learner preview
+    // beside the form; every other unit type is a short form and reads better
+    // constrained.
+    <div className={`reveal ${isNotes ? "max-w-[100rem]" : "max-w-3xl"}`}>
       <Link
         href={`/admin/courses/${courseId}`}
         className="eyebrow eyebrow-muted transition hover:text-accent-bright"
@@ -65,7 +70,7 @@ export default async function UnitEditor({
         </span>
       </div>
 
-      <form action={updateUnit} className="mt-6 grid gap-4">
+      <form action={updateUnit} className="mt-6 grid max-w-3xl gap-4">
         <input type="hidden" name="id" value={unit.id} />
         <input type="hidden" name="courseId" value={courseId} />
 
@@ -237,7 +242,7 @@ export default async function UnitEditor({
         </div>
       </form>
 
-      {unit.type === "NOTES" ? (
+      {isNotes ? (
         <NotesBuilder
           unitId={unit.id}
           courseId={courseId}
