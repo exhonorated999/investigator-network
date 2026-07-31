@@ -74,8 +74,8 @@ export async function updateCourse(formData: FormData) {
   revalidatePath("/admin/courses");
 }
 
-/** Max cover image size. Covers are decorative; anything bigger is a mistake. */
-const MAX_COVER_BYTES = 8 * 1024 * 1024;
+/** Max cover image size. Must stay below serverActions.bodySizeLimit in next.config.ts. */
+const MAX_COVER_BYTES = 25 * 1024 * 1024;
 const COVER_MIME = /^image\/(png|jpeg|jpg|webp|gif|avif)$/i;
 
 /**

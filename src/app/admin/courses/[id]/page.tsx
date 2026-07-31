@@ -196,7 +196,7 @@ export default async function CourseEditor({
             <div className="grid gap-2">
               <CoverUpload courseId={course.id} action={uploadCourseCover} />
               <p className="text-xs text-muted">
-                PNG, JPEG, WebP, GIF or AVIF — up to 8 MB. Uploading replaces
+                PNG, JPEG, WebP, GIF or AVIF — up to 25 MB. Uploading replaces
                 whatever is in the URL field above.
               </p>
               {course.coverImage ? (

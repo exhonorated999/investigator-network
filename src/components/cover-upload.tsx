@@ -15,7 +15,7 @@ import { useFormStatus } from "react-dom";
  * Keep MAX_BYTES in sync with MAX_COVER_BYTES in admin/courses/actions.ts and
  * below the bodySizeLimit in next.config.ts.
  */
-const MAX_BYTES = 8 * 1024 * 1024;
+const MAX_BYTES = 25 * 1024 * 1024;
 const ACCEPT = "image/png,image/jpeg,image/webp,image/gif,image/avif";
 
 function SubmitButton({ disabled }: { disabled: boolean }) {
@@ -52,7 +52,7 @@ export function CoverUpload({
     }
     if (file.size > MAX_BYTES) {
       const mb = (file.size / 1024 / 1024).toFixed(1);
-      setError(`That file is ${mb} MB — the limit is 8 MB. Resize it and retry.`);
+      setError(`That file is ${mb} MB — the limit is 25 MB. Resize it and retry.`);
       setReady(false);
       return;
     }
