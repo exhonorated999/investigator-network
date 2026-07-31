@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { UNIT_TYPES, UNIT_LABEL } from "@/lib/units";
+import { CoverUpload } from "@/components/cover-upload";
 import {
   updateCourse,
   setCourseStatus,
@@ -193,20 +194,7 @@ export default async function CourseEditor({
               )}
             </div>
             <div className="grid gap-2">
-              <form
-                action={uploadCourseCover}
-                className="flex flex-wrap items-center gap-2"
-              >
-                <input type="hidden" name="id" value={course.id} />
-                <input
-                  type="file"
-                  name="file"
-                  accept="image/png,image/jpeg,image/webp,image/gif,image/avif"
-                  required
-                  className="field w-auto file:mr-3 file:border-0 file:bg-transparent file:font-mono file:text-[11px] file:uppercase file:tracking-[0.14em] file:text-accent"
-                />
-                <button className="btn btn-primary btn-sm">Upload</button>
-              </form>
+              <CoverUpload courseId={course.id} action={uploadCourseCover} />
               <p className="text-xs text-muted">
                 PNG, JPEG, WebP, GIF or AVIF — up to 8 MB. Uploading replaces
                 whatever is in the URL field above.
