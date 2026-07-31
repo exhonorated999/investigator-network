@@ -10,7 +10,7 @@ import {
 } from "@/lib/video";
 import { parseEmbedRef, embedLabel } from "@/lib/embed";
 import { readNotesDoc } from "@/lib/blocks";
-import { NotesBuilder } from "@/components/notes-builder";
+import { NotesEditor } from "@/components/editor/notes-editor";
 import { updateUnit, deleteUnit } from "../../../actions";
 import { sendLiveSessionReminders } from "../../../actions";
 import { ensureQuiz } from "../../../quiz-actions";
@@ -243,11 +243,7 @@ export default async function UnitEditor({
       </form>
 
       {isNotes ? (
-        <NotesBuilder
-          unitId={unit.id}
-          courseId={courseId}
-          blocks={notesBlocks}
-        />
+        <NotesEditor unitId={unit.id} initialBlocks={notesBlocks} />
       ) : null}
 
       {unit.type === "QUIZ" && quiz ? (

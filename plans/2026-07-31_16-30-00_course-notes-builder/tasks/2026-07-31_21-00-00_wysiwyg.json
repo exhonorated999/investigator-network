@@ -1,0 +1,32 @@
+[
+  {
+    "content": "[wysiwyg-1] Pure id-keyed immutable tree ops in src/lib/notes-doc.ts",
+    "id": "1",
+    "status": "completed"
+  },
+  {
+    "content": "[wysiwyg-2] Autosave route PUT /api/notes + client editor store with undo",
+    "id": "2",
+    "status": "completed"
+  },
+  {
+    "content": "[wysiwyg-3] Inline field primitives: InlineText, InlineMarkdown, client md()",
+    "id": "3",
+    "status": "completed"
+  },
+  {
+    "content": "[wysiwyg-4] Block frame: hover toolbar, drag handle, insert points, picker",
+    "id": "4",
+    "status": "completed"
+  },
+  {
+    "content": "[wysiwyg-5] Editable surface for all 22 block types + properties panel",
+    "id": "5",
+    "status": "completed"
+  },
+  {
+    "content": "[wysiwyg-6] Wire into admin page, retire notes-builder, verify in browser",
+    "id": "6",
+    "status": "completed"
+  }
+]
