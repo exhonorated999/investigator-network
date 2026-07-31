@@ -10,6 +10,8 @@ import {
   renameSection,
   deleteSection,
   addUnit,
+  moveUnit,
+  moveSection,
 } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -61,6 +63,15 @@ export default async function CourseEditor({
           </span>
         </div>
         <div className="flex items-center gap-2">
+          <Link
+            href={`/courses/${course.slug}`}
+            target="_blank"
+            rel="noreferrer"
+            className="btn btn-ghost btn-sm"
+            title="Open the learner view of this course in a new tab"
+          >
+            Preview as student ↗
+          </Link>
           <form action={setCourseStatus}>
             <input type="hidden" name="id" value={course.id} />
             <input
@@ -160,6 +171,32 @@ export default async function CourseEditor({
                     Rename
                   </button>
                 </form>
+                <form action={moveSection}>
+                  <input type="hidden" name="id" value={section.id} />
+                  <input type="hidden" name="courseId" value={course.id} />
+                  <input type="hidden" name="dir" value="up" />
+                  <button
+                    className="btn btn-ghost btn-sm px-2 disabled:opacity-25"
+                    disabled={si === 0}
+                    title="Move section up"
+                    aria-label={`Move section ${section.title} up`}
+                  >
+                    ↑
+                  </button>
+                </form>
+                <form action={moveSection}>
+                  <input type="hidden" name="id" value={section.id} />
+                  <input type="hidden" name="courseId" value={course.id} />
+                  <input type="hidden" name="dir" value="down" />
+                  <button
+                    className="btn btn-ghost btn-sm px-2 disabled:opacity-25"
+                    disabled={si === course.sections.length - 1}
+                    title="Move section down"
+                    aria-label={`Move section ${section.title} down`}
+                  >
+                    ↓
+                  </button>
+                </form>
                 <form action={deleteSection}>
                   <input type="hidden" name="id" value={section.id} />
                   <input type="hidden" name="courseId" value={course.id} />
@@ -170,17 +207,60 @@ export default async function CourseEditor({
               </div>
 
               <ul className="mt-3 grid gap-2">
-                {section.units.map((unit) => (
-                  <li key={unit.id}>
+                {section.units.map((unit, unitIndex) => (
+                  <li
+                    key={unit.id}
+                    className="flex items-center gap-2 border border-border bg-[rgba(10,12,17,0.6)] pr-2 transition hover:border-border-strong"
+                  >
                     <Link
                       href={`/admin/courses/${course.id}/units/${unit.id}`}
-                      className="flex items-center justify-between border border-border bg-[rgba(10,12,17,0.6)] px-3 py-2 transition hover:border-border-strong"
+                      className="flex min-w-0 flex-1 items-center justify-between gap-3 px-3 py-2"
                     >
-                      <span className="text-[15px] text-foreground">{unit.title}</span>
-                      <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">
+                      <span className="truncate text-[15px] text-foreground">
+                        {unit.title}
+                      </span>
+                      <span className="shrink-0 font-mono text-[10px] uppercase tracking-[0.14em] text-muted">
                         {UNIT_LABEL[unit.type]}
                       </span>
                     </Link>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <form action={moveUnit}>
+                        <input type="hidden" name="id" value={unit.id} />
+                        <input type="hidden" name="courseId" value={course.id} />
+                        <input
+                          type="hidden"
+                          name="sectionId"
+                          value={section.id}
+                        />
+                        <input type="hidden" name="dir" value="up" />
+                        <button
+                          className="btn btn-ghost btn-sm px-2 disabled:opacity-25"
+                          disabled={unitIndex === 0}
+                          title="Move unit up"
+                          aria-label={`Move ${unit.title} up`}
+                        >
+                          ↑
+                        </button>
+                      </form>
+                      <form action={moveUnit}>
+                        <input type="hidden" name="id" value={unit.id} />
+                        <input type="hidden" name="courseId" value={course.id} />
+                        <input
+                          type="hidden"
+                          name="sectionId"
+                          value={section.id}
+                        />
+                        <input type="hidden" name="dir" value="down" />
+                        <button
+                          className="btn btn-ghost btn-sm px-2 disabled:opacity-25"
+                          disabled={unitIndex === section.units.length - 1}
+                          title="Move unit down"
+                          aria-label={`Move ${unit.title} down`}
+                        >
+                          ↓
+                        </button>
+                      </form>
+                    </div>
                   </li>
                 ))}
                 {section.units.length === 0 && (

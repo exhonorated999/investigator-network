@@ -118,6 +118,39 @@ export async function deleteSection(formData: FormData) {
   revalidatePath(`/admin/courses/${courseId}`);
 }
 
+/**
+ * Move a section up or down within its course. Rewrites every sibling's
+ * `order` sequentially so the list stays normalized even if historical rows
+ * ended up with duplicate or gapped order values.
+ */
+export async function moveSection(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id"));
+  const courseId = String(formData.get("courseId"));
+  const dir = String(formData.get("dir")) === "up" ? -1 : 1;
+
+  const siblings = await prisma.section.findMany({
+    where: { courseId },
+    orderBy: { order: "asc" },
+    select: { id: true },
+  });
+
+  const from = siblings.findIndex((s) => s.id === id);
+  const to = from + dir;
+  if (from === -1 || to < 0 || to >= siblings.length) return;
+
+  const [moved] = siblings.splice(from, 1);
+  siblings.splice(to, 0, moved);
+
+  await prisma.$transaction(
+    siblings.map((s, i) =>
+      prisma.section.update({ where: { id: s.id }, data: { order: i } })
+    )
+  );
+
+  revalidatePath(`/admin/courses/${courseId}`);
+}
+
 // --------------------------- Units ---------------------------
 
 export async function addUnit(formData: FormData) {
@@ -227,6 +260,40 @@ export async function deleteUnit(formData: FormData) {
   await prisma.unit.delete({ where: { id } });
   revalidatePath(`/admin/courses/${courseId}`);
   redirect(`/admin/courses/${courseId}`);
+}
+
+/**
+ * Move a unit up or down within its section. Rewrites every sibling's `order`
+ * sequentially so the list stays normalized even if historical rows ended up
+ * with duplicate or gapped order values.
+ */
+export async function moveUnit(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id"));
+  const courseId = String(formData.get("courseId"));
+  const sectionId = String(formData.get("sectionId"));
+  const dir = String(formData.get("dir")) === "up" ? -1 : 1;
+
+  const siblings = await prisma.unit.findMany({
+    where: { sectionId },
+    orderBy: { order: "asc" },
+    select: { id: true },
+  });
+
+  const from = siblings.findIndex((u) => u.id === id);
+  const to = from + dir;
+  if (from === -1 || to < 0 || to >= siblings.length) return;
+
+  const [moved] = siblings.splice(from, 1);
+  siblings.splice(to, 0, moved);
+
+  await prisma.$transaction(
+    siblings.map((u, i) =>
+      prisma.unit.update({ where: { id: u.id }, data: { order: i } })
+    )
+  );
+
+  revalidatePath(`/admin/courses/${courseId}`);
 }
 
 /** Email all enrolled learners a reminder for a LIVE_SESSION unit. */
