@@ -1,0 +1,32 @@
+[
+  {
+    "content": "[schema] Add presence fields to User + run migration",
+    "id": "1",
+    "status": "completed"
+  },
+  {
+    "content": "[presence] lib/presence.ts, /api/presence route, PresenceBeacon client",
+    "id": "2",
+    "status": "completed"
+  },
+  {
+    "content": "[analytics] lib/analytics.ts time-bucket stats + SVG chart components",
+    "id": "3",
+    "status": "completed"
+  },
+  {
+    "content": "[moderation] feed moderation actions + /admin/moderation page",
+    "id": "5",
+    "status": "in_progress"
+  },
+  {
+    "content": "[page] /admin/analytics visual page + nav link",
+    "id": "4",
+    "status": "in_progress"
+  },
+  {
+    "content": "[cards] Dashboard cards: online, grading queue, messages, moderation",
+    "id": "6",
+    "status": "pending"
+  }
+]

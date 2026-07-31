@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Orbitron, Rajdhani, JetBrains_Mono } from "next/font/google";
+import { auth } from "@/auth";
+import { PresenceBeacon } from "@/components/presence-beacon";
 import "./globals.css";
 
 const orbitron = Orbitron({
@@ -26,11 +28,16 @@ export const metadata: Metadata = {
     "Investigator Network: professional investigator training, courses, and certification.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Only signed-in users emit heartbeats, so logged-out visitors on the login
+  // and marketing pages don't generate pointless traffic.
+  const session = await auth();
+  const signedIn = Boolean(session?.user?.id);
+
   return (
     <html
       lang="en"
@@ -46,7 +53,10 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {signedIn ? <PresenceBeacon /> : null}
+        {children}
+      </body>
     </html>
   );
 }

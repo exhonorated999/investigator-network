@@ -62,7 +62,19 @@ model User {
   convoParts   ConversationParticipant[]
   messagesSent Message[]
 
+  /// Presence — last time this user's browser sent a heartbeat. A user counts
+  /// as "online" if this is within the presence window (see lib/presence.ts).
+  lastSeenAt       DateTime?
+  /// Where they were when that heartbeat fired, so staff can see not just who
+  /// is online but what they are working on. Denormalized on purpose: this is
+  /// throwaway telemetry, and a relation would force a join on every poll.
+  lastSeenPath     String?
+  lastSeenCourseId String?
+  lastSeenCourse   Course?  @relation("PresenceCourse", fields: [lastSeenCourseId], references: [id], onDelete: SetNull)
+  lastSeenUnitId   String?
+
   @@index([status])
+  @@index([lastSeenAt])
 }
 
 // ---------------------------------------------------------------------------
@@ -106,6 +118,7 @@ model Course {
   enrollments  Enrollment[]
   certificates Certificate[]
   favorites    CourseFavorite[]
+  presentUsers User[]           @relation("PresenceCourse")
 }
 
 model Section {
