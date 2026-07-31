@@ -384,7 +384,7 @@ function PlayerDock({
         {/* header / drag handle */}
         <div
           onPointerDown={startMove}
-          className="flex cursor-grab items-center justify-between gap-2 border-b border-border bg-[rgba(10,12,17,0.9)] px-3 active:cursor-grabbing"
+          className="flex cursor-grab items-center justify-between gap-2 border-b border-border bg-well-strong px-3 active:cursor-grabbing"
           style={{ height: HEADER_H }}
         >
           <div className="flex min-w-0 items-center gap-2">

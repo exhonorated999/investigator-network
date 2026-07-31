@@ -244,7 +244,7 @@ export function NotesWorkspace({
             </div>
             {/* Bounded height so the pane scrolls independently of the form
                 instead of the page growing to the taller of the two. */}
-            <div className="mt-2 max-h-[calc(100vh-8rem)] overflow-y-auto border border-border bg-[rgba(10,12,17,0.55)] p-4">
+            <div className="mt-2 max-h-[calc(100vh-8rem)] overflow-y-auto border border-border bg-well p-4">
               {preview}
             </div>
           </aside>
@@ -284,7 +284,7 @@ export function BlockShell({
   }, [register, unregister, blockId]);
 
   return (
-    <div className="border border-border bg-[rgba(10,12,17,0.55)]">
+    <div className="border border-border bg-well">
       <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
         <button
           type="button"

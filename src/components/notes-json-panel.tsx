@@ -43,7 +43,7 @@ export function NotesJsonPanel({
   }
 
   return (
-    <details className="mt-8 border border-border bg-[rgba(10,12,17,0.4)]">
+    <details className="mt-8 border border-border bg-well-soft">
       <summary className="cursor-pointer list-none px-4 py-3 font-mono text-[11px] uppercase tracking-[0.14em] text-accent transition hover:text-accent-bright">
         ⟨/⟩ JSON source
       </summary>

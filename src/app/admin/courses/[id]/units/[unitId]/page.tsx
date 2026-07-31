@@ -188,7 +188,7 @@ export default async function UnitEditor({
                 className={inputClass}
               />
             </label>
-            <p className="border border-border bg-[rgba(10,12,17,0.6)] px-3 py-2 font-mono text-[11px] text-muted">
+            <p className="border border-border bg-well px-3 py-2 font-mono text-[11px] text-muted">
               Paste a Teams link you created in Teams/Outlook. Automatic meeting
               creation (Microsoft Graph) is a later phase.
             </p>

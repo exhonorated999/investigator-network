@@ -317,7 +317,7 @@ export function HBar({ value, max, label, className }: HBarProps) {
         </span>
       </div>
       <div
-        className="mt-1.5 h-1.5 w-full overflow-hidden border border-border bg-[rgba(10,12,17,0.6)]"
+        className="mt-1.5 h-1.5 w-full overflow-hidden border border-border bg-well"
         role="img"
         aria-label={`${label}: ${formatValue(value)} of ${formatValue(max)} (${pctStr})`}
       >

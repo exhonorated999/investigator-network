@@ -177,7 +177,7 @@ export default async function CourseEditor({
         <div className="mt-5 border-t border-border pt-5">
           <span className="eyebrow eyebrow-muted">Cover image</span>
           <div className="mt-3 flex flex-wrap items-start gap-4">
-            <div className="relative h-24 w-40 shrink-0 overflow-hidden border border-border bg-[rgba(10,12,17,0.6)]">
+            <div className="relative h-24 w-40 shrink-0 overflow-hidden border border-border bg-well">
               {course.coverImage ? (
                 /* Covers may be operator URLs or /api/files/… — plain img
                    avoids next/image remote-pattern config. */
@@ -230,7 +230,7 @@ export default async function CourseEditor({
                   <input
                     name="title"
                     defaultValue={section.title}
-                    className="flex-1 border border-transparent bg-transparent px-2 py-1 font-display text-[14px] font-semibold uppercase tracking-[0.04em] text-foreground outline-none transition hover:border-border focus:border-accent focus:bg-[rgba(10,12,17,0.85)]"
+                    className="flex-1 border border-transparent bg-transparent px-2 py-1 font-display text-[14px] font-semibold uppercase tracking-[0.04em] text-foreground outline-none transition hover:border-border focus:border-accent focus:bg-surface"
                   />
                   <button className="btn btn-ghost btn-sm">
                     Rename
@@ -275,7 +275,7 @@ export default async function CourseEditor({
                 {section.units.map((unit, unitIndex) => (
                   <li
                     key={unit.id}
-                    className="flex items-center gap-2 border border-border bg-[rgba(10,12,17,0.6)] pr-2 transition hover:border-border-strong"
+                    className="flex items-center gap-2 border border-border bg-well pr-2 transition hover:border-border-strong"
                   >
                     <Link
                       href={`/admin/courses/${course.id}/units/${unit.id}`}

@@ -92,7 +92,7 @@ export async function QuizTaker({
                 {q.choices.map((c) => (
                   <label
                     key={c.id}
-                    className="flex cursor-pointer items-center gap-3 border border-border bg-[rgba(10,12,17,0.5)] px-4 py-3 text-[15px] text-foreground transition hover:border-accent/50 hover:bg-[rgba(0,180,216,0.06)] has-[:checked]:border-accent has-[:checked]:bg-[rgba(0,180,216,0.1)] has-[:checked]:shadow-[0_0_16px_rgba(0,180,216,0.2)]"
+                    className="flex cursor-pointer items-center gap-3 border border-border bg-well px-4 py-3 text-[15px] text-foreground transition hover:border-accent/50 hover:bg-[rgba(0,180,216,0.06)] has-[:checked]:border-accent has-[:checked]:bg-[rgba(0,180,216,0.1)] has-[:checked]:shadow-[0_0_16px_rgba(0,180,216,0.2)]"
                   >
                     <input
                       type="radio"

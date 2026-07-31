@@ -107,7 +107,7 @@ export function PdfBlockView({ block }: { block: PdfBlock }) {
           Download ↗
         </a>
       ) : null}
-      <div className="overflow-hidden border border-border bg-[rgba(10,12,17,0.85)]">
+      <div className="overflow-hidden border border-border bg-well-strong">
         <iframe
           src={url}
           title={title}
@@ -148,7 +148,7 @@ export function EmbedBlockView({ block }: { block: EmbedBlock }) {
       >
         Full screen ↗
       </a>
-      <div className="overflow-hidden border border-border bg-[rgba(10,12,17,0.85)]">
+      <div className="overflow-hidden border border-border bg-well-strong">
         <iframe
           src={url}
           title={title}

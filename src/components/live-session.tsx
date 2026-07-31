@@ -116,13 +116,13 @@ export function LiveSession({
       </div>
 
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
-        <div className="border border-border bg-[rgba(10,12,17,0.6)] p-4">
+        <div className="border border-border bg-well p-4">
           <p className="eyebrow eyebrow-muted text-[10px]">Date / Time</p>
           <p className="mt-2 font-mono text-sm text-foreground">
             {startsAt ? fmtDateTime(startsAt) : "TBA"}
           </p>
         </div>
-        <div className="border border-border bg-[rgba(10,12,17,0.6)] p-4">
+        <div className="border border-border bg-well p-4">
           <p className="eyebrow eyebrow-muted text-[10px]">
             {phase === "live"
               ? "Ends in"

@@ -167,7 +167,7 @@ function AddBlock({
 }) {
   const encoded = encodePath(path);
   return (
-    <details className="group border border-border bg-[rgba(10,12,17,0.4)]">
+    <details className="group border border-border bg-well-soft">
       <summary className="cursor-pointer list-none px-3 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-accent transition hover:text-accent-bright">
         + Add block
       </summary>
@@ -192,7 +192,7 @@ function AddBlock({
                     <input type="hidden" name="path" value={encoded} />
                     <input type="hidden" name="type" value={meta.type} />
                     <button
-                      className="w-full border border-border bg-[rgba(10,12,17,0.6)] px-3 py-2 text-left transition hover:border-accent hover:bg-[rgba(0,180,216,0.06)]"
+                      className="w-full border border-border bg-well px-3 py-2 text-left transition hover:border-accent hover:bg-[rgba(0,180,216,0.06)]"
                       title={meta.description}
                     >
                       <span className="font-mono text-[11px] text-accent">
