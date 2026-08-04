@@ -37,6 +37,10 @@ yarn-error.log*
 # uploaded files (persistent volume in prod)
 /.uploads
 
+# legacy migration output — activation-link CSVs are credential material and
+# must never be committed.
+/migration-out
+
 # vercel
 .vercel
 

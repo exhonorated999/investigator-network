@@ -23,6 +23,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const user = await prisma.user.findUnique({ where: { email } });
         if (!user) return null;
 
+        // No password set yet — the account was migrated or admin-created and
+        // is still waiting on its activation link. Never sign it in.
+        if (!user.passwordHash) return null;
+
         const ok = await verifyPassword(password, user.passwordHash);
         if (!ok) return null;
 

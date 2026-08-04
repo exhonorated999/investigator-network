@@ -48,8 +48,16 @@ model User {
   name         String
   agency       String
   email        String     @unique
-  passwordHash String
+  /// Null means the account has no usable password yet — it was created by an
+  /// admin or migrated from the legacy platform and is waiting for the user to
+  /// set one via an activation link (see InviteToken). Such accounts can never
+  /// sign in with credentials until they activate.
+  passwordHash String?
   role         Role       @default(LEARNER)
+  /// The platform owner. Exactly one account (the Inv-Network admin) holds this.
+  /// A super admin can create and remove other admins and can never be removed
+  /// or suspended by anyone — including other admins.
+  isSuperAdmin Boolean    @default(false)
   status       UserStatus @default(PENDING)
   /// LE (default) or CIVILIAN. Set at registration or by an admin. Drives
   /// what courses, community topics, news and DM contacts the user can see.
@@ -82,6 +90,13 @@ model User {
   courseQuestions CourseQuestion[]
   courseAnswers   CourseAnswer[]
   courseActivity  CourseActivity[]
+  inviteTokens    InviteToken[]
+
+  /// Provenance for accounts migrated off the legacy LearnWorlds site. Holds
+  /// the legacy user id so re-running the importer is idempotent, plus when the
+  /// migration happened. Null for accounts created natively here.
+  legacyId   String?   @unique
+  importedAt DateTime?
 
   /// Presence — last time this user's browser sent a heartbeat. A user counts
   /// as "online" if this is within the presence window (see lib/presence.ts).
@@ -96,6 +111,36 @@ model User {
 
   @@index([status])
   @@index([lastSeenAt])
+}
+
+/// Why a token was issued. ACTIVATION is a first-time credential handout (new
+/// account or migrated legacy account); PASSWORD_RESET is a recovery link for
+/// an account that already has a password.
+enum InviteTokenPurpose {
+  ACTIVATION
+  PASSWORD_RESET
+}
+
+/// Single-use, expiring link that lets a user set their own password without an
+/// admin ever handling plaintext. Only a SHA-256 hash of the token is stored,
+/// so a database leak cannot be replayed into account takeovers — the raw token
+/// exists only in the URL handed to the user.
+model InviteToken {
+  id          String             @id @default(cuid())
+  userId      String
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash   String             @unique
+  purpose     InviteTokenPurpose @default(ACTIVATION)
+  expiresAt   DateTime
+  /// Set the moment the token is redeemed. A used token is dead forever.
+  usedAt      DateTime?
+  /// Free-text provenance, e.g. "legacy-import 2026-08-04" or an admin id, so
+  /// you can tell where a batch of links came from.
+  issuedBy    String             @default("")
+  createdAt   DateTime           @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 // ---------------------------------------------------------------------------

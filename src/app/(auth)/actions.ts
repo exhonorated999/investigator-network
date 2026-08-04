@@ -93,8 +93,20 @@ export async function loginAction(
   const { email, password } = parsed.data;
   const user = await prisma.user.findUnique({ where: { email } });
 
+  // Migrated / admin-created account that has never been activated. Tell them
+  // plainly — otherwise a legacy user whose old LearnWorlds password no longer
+  // works just sees "invalid password" and files a support ticket.
+  if (user && !user.passwordHash) {
+    return {
+      ok: false,
+      message:
+        "This account hasn't been activated yet. Use the activation link that was emailed to you to set a password, or contact an administrator for a new link.",
+    };
+  }
+
   // Generic message for unknown email / bad password (no user enumeration).
-  if (!user || !(await verifyPassword(password, user.passwordHash))) {
+  const hash = user?.passwordHash;
+  if (!user || !hash || !(await verifyPassword(password, hash))) {
     return { ok: false, message: "Invalid email or password." };
   }
 
