@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { TopicPicker } from "@/components/widgets/topic-picker";
-import { ArticleReader } from "@/components/widgets/article-reader";
 import { hostOf, type FeedArticle, type Topic } from "@/lib/news";
 
 function stamp(d: Date): string {
@@ -10,6 +9,40 @@ function stamp(d: Date): string {
 /** Where a headline goes: the in-app reader when text was pasted, else out. */
 export function articleHref(a: FeedArticle): string {
   return a.hasBody || !a.sourceUrl ? `/news/${a.id}` : a.sourceUrl;
+}
+
+/**
+ * Server-rendered navigation for a headline. In-app articles route to the
+ * dedicated /news/[id] reader page; external ones open their source in a new
+ * tab. No client modal, so a click always works regardless of hydration.
+ */
+function CardLink({
+  a,
+  className,
+  children,
+}: {
+  a: FeedArticle;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const external = !a.hasBody && !!a.sourceUrl;
+  if (external) {
+    return (
+      <a
+        href={a.sourceUrl!}
+        target="_blank"
+        rel="noreferrer noopener"
+        className={className}
+      >
+        {children}
+      </a>
+    );
+  }
+  return (
+    <Link href={`/news/${a.id}`} className={className}>
+      {children}
+    </Link>
+  );
 }
 
 export function ArticleRow({ a }: { a: FeedArticle }) {
@@ -51,9 +84,9 @@ export function ArticleRow({ a }: { a: FeedArticle }) {
     "group block border-b border-border py-3 first:pt-0 last:border-b-0 last:pb-0";
 
   return (
-    <ArticleReader id={a.id} className={`${cls} w-full text-left`}>
+    <CardLink a={a} className={`${cls} w-full text-left`}>
       {inner}
-    </ArticleReader>
+    </CardLink>
   );
 }
 
@@ -94,8 +127,8 @@ export function NewsCard({
         ) : (
           <>
             {lead.imageUrl ? (
-              <ArticleReader
-                id={lead.id}
+              <CardLink
+                a={lead}
                 className="bracket group mb-3 block aspect-[16/7] w-full overflow-hidden"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -104,7 +137,7 @@ export function NewsCard({
                   alt=""
                   className="h-full w-full object-cover opacity-80 transition duration-500 group-hover:scale-[1.03] group-hover:opacity-100"
                 />
-              </ArticleReader>
+              </CardLink>
             ) : null}
 
             <div>

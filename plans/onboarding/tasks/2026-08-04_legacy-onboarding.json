@@ -1,0 +1,32 @@
+[
+  {
+    "content": "[schema] InviteToken model + nullable passwordHash + legacyId; migrate",
+    "id": "1",
+    "status": "completed"
+  },
+  {
+    "content": "[auth] block login when passwordHash is null",
+    "id": "2",
+    "status": "completed"
+  },
+  {
+    "content": "[lib] invite token create/verify helper + legacy course slug map",
+    "id": "3",
+    "status": "completed"
+  },
+  {
+    "content": "[ui] /activate/[token] set-password page + action",
+    "id": "4",
+    "status": "completed"
+  },
+  {
+    "content": "[import] prisma/import_legacy_users.mjs dry-run + commit, report + activation CSV",
+    "id": "5",
+    "status": "completed"
+  },
+  {
+    "content": "[verify] open datapilot courses to CIVILIAN, dry-run the import, tsc",
+    "id": "6",
+    "status": "completed"
+  }
+]

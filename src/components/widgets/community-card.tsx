@@ -7,7 +7,7 @@ import {
   REACTIONS,
   type FeedComment,
   type FeedPost,
-} from "@/lib/community";
+} from "@/lib/community-shared";
 import {
   createComment,
   createPost,
@@ -19,6 +19,7 @@ import {
 } from "@/app/community/actions";
 import { Avatar, RoleBadge } from "@/components/widgets/avatar";
 import { PostEmbed } from "@/components/widgets/post-embed";
+import { PostBody } from "@/components/widgets/post-body";
 
 /* -------------------------------------------------------------- reactions -- */
 
@@ -151,9 +152,11 @@ function CommentItem({
                 <span className="font-mono text-[10px] uppercase text-gold">hidden</span>
               ) : null}
             </div>
-            <p className="mt-0.5 whitespace-pre-wrap text-[14px] leading-snug text-foreground/90">
-              {comment.body}
-            </p>
+            <PostBody
+              body={comment.body}
+              hideWhenBareLink={false}
+              className="mt-0.5 whitespace-pre-wrap text-[14px] leading-snug text-foreground/90"
+            />
 
             <div className="mt-1 flex items-center gap-3">
               <ReactionBar reactions={comment.reactions} target={{ commentId: comment.id }} />
@@ -282,9 +285,7 @@ function PostItem({ post, isAdmin }: { post: FeedPost; isAdmin: boolean }) {
         ) : null}
       </div>
 
-      <p className="mt-3 whitespace-pre-wrap text-[15px] leading-relaxed text-foreground/90">
-        {post.body}
-      </p>
+      <PostBody body={post.body} />
 
       {post.imageUrl ? (
         <div className="mt-3 overflow-hidden border border-border">

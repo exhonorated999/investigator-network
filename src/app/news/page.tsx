@@ -2,7 +2,6 @@ import Link from "next/link";
 import { requireViewer } from "@/lib/viewer";
 import { SiteHeader } from "@/components/site-header";
 import { TopicPicker } from "@/components/widgets/topic-picker";
-import { ArticleReader } from "@/components/widgets/article-reader";
 import {
   hostOf,
   loadArticles,
@@ -80,10 +79,27 @@ function Card({ a, lead }: { a: FeedArticle; lead?: boolean }) {
 
   const cls = "panel panel-hover rule-top group block overflow-hidden";
 
+  // A plain, server-rendered navigation instead of a client modal: external
+  // items open their source directly; in-app items go to the dedicated reader
+  // page at /news/[id]. This has no hydration or server-action dependency, so
+  // a click always does something even if client JS hasn't loaded.
+  if (external) {
+    return (
+      <a
+        href={a.sourceUrl!}
+        target="_blank"
+        rel="noreferrer noopener"
+        className={`${cls} w-full text-left`}
+      >
+        {body}
+      </a>
+    );
+  }
+
   return (
-    <ArticleReader id={a.id} className={`${cls} w-full text-left`}>
+    <Link href={`/news/${a.id}`} className={`${cls} w-full text-left`}>
       {body}
-    </ArticleReader>
+    </Link>
   );
 }
 

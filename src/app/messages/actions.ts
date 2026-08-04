@@ -76,11 +76,14 @@ export async function startConversation(args: {
     where: {
       id: args.otherId,
       status: "APPROVED",
-      // Audience isolation: learners can only message peers on their own side.
-      // Admins are audience-neutral and can message anyone.
+      // Audience isolation: learners can only message peers on their own side,
+      // PLUS admins (instructors), who are audience-neutral and reachable by
+      // everyone. Admins can message anyone. Keep in sync with userAudienceWhere.
       ...(session.user!.role === "ADMIN"
         ? {}
-        : { audience: session.user!.audience }),
+        : {
+            OR: [{ role: "ADMIN" }, { audience: session.user!.audience }],
+          }),
     },
     select: { id: true },
   });

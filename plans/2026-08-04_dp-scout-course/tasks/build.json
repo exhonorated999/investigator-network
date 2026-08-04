@@ -1,0 +1,32 @@
+[
+  {
+    "content": "Upload 9 DP Scout assets (4 images + 5 downloads) as course-asset FileUploads",
+    "id": "1",
+    "status": "completed"
+  },
+  {
+    "content": "Create DATAPILOT Scout course (LE, PUBLISHED, instructor Justin Moyer, 1hr)",
+    "id": "2",
+    "status": "completed"
+  },
+  {
+    "content": "Build On Demand Training section with 10 Bunny videos in order",
+    "id": "3",
+    "status": "completed"
+  },
+  {
+    "content": "Build interactive Course Notes NOTES unit from reference content",
+    "id": "4",
+    "status": "completed"
+  },
+  {
+    "content": "Add Certificate of Completion section",
+    "id": "5",
+    "status": "completed"
+  },
+  {
+    "content": "Verify in browser as admin + LE learner, then report",
+    "id": "6",
+    "status": "completed"
+  }
+]

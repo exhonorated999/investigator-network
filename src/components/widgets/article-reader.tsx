@@ -21,6 +21,7 @@ export function ArticleReader({
   const [open, setOpen] = useState(false);
   const [article, setArticle] = useState<ModalArticle | null>(null);
   const [loading, setLoading] = useState(false);
+  const [failed, setFailed] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
@@ -29,9 +30,17 @@ export function ArticleReader({
     setOpen(true);
     if (!article) {
       setLoading(true);
-      const a = await fetchArticle(id);
-      setArticle(a);
-      setLoading(false);
+      setFailed(false);
+      try {
+        const a = await fetchArticle(id);
+        setArticle(a);
+      } catch {
+        // A transient server/DB hiccup must never leave the reader stuck on a
+        // spinner with the page scroll-locked. Surface a recoverable error.
+        setFailed(true);
+      } finally {
+        setLoading(false);
+      }
     }
   }
 
@@ -89,9 +98,29 @@ export function ArticleReader({
                   <span className="text-lg leading-none">×</span>
                 </button>
 
-                {loading || !article ? (
+                {loading ? (
                   <p className="py-16 text-center font-mono text-sm text-muted">
-                    {loading ? "Loading article…" : "Article unavailable."}
+                    Loading article…
+                  </p>
+                ) : failed ? (
+                  <div className="py-16 text-center">
+                    <p className="font-mono text-sm text-danger">
+                      Couldn&rsquo;t load this article.
+                    </p>
+                    <p className="mt-1 font-mono text-[11px] text-muted">
+                      A temporary hiccup — please try again.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={openReader}
+                      className="btn btn-ghost btn-sm mt-4"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                ) : !article ? (
+                  <p className="py-16 text-center font-mono text-sm text-muted">
+                    Article unavailable.
                   </p>
                 ) : (
                   <article>

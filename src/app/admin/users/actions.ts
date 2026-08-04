@@ -46,6 +46,19 @@ export async function createUser(
   if (existing)
     return { ok: false, message: "An account with this email already exists." };
 
+  // Only the super admin may mint new admins.
+  if (isAdminRole) {
+    const actor = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { isSuperAdmin: true },
+    });
+    if (!actor?.isSuperAdmin)
+      return {
+        ok: false,
+        message: "Only the super admin can grant the admin role.",
+      };
+  }
+
   await prisma.user.create({
     data: {
       name,
@@ -100,9 +113,35 @@ export async function denyUser(formData: FormData) {
   refresh();
 }
 
+/**
+ * Decide whether `actor` is allowed to suspend/remove `target`.
+ *  - Nobody may act on the super admin.
+ *  - Nobody may act on themselves.
+ *  - Acting on another ADMIN requires the actor to be the super admin.
+ *  - Otherwise (a learner target) any admin may act.
+ */
+async function canManage(actorId: string, targetId: string): Promise<boolean> {
+  if (actorId === targetId) return false;
+  const [actor, target] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: actorId },
+      select: { isSuperAdmin: true },
+    }),
+    prisma.user.findUnique({
+      where: { id: targetId },
+      select: { role: true, isSuperAdmin: true },
+    }),
+  ]);
+  if (!actor || !target) return false;
+  if (target.isSuperAdmin) return false;
+  if (target.role === "ADMIN") return actor.isSuperAdmin;
+  return true;
+}
+
 export async function suspendUser(formData: FormData) {
-  await requireAdmin();
+  const session = await requireAdmin();
   const userId = String(formData.get("userId"));
+  if (!(await canManage(session.user.id, userId))) return;
   await prisma.user.update({
     where: { id: userId },
     data: { status: "SUSPENDED" },
@@ -113,17 +152,13 @@ export async function suspendUser(formData: FormData) {
 /**
  * Soft delete. Marks the account REMOVED: it can no longer log in and drops
  * out of directories/queues, but the row and all history are retained so the
- * account can be restored later. Admins cannot be removed.
+ * account can be restored later. Admins can only be removed by the super admin,
+ * and the super admin can never be removed.
  */
 export async function removeUser(formData: FormData) {
-  await requireAdmin();
+  const session = await requireAdmin();
   const userId = String(formData.get("userId"));
-
-  const target = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { role: true },
-  });
-  if (!target || target.role === "ADMIN") return;
+  if (!(await canManage(session.user.id, userId))) return;
 
   await prisma.user.update({
     where: { id: userId },
@@ -160,4 +195,77 @@ export async function reactivateUser(formData: FormData) {
   });
   await sendApprovalEmail(user.email, user.name);
   refresh();
+}
+
+/** Enroll a user into a course from the admin user-detail page. */
+export async function adminEnrollUser(formData: FormData) {
+  await requireAdmin();
+  const userId = String(formData.get("userId"));
+  const courseId = String(formData.get("courseId"));
+  if (!userId || !courseId) return;
+
+  const course = await prisma.course.findUnique({
+    where: { id: courseId },
+    select: { id: true },
+  });
+  if (!course) return;
+
+  await prisma.enrollment.upsert({
+    where: { userId_courseId: { userId, courseId } },
+    update: {},
+    create: { userId, courseId },
+  });
+  revalidatePath(`/admin/users/${userId}`);
+  refresh();
+}
+
+/** Remove a user's enrollment (and their progress) in a course. */
+export async function adminUnenrollUser(formData: FormData) {
+  await requireAdmin();
+  const userId = String(formData.get("userId"));
+  const courseId = String(formData.get("courseId"));
+  if (!userId || !courseId) return;
+
+  // Drop progress rows for this course's units so re-enrolling starts clean.
+  const units = await prisma.unit.findMany({
+    where: { section: { courseId } },
+    select: { id: true },
+  });
+  const unitIds = units.map((u) => u.id);
+
+  await prisma.$transaction([
+    prisma.enrollment.deleteMany({ where: { userId, courseId } }),
+    prisma.unitProgress.deleteMany({
+      where: { userId, unitId: { in: unitIds } },
+    }),
+  ]);
+  revalidatePath(`/admin/users/${userId}`);
+  refresh();
+}
+
+export type ResetPwState = { ok: boolean; message?: string };
+
+/**
+ * Admin password reset. Follows the same authority rules as removal: a regular
+ * admin may reset a learner's password, but resetting another admin's — or the
+ * super admin's — password requires the super admin.
+ */
+export async function resetUserPassword(
+  _prev: ResetPwState,
+  formData: FormData
+): Promise<ResetPwState> {
+  const session = await requireAdmin();
+  const userId = String(formData.get("userId"));
+  const password = String(formData.get("password") ?? "");
+
+  if (password.length < 8)
+    return { ok: false, message: "Password must be at least 8 characters." };
+  if (!(await canManage(session.user.id, userId)))
+    return { ok: false, message: "You are not allowed to reset this password." };
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { passwordHash: await hashPassword(password) },
+  });
+  return { ok: true, message: "Password reset. Share the new password securely." };
 }

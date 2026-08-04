@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/rbac";
 import type { Prisma, UserStatus, Audience } from "@/generated/prisma";
 import { AUDIENCE_SHORT } from "@/lib/audience";
 import { CreateUserForm } from "./create-user-form";
@@ -66,6 +67,14 @@ export default async function UsersPage({
 }) {
   const { status = "PENDING", q = "" } = await searchParams;
 
+  const session = await requireAdmin();
+  const actor = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { id: true, isSuperAdmin: true },
+  });
+  const actorIsSuper = actor?.isSuperAdmin ?? false;
+  const actorId = actor?.id ?? "";
+
   const where: Prisma.UserWhereInput = {};
   if (status !== "ALL") where.status = status as UserStatus;
   if (q.trim()) {
@@ -94,7 +103,7 @@ export default async function UsersPage({
       </p>
 
       <div className="mt-6">
-        <CreateUserForm />
+        <CreateUserForm canGrantAdmin={actorIsSuper} />
       </div>
 
       <div className="mt-6 flex flex-wrap items-center gap-2">
@@ -152,9 +161,35 @@ export default async function UsersPage({
                 </td>
               </tr>
             ) : (
-              users.map((u) => (
+              users.map((u) => {
+                // A learner is manageable by any admin; an admin is manageable
+                // only by the super admin; the super admin and self are never
+                // manageable.
+                const manageable =
+                  u.id !== actorId &&
+                  !u.isSuperAdmin &&
+                  (u.role !== "ADMIN" || actorIsSuper);
+                return (
                 <tr key={u.id} className="border-t border-border transition hover:bg-[rgba(0,180,216,0.03)]">
-                  <td className="px-4 py-3 text-foreground">{u.name}</td>
+                  <td className="px-4 py-3 text-foreground">
+                    <Link
+                      href={`/admin/users/${u.id}`}
+                      className="font-medium hover:text-accent-bright hover:underline"
+                    >
+                      {u.name}
+                    </Link>
+                    {u.role === "ADMIN" && (
+                      <span
+                        className={`mt-1 inline-block border px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.14em] ${
+                          u.isSuperAdmin
+                            ? "border-gold/50 text-gold bg-[rgba(244,162,97,0.10)]"
+                            : "border-accent-bright/40 text-accent-bright bg-[rgba(0,180,216,0.08)]"
+                        }`}
+                      >
+                        {u.isSuperAdmin ? "Super Admin" : "Admin"}
+                      </span>
+                    )}
+                  </td>
                   <td className="px-4 py-3">
                     <span
                       className={`inline-block border px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] ${
@@ -196,7 +231,7 @@ export default async function UsersPage({
                           />
                         </>
                       )}
-                      {u.status === "APPROVED" && u.role !== "ADMIN" && (
+                      {u.status === "APPROVED" && manageable && (
                         <ActionButton
                           action={suspendUser}
                           userId={u.id}
@@ -219,7 +254,7 @@ export default async function UsersPage({
                           label="Restore"
                           variant="primary"
                         />
-                      ) : u.role !== "ADMIN" ? (
+                      ) : manageable ? (
                         <form action={removeUser}>
                           <input type="hidden" name="userId" value={u.id} />
                           <ConfirmSubmit
@@ -232,7 +267,8 @@ export default async function UsersPage({
                     </div>
                   </td>
                 </tr>
-              ))
+                );
+              })
             )}
           </tbody>
         </table>

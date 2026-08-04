@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { marked } from "marked";
 import { prisma } from "@/lib/prisma";
 import { requireViewer } from "@/lib/viewer";
 import { SiteHeader } from "@/components/site-header";
@@ -13,7 +14,35 @@ import {
 import { UNIT_LABEL } from "@/lib/units";
 import { CourseForum } from "@/components/course-forum";
 import { loadQuestions } from "@/lib/course-forum";
+import { sanitizeHtml } from "@/lib/sanitize-html";
+import { PROSE_INLINE } from "@/components/blocks/prose";
+import {
+  courseCheckout,
+  invoiceMailto,
+  DEFAULT_INVOICE_EMAIL,
+} from "@/lib/course-checkout";
 import { enroll } from "../actions";
+
+/**
+ * A course description doubles as its landing page. Short descriptions are
+ * plain sentences; long ones are authored in markdown (headings, lists, links).
+ * Rendering through marked + the sanitizer covers both — a one-line
+ * description just becomes a single paragraph.
+ */
+function descriptionHtml(markdown: string): string {
+  const text = String(markdown ?? "").trim();
+  if (!text) return "";
+  try {
+    return sanitizeHtml(marked.parse(text, { async: false }) as string);
+  } catch {
+    return "";
+  }
+}
+
+/** True when the description is long/structured enough to warrant panel treatment. */
+function isLongDescription(text: string): boolean {
+  return text.trim().length > 320 || /^#{1,3}\s|\n[-*]\s/m.test(text);
+}
 
 export const dynamic = "force-dynamic";
 
@@ -63,6 +92,18 @@ export default async function CourseOverview({
   const canForum = isAdmin || !!enrollment;
   const questions = canForum ? await loadQuestions(course.id) : [];
 
+  // Landing-page treatment: long markdown descriptions render as a panel
+  // below the enrollment call-to-action instead of a single hero paragraph.
+  const longDescription = isLongDescription(course.description ?? "");
+  const landingHtml = longDescription ? descriptionHtml(course.description) : "";
+
+  // PAID courses have no in-app checkout — payment is off-site and an admin
+  // enrolls the attendee afterwards, so the free self-enroll button is
+  // suppressed and replaced with the purchase call-to-action.
+  const checkout = courseCheckout(slug);
+  const isPaid = course.pricing === "PAID";
+  const invoiceEmail = checkout?.invoiceEmail || DEFAULT_INVOICE_EMAIL;
+
   return (
     <div className="min-h-screen">
       <SiteHeader name={user.name} isAdmin={isAdmin} />
@@ -89,9 +130,16 @@ export default async function CourseOverview({
           <h1 className="display-lg mt-4">
             {course.title}
           </h1>
-          {course.description ? (
+          {course.description && !longDescription ? (
             <p className="mt-4 max-w-2xl text-lg text-muted">
               {course.description}
+            </p>
+          ) : null}
+          {course.instructor?.trim() || course.trainingHours ? (
+            <p className="mt-4 font-mono text-xs uppercase tracking-[0.14em] text-muted">
+              {course.instructor?.trim() ? `Instructor: ${course.instructor}` : ""}
+              {course.instructor?.trim() && course.trainingHours ? "  ·  " : ""}
+              {course.trainingHours ? `${course.trainingHours} training hours` : ""}
             </p>
           ) : null}
         </header>
@@ -143,18 +191,76 @@ export default async function CourseOverview({
             </div>
           </div>
         ) : course.status === "PUBLISHED" ? (
-          <div className="panel rule-top reveal reveal-2 mt-8 p-6">
-            <p className="text-muted">This course is open for enrollment.</p>
-            <form action={enroll} className="mt-4">
-              <input type="hidden" name="slug" value={slug} />
-              <button className="btn btn-primary">Enroll</button>
-            </form>
-          </div>
+          isPaid ? (
+            /* Paid: no self-enroll. Purchase off-site, then an admin enrolls. */
+            <div className="panel rule-top reveal reveal-2 mt-8 p-6">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <p className="eyebrow eyebrow-gold">Enrollment by purchase</p>
+                  <p className="mt-2 max-w-xl text-muted">
+                    Seats are reserved on payment. Once your payment or agency
+                    invoice clears, your account is granted access and you will
+                    receive your course materials.
+                  </p>
+                </div>
+                {checkout?.priceLabel ? (
+                  <span className="font-display text-2xl font-black text-accent-bright">
+                    {checkout.priceLabel}
+                  </span>
+                ) : null}
+              </div>
+              <div className="mt-5 flex flex-wrap items-center gap-3">
+                {checkout?.checkoutUrl ? (
+                  <a
+                    href={checkout.checkoutUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-primary"
+                  >
+                    Register &amp; pay →
+                  </a>
+                ) : null}
+                <a
+                  href={invoiceMailto(course.title, invoiceEmail)}
+                  className="btn btn-gold"
+                >
+                  ✉ Request an invoice
+                </a>
+              </div>
+              {checkout?.note ? (
+                <p className="mt-4 border-t border-border pt-4 font-mono text-xs leading-relaxed text-muted">
+                  {checkout.note}
+                </p>
+              ) : null}
+            </div>
+          ) : (
+            <div className="panel rule-top reveal reveal-2 mt-8 p-6">
+              <p className="text-muted">This course is open for enrollment.</p>
+              <form action={enroll} className="mt-4">
+                <input type="hidden" name="slug" value={slug} />
+                <button className="btn btn-primary">Enroll</button>
+              </form>
+            </div>
+          )
         ) : (
           <div className="panel rule-top reveal reveal-2 mt-8 p-6">
             <p className="text-muted">Publish this course to allow enrollment.</p>
           </div>
         )}
+
+        {/* --------------------------------------------------- about / landing */}
+        {landingHtml ? (
+          <section className="reveal reveal-3 mt-12">
+            <header className="border-b border-border pb-3">
+              <p className="eyebrow eyebrow-gold">00 / Briefing</p>
+              <h2 className="display-lg mt-2">About this course</h2>
+            </header>
+            <div
+              className={`mt-6 ${PROSE_INLINE}`}
+              dangerouslySetInnerHTML={{ __html: landingHtml }}
+            />
+          </section>
+        ) : null}
 
         {/* -------------------------------------------------------- curriculum */}
         <section className="reveal reveal-3 mt-12">

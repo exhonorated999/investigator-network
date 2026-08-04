@@ -20,7 +20,7 @@ function Submit() {
  * Creating a user here approves them instantly on the chosen side, overriding
  * the normal approval gate.
  */
-export function CreateUserForm() {
+export function CreateUserForm({ canGrantAdmin = false }: { canGrantAdmin?: boolean }) {
   const [open, setOpen] = useState(false);
   const [state, action] = useActionState(createUser, initial);
   const [audience, setAudience] = useState<"LE" | "CIVILIAN">("LE");
@@ -85,8 +85,12 @@ export function CreateUserForm() {
           </label>
 
           <label className="flex items-center gap-2.5 font-mono text-[11px] uppercase tracking-wider text-muted sm:col-span-2">
-            <input type="checkbox" name="makeAdmin" className="h-4 w-4 accent-[var(--accent)]" />
-            Grant admin role
+            {canGrantAdmin ? (
+              <>
+                <input type="checkbox" name="makeAdmin" className="h-4 w-4 accent-[var(--accent)]" />
+                Grant admin role
+              </>
+            ) : null}
           </label>
 
           <div className="flex items-center justify-between gap-3 sm:col-span-2">

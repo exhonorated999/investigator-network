@@ -48,11 +48,13 @@ export function courseAudienceWhere(v: AudienceViewer): Prisma.CourseWhereInput 
 
 /**
  * User filter for a viewer (used by DM directory + any people search). Admins
- * see all approved users; learners only see approved users on their own side.
+ * see all approved users; learners see approved peers on their own side PLUS
+ * admins (instructors), who are audience-neutral and reachable by everyone.
+ * Keep this in sync with the target check in `startConversation`.
  */
 export function userAudienceWhere(v: AudienceViewer): Prisma.UserWhereInput {
   if (isAdmin(v)) return {};
-  return { audience: v.audience };
+  return { OR: [{ role: "ADMIN" }, { audience: v.audience }] };
 }
 
 /**

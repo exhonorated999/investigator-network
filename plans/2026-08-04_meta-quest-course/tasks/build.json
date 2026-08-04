@@ -1,0 +1,32 @@
+[
+  {
+    "content": "[build-1] Write build script: upload resources + create course/sections/units",
+    "id": "1",
+    "status": "completed"
+  },
+  {
+    "content": "[build-2] Author On Demand videos + interleaved knowledge-check units (must-pass)",
+    "id": "2",
+    "status": "completed"
+  },
+  {
+    "content": "[build-3] Author interactive Course Notes doc (reference content + presentation + supplemental + downloads)",
+    "id": "3",
+    "status": "completed"
+  },
+  {
+    "content": "[build-4] Build Certification Test QUIZ (6 MC) + Certificate unit",
+    "id": "4",
+    "status": "completed"
+  },
+  {
+    "content": "[build-5] Run build script; verify course + notes render + assets 200 (Playwright)",
+    "id": "5",
+    "status": "completed"
+  },
+  {
+    "content": "[build-6] Clean up scratch; report",
+    "id": "6",
+    "status": "completed"
+  }
+]

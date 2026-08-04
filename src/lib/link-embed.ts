@@ -25,6 +25,52 @@ export interface LinkEmbed {
 
 const URL_RE = /https?:\/\/[^\s<>"')]+/gi;
 
+/**
+ * Tracking parameters that make a shared URL unreadable. LinkedIn's share
+ * links in particular arrive with utm_*, rcm, and a tracking id attached.
+ */
+const STRIP_PARAMS = [
+  /^utm_/i,
+  /^rcm$/i,
+  /^fbclid$/i,
+  /^gclid$/i,
+  /^igshid$/i,
+  /^mc_[ce]id$/i,
+  /^trk$/i,
+  /^trackingId$/i,
+  /^originalSubdomain$/i,
+];
+
+/** Strip tracking parameters so a pasted link is presentable. */
+export function cleanUrl(raw: string): string {
+  try {
+    const u = new URL(raw);
+    for (const key of [...u.searchParams.keys()]) {
+      if (STRIP_PARAMS.some((re) => re.test(key))) u.searchParams.delete(key);
+    }
+    return u.toString().replace(/\?$/, "");
+  } catch {
+    return raw;
+  }
+}
+
+/**
+ * A short, human-readable label for a URL: host plus a trimmed path, with the
+ * query string dropped. Used instead of printing a 200-character share link.
+ */
+export function shortUrlLabel(raw: string, max = 48): string {
+  let u: URL;
+  try {
+    u = new URL(raw);
+  } catch {
+    return raw.length > max ? `${raw.slice(0, max - 1)}…` : raw;
+  }
+  const host = u.hostname.replace(/^www\./, "");
+  const path = u.pathname.replace(/\/+$/, "");
+  const label = path && path !== "/" ? `${host}${path}` : host;
+  return label.length > max ? `${label.slice(0, max - 1)}…` : label;
+}
+
 /** First https(+http) URL in a block of text, or null. */
 export function firstUrl(text: string): string | null {
   const m = text.match(URL_RE);
@@ -100,5 +146,5 @@ export function detectLinkEmbed(body: string): LinkEmbed | null {
     };
   }
 
-  return { kind: "link", url: raw, platform: platformLabel(host), host };
+  return { kind: "link", url: cleanUrl(raw), platform: platformLabel(host), host };
 }

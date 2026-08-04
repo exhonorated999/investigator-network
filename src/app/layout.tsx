@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Orbitron, Rajdhani, JetBrains_Mono } from "next/font/google";
 import { auth } from "@/auth";
 import { PresenceBeacon } from "@/components/presence-beacon";
@@ -45,7 +46,9 @@ export default async function RootLayout({
       className={`${orbitron.variable} ${rajdhani.variable} ${jetbrains.variable} h-full antialiased`}
     >
       <head>
-        <script
+        <Script
+          id="theme-init"
+          strategy="beforeInteractive"
           // Apply saved theme before paint so there is no light/dark flash.
           dangerouslySetInnerHTML={{
             __html:

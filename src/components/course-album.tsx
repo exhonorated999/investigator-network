@@ -63,12 +63,23 @@ function Artwork({ course, small }: { course: AlbumCourse; small?: boolean }) {
   if (course.coverImage) {
     return (
       // Covers are operator-supplied URLs; plain img avoids remote-pattern config.
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={course.coverImage}
-        alt=""
-        className="absolute inset-0 h-full w-full object-cover"
-      />
+      // Landscape covers in a square frame: a blurred copy fills the frame while
+      // the foreground image is contained so the whole artwork stays visible.
+      <div className="absolute inset-0 bg-[#0b0e14]">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={course.coverImage}
+          alt=""
+          aria-hidden
+          className="absolute inset-0 h-full w-full scale-110 object-cover blur-xl opacity-45"
+        />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={course.coverImage}
+          alt=""
+          className="absolute inset-0 h-full w-full object-contain"
+        />
+      </div>
     );
   }
 
