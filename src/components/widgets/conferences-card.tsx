@@ -1,4 +1,5 @@
 import { WidgetCard, WidgetEmpty } from "@/components/widgets/widget-shell";
+import { AddToCalendar } from "@/components/add-to-calendar";
 
 export interface ConferenceItem {
   id: string;
@@ -34,6 +35,8 @@ export function ConferencesCard({
       ) : (
         <div>
           {items.map((c) => {
+            // The calendar button can't live inside the row's <a> (nested
+            // interactive elements), so the link and the button are siblings.
             const inner = (
               <>
                 <span className="min-w-0">
@@ -48,22 +51,35 @@ export function ConferencesCard({
                 <span className="shrink-0 text-muted">{c.url ? "↗" : "→"}</span>
               </>
             );
-            return c.url ? (
-              <a
-                key={c.id}
-                href={c.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group flex items-center justify-between gap-3 border-b border-border py-2.5 last:border-b-0 transition hover:bg-[rgba(0,180,216,0.05)]"
-              >
-                {inner}
-              </a>
-            ) : (
+            return (
               <div
                 key={c.id}
-                className="group flex items-center justify-between gap-3 border-b border-border py-2.5 last:border-b-0"
+                className="flex items-center gap-2 border-b border-border py-2.5 last:border-b-0"
               >
-                {inner}
+                {c.url ? (
+                  <a
+                    href={c.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group flex min-w-0 flex-1 items-center justify-between gap-3 transition hover:bg-[rgba(0,180,216,0.05)]"
+                  >
+                    {inner}
+                  </a>
+                ) : (
+                  <div className="group flex min-w-0 flex-1 items-center justify-between gap-3">
+                    {inner}
+                  </div>
+                )}
+                <AddToCalendar
+                  title={c.name}
+                  start={c.startsAt.toISOString()}
+                  end={c.endsAt ? c.endsAt.toISOString() : null}
+                  location={c.location || "See event details"}
+                  details="Conference / training listed on Investigator Network."
+                  url={c.url}
+                  className="shrink-0 border border-border px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-muted transition hover:border-accent hover:text-accent-bright"
+                  label="Calendar"
+                />
               </div>
             );
           })}

@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AddToCalendar } from "./add-to-calendar";
 
 /**
  * Live instructor-led session panel. Teams meetings can't be iframe-embedded
  * (Microsoft blocks framing), so "Join" opens Teams in a right-sized pop-up
  * window that feels connected to the app. Adds a live countdown / status and
- * an add-to-calendar (.ics) download.
+ * an add-to-calendar menu (Outlook/Teams, Google, .ics).
  */
 export function LiveSession({
   title,
@@ -57,42 +58,6 @@ export function LiveSession({
     );
     // Popup blocked → fall back to a normal new tab.
     if (!win) window.open(teamsJoinUrl, "_blank", "noopener,noreferrer");
-  }
-
-  function addToCalendar() {
-    if (start == null || end == null) return;
-    const esc = (s: string) =>
-      s.replace(/\\/g, "\\\\").replace(/[,;]/g, (m) => "\\" + m).replace(/\n/g, "\\n");
-    const stamp = (ms: number) =>
-      new Date(ms).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
-    const ics = [
-      "BEGIN:VCALENDAR",
-      "VERSION:2.0",
-      "PRODID:-//Investigator Network//Live Session//EN",
-      "BEGIN:VEVENT",
-      `UID:${start}-${Math.random().toString(36).slice(2)}@investigator-network`,
-      `DTSTAMP:${stamp(Date.now())}`,
-      `DTSTART:${stamp(start)}`,
-      `DTEND:${stamp(end)}`,
-      `SUMMARY:${esc(title)}`,
-      `DESCRIPTION:${esc(`Live instructor-led session.${teamsJoinUrl ? ` Join: ${teamsJoinUrl}` : ""}`)}`,
-      teamsJoinUrl ? `URL:${esc(teamsJoinUrl)}` : "",
-      "LOCATION:Microsoft Teams",
-      "END:VEVENT",
-      "END:VCALENDAR",
-    ]
-      .filter(Boolean)
-      .join("\r\n");
-
-    const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${title.replace(/[^\w]+/g, "-").slice(0, 40) || "session"}.ics`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
   }
 
   const fmtDateTime = (iso: string) =>
@@ -150,9 +115,14 @@ export function LiveSession({
         )}
 
         {start != null && phase !== "ended" ? (
-          <button type="button" onClick={addToCalendar} className="btn btn-ghost">
-            + Add to calendar
-          </button>
+          <AddToCalendar
+            title={title}
+            start={start}
+            end={end}
+            location="Microsoft Teams"
+            details="Live instructor-led session — Investigator Network."
+            url={teamsJoinUrl}
+          />
         ) : null}
 
         {replayUrl ? (
