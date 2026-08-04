@@ -20,6 +20,10 @@
  *   --limit <n>     only process the first n CSV rows (for a trial run)
  *   --reissue       also mint fresh links for previously-imported accounts that
  *                   still have no password (use if a mail-merge batch was lost)
+ *   --no-links      create accounts and enrolments but mint NO tokens. Use to
+ *                   migrate ahead of launch: accounts sit dormant and unusable,
+ *                   then a later --reissue run mints every link at once against
+ *                   the real domain.
  *   --out <dir>     output directory (default: migration-out)
  *   --allow-localhost
  *                   permit minting links against a localhost base URL (testing
@@ -53,11 +57,12 @@ const activationUrl = (t) => `${BASE_URL}/activate/${t}`;
 
 // --- args ------------------------------------------------------------------
 function args(argv) {
-  const o = { commit: false, reissue: false, allowLocalhost: false, out: "migration-out", limit: 0, file: "" };
+  const o = { commit: false, reissue: false, noLinks: false, allowLocalhost: false, out: "migration-out", limit: 0, file: "" };
   for (let i = 2; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--commit") o.commit = true;
     else if (a === "--reissue") o.reissue = true;
+    else if (a === "--no-links") o.noLinks = true;
     else if (a === "--allow-localhost") o.allowLocalhost = true;
     else if (a === "--limit") o.limit = Number(argv[++i] ?? 0) || 0;
     else if (a === "--out") o.out = argv[++i] ?? o.out;
@@ -203,8 +208,14 @@ async function main() {
 
   // Activation links are permanent artefacts of a mail-merge: if they get minted
   // against localhost, 5,000 people receive a dead link and every token has to be
-  // reissued. Refuse rather than let that happen quietly.
-  if (OPTS.commit && /^https?:\/\/(localhost|127\.0\.0\.1)/i.test(BASE_URL) && !OPTS.allowLocalhost) {
+  // reissued. Refuse rather than let that happen quietly. --no-links mints
+  // nothing, so the base URL is irrelevant there.
+  if (
+    OPTS.commit &&
+    !OPTS.noLinks &&
+    /^https?:\/\/(localhost|127\.0\.0\.1)/i.test(BASE_URL) &&
+    !OPTS.allowLocalhost
+  ) {
     throw new Error(
       `Refusing to mint activation links against ${BASE_URL}.\n` +
         `Set PUBLIC_BASE_URL to the real site origin first, e.g.\n` +
@@ -371,7 +382,7 @@ async function main() {
   // Activation links — new accounts, plus (with --reissue) any previously
   // imported account still sitting without a password.
   const needLink = [];
-  if (OPTS.commit) {
+  if (OPTS.commit && !OPTS.noLinks) {
     const passwordless = new Map(
       allUsers.filter((u) => !u.passwordHash).map((u) => [u.email, u])
     );
@@ -457,9 +468,23 @@ async function main() {
   }
   L.push("");
   L.push("-- activation links ------------------------------------------------");
-  L.push(`links minted            ${OPTS.commit ? links.length : "(dry run)"}`);
-  if (!OPTS.commit)
-    L.push(`would mint              ${toCreate.length}${OPTS.reissue ? " + any passwordless existing" : ""}`);
+  if (OPTS.noLinks) {
+    const dormant = OPTS.commit
+      ? allUsers.filter((u) => !u.passwordHash).length
+      : toCreate.length;
+    L.push("--no-links: no tokens minted.");
+    L.push(`dormant accounts        ${dormant} (cannot sign in until activated)`);
+    L.push("");
+    L.push("At go-live, set PUBLIC_BASE_URL to the real origin and run:");
+    L.push(`  node prisma/import_legacy_users.mjs --file "<same csv>" --commit --reissue`);
+    L.push("which mints one link for every account still without a password.");
+  } else {
+    L.push(`links minted            ${OPTS.commit ? links.length : "(dry run)"}`);
+    if (!OPTS.commit)
+      L.push(
+        `would mint              ${toCreate.length}${OPTS.reissue ? " + any passwordless existing" : ""}`
+      );
+  }
 
   const outDir = path.resolve(OPTS.out);
   fs.mkdirSync(outDir, { recursive: true });
