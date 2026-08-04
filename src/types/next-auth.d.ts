@@ -9,6 +9,8 @@ declare module "next-auth" {
       status: UserStatus;
       agency: string;
       audience: Audience;
+      /// Current password is a temporary credential the user did not choose.
+      mustChangePassword: boolean;
     } & DefaultSession["user"];
   }
 
@@ -17,6 +19,7 @@ declare module "next-auth" {
     status: UserStatus;
     agency: string;
     audience: Audience;
+    mustChangePassword: boolean;
   }
 }
 
@@ -27,5 +30,6 @@ declare module "next-auth/jwt" {
     status: UserStatus;
     agency: string;
     audience: Audience;
+    mustChangePassword: boolean;
   }
 }

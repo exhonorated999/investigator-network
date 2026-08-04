@@ -98,6 +98,11 @@ model User {
   legacyId   String?   @unique
   importedAt DateTime?
 
+  /// True when the current password is a temporary/bootstrap credential the user
+  /// did not choose (e.g. the shared migration password). Every authenticated
+  /// area redirects such a session to /change-password until they pick their own.
+  mustChangePassword Boolean @default(false)
+
   /// Presence — last time this user's browser sent a heartbeat. A user counts
   /// as "online" if this is within the presence window (see lib/presence.ts).
   lastSeenAt       DateTime?

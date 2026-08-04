@@ -41,6 +41,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           status: user.status,
           agency: user.agency,
           audience: user.audience,
+          mustChangePassword: user.mustChangePassword,
         };
       },
     }),
@@ -53,6 +54,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.status = (user as { status: UserStatus }).status;
         token.agency = (user as { agency: string }).agency;
         token.audience = (user as { audience: Audience }).audience;
+        token.mustChangePassword = (
+          user as { mustChangePassword: boolean }
+        ).mustChangePassword;
       }
       return token;
     },
@@ -63,6 +67,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.status = token.status as UserStatus;
         session.user.agency = token.agency as string;
         session.user.audience = token.audience as Audience;
+        session.user.mustChangePassword = Boolean(token.mustChangePassword);
       }
       return session;
     },

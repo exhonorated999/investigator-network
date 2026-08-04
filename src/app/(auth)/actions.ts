@@ -134,6 +134,10 @@ export async function loginAction(
   // APPROVED — establish the session.
   await signIn("credentials", { email, password, redirect: false });
 
+  // Still on the temporary migration password: go straight to the change screen
+  // instead of bouncing off a dashboard layout.
+  if (user.mustChangePassword) redirect("/change-password");
+
   redirect(user.role === "ADMIN" ? "/admin" : "/dashboard");
 }
 
