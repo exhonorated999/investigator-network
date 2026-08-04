@@ -2,7 +2,12 @@ import { z } from "zod";
 
 export const registerSchema = z.object({
   name: z.string().trim().min(2, "Please enter your full name.").max(120),
-  agency: z.string().trim().min(2, "Please enter your agency.").max(160),
+  audience: z.enum(["LE", "CIVILIAN"], {
+    message: "Select whether you are law enforcement or a civilian investigator.",
+  }),
+  // Agency (LE) or business (civilian). Optional — civilians may be independent.
+  agency: z.string().trim().max(160).default(""),
+  state: z.string().trim().min(2, "Please enter your state.").max(80),
   email: z.string().trim().toLowerCase().email("Enter a valid email address."),
   password: z
     .string()

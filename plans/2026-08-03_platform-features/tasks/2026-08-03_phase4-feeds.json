@@ -1,0 +1,27 @@
+[
+  {
+    "content": "[p4-1] #1 Link embeds: lib/link-embed.ts + PostEmbed component; wire into community-card posts",
+    "id": "p4-1",
+    "status": "completed"
+  },
+  {
+    "content": "[p4-2] #8 Schema: Conference model (audience-aware) + migrate/generate",
+    "id": "p4-2",
+    "status": "completed"
+  },
+  {
+    "content": "[p4-3] #8 Admin: /admin/conferences list+create+delete actions + nav link",
+    "id": "p4-3",
+    "status": "completed"
+  },
+  {
+    "content": "[p4-4] #8 Dashboard: conferences widget registry + card + data load + SLOT_CHOICES",
+    "id": "p4-4",
+    "status": "completed"
+  },
+  {
+    "content": "[p4-5] Verify: tsc + playwright smoke (YT link embed; conference create->shows)",
+    "id": "p4-5",
+    "status": "completed"
+  }
+]

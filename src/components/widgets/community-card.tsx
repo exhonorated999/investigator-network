@@ -18,6 +18,7 @@ import {
   toggleReaction,
 } from "@/app/community/actions";
 import { Avatar, RoleBadge } from "@/components/widgets/avatar";
+import { PostEmbed } from "@/components/widgets/post-embed";
 
 /* -------------------------------------------------------------- reactions -- */
 
@@ -292,6 +293,8 @@ function PostItem({ post, isAdmin }: { post: FeedPost; isAdmin: boolean }) {
         </div>
       ) : null}
 
+      <PostEmbed body={post.body} />
+
       <div className="mt-2 flex items-center justify-between gap-3">
         <ReactionBar reactions={post.reactions} target={{ postId: post.id }} />
         <button
@@ -378,17 +381,20 @@ export function CommunityCard({
   feeds,
   counts,
   isAdmin,
+  topics = COMMUNITY_TOPICS,
   number = "08",
   variant = "card",
 }: {
   feeds: Record<string, FeedPost[]>;
   counts: Record<string, number>;
   isAdmin: boolean;
+  topics?: typeof COMMUNITY_TOPICS;
   number?: string;
   variant?: "card" | "page";
 }) {
-  const [topic, setTopic] = useState(COMMUNITY_TOPICS[0].id);
-  const active = COMMUNITY_TOPICS.find((t) => t.id === topic) ?? COMMUNITY_TOPICS[0];
+  const list = topics.length ? topics : COMMUNITY_TOPICS;
+  const [topic, setTopic] = useState(list[0].id);
+  const active = list.find((t) => t.id === topic) ?? list[0];
   const posts = feeds[topic] ?? [];
 
   const scrollClass =
@@ -404,7 +410,7 @@ export function CommunityCard({
 
         {/* topic tabs */}
         <div className="mt-3 flex flex-wrap gap-1.5">
-          {COMMUNITY_TOPICS.map((t) => {
+          {list.map((t) => {
             const on = t.id === topic;
             return (
               <button

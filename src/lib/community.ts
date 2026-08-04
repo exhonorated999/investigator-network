@@ -7,23 +7,68 @@
  * an entry here; existing posts keep their stored `topic` string.
  */
 import { prisma } from "@/lib/prisma";
-import type { Role } from "@/generated/prisma";
+import type { Role, Audience } from "@/generated/prisma";
 
 export interface CommunityTopic {
   id: string;
   label: string;
   blurb: string;
+  /** Which side of the platform this topic belongs to. */
+  audience: Audience;
 }
 
 export const COMMUNITY_TOPICS: CommunityTopic[] = [
-  { id: "DFIR", label: "DFIR", blurb: "Digital forensics & incident response" },
-  { id: "ICAC", label: "ICAC", blurb: "Internet crimes against children" },
+  {
+    id: "DFIR",
+    label: "DFIR",
+    blurb: "Digital forensics & incident response",
+    audience: "LE",
+  },
+  {
+    id: "ICAC",
+    label: "ICAC",
+    blurb: "Internet crimes against children",
+    audience: "LE",
+  },
   {
     id: "GENERAL",
     label: "General Investigations",
     blurb: "Case work, interviews, evidence & everything else",
+    audience: "LE",
+  },
+  {
+    id: "CDFIR",
+    label: "CDFIR",
+    blurb: "Civilian digital forensics & incident response",
+    audience: "CIVILIAN",
+  },
+  {
+    id: "PRIVATE_INVESTIGATIONS",
+    label: "Private Investigations",
+    blurb: "Licensing, surveillance, case work & the PI trade",
+    audience: "CIVILIAN",
   },
 ];
+
+/** Topics visible to a viewer. Admins see all; learners see their side only. */
+export function topicsForAudience(
+  audience: Audience,
+  role: string
+): CommunityTopic[] {
+  if (role === "ADMIN") return COMMUNITY_TOPICS;
+  return COMMUNITY_TOPICS.filter((t) => t.audience === audience);
+}
+
+/** True when a viewer is allowed to read/post in a given topic. */
+export function canAccessTopic(
+  topicId: string,
+  audience: Audience,
+  role: string
+): boolean {
+  if (role === "ADMIN") return true;
+  const t = COMMUNITY_TOPICS.find((x) => x.id === topicId);
+  return !!t && t.audience === audience;
+}
 
 export const DEFAULT_TOPIC = COMMUNITY_TOPICS[0].id;
 

@@ -67,6 +67,7 @@ export default async function EditArticlePage({
             sourceUrl: article.sourceUrl,
             sourceName: article.sourceName,
             category: article.category?.name ?? "",
+            audience: article.audience ?? "ALL",
             summary: article.summary,
             body: article.body,
             imageUrl: article.imageUrl ?? "",

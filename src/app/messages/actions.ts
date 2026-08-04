@@ -73,7 +73,15 @@ export async function startConversation(args: {
   }
 
   const other = await prisma.user.findFirst({
-    where: { id: args.otherId, status: "APPROVED" },
+    where: {
+      id: args.otherId,
+      status: "APPROVED",
+      // Audience isolation: learners can only message peers on their own side.
+      // Admins are audience-neutral and can message anyone.
+      ...(session.user!.role === "ADMIN"
+        ? {}
+        : { audience: session.user!.audience }),
+    },
     select: { id: true },
   });
   if (!other) return { conversationId: null };
@@ -120,5 +128,8 @@ export async function searchDirectory(args: {
   query: string;
 }): Promise<DirectoryEntry[]> {
   const session = await requireUser();
-  return loadDirectory(session.user!.id, args.query);
+  return loadDirectory(session.user!.id, args.query, {
+    audience: session.user!.audience,
+    role: session.user!.role,
+  });
 }

@@ -8,6 +8,7 @@
  * instead of silently going unread.
  */
 import { prisma } from "@/lib/prisma";
+import { newsAudienceWhere, type AudienceViewer } from "@/lib/audience";
 
 export interface FeedArticle {
   id: string;
@@ -42,12 +43,13 @@ export async function loadNewsTopics(userId: string): Promise<string[]> {
 }
 
 /** Every topic that has at least one published article, plus its count. */
-export async function loadTopics(): Promise<Topic[]> {
+export async function loadTopics(viewer?: AudienceViewer): Promise<Topic[]> {
+  const audienceWhere = viewer ? newsAudienceWhere(viewer) : {};
   const [categories, grouped] = await Promise.all([
     prisma.category.findMany({ orderBy: { name: "asc" } }),
     prisma.newsArticle.groupBy({
       by: ["categoryId"],
-      where: { published: true },
+      where: { published: true, ...audienceWhere },
       _count: { _all: true },
     }),
   ]);
@@ -58,11 +60,15 @@ export async function loadTopics(): Promise<Topic[]> {
       .map((g) => [g.categoryId as string, g._count._all])
   );
 
-  return categories.map((c) => ({
-    id: c.id,
-    name: c.name,
-    count: counts.get(c.id) ?? 0,
-  }));
+  // Only surface categories that have at least one article the viewer can see,
+  // so the other side's feeds (e.g. Private Investigator News) never leak in.
+  return categories
+    .map((c) => ({
+      id: c.id,
+      name: c.name,
+      count: counts.get(c.id) ?? 0,
+    }))
+    .filter((c) => (viewer ? c.count > 0 : true));
 }
 
 function toFeed(a: {
@@ -111,12 +117,14 @@ const SELECT = {
  */
 export async function loadNewsFeed(
   userId: string,
-  limit = 6
+  limit = 6,
+  viewer?: AudienceViewer
 ): Promise<FeedArticle[]> {
   const topics = await loadNewsTopics(userId);
   const rows = await prisma.newsArticle.findMany({
     where: {
       published: true,
+      ...(viewer ? newsAudienceWhere(viewer) : {}),
       ...(topics.length > 0 ? { categoryId: { in: topics } } : {}),
     },
     orderBy: { publishedAt: "desc" },
@@ -130,10 +138,12 @@ export async function loadNewsFeed(
 export async function loadArticles(opts: {
   topicId?: string | null;
   limit?: number;
+  viewer?: AudienceViewer;
 }): Promise<FeedArticle[]> {
   const rows = await prisma.newsArticle.findMany({
     where: {
       published: true,
+      ...(opts.viewer ? newsAudienceWhere(opts.viewer) : {}),
       ...(opts.topicId ? { categoryId: opts.topicId } : {}),
     },
     orderBy: { publishedAt: "desc" },
@@ -143,9 +153,13 @@ export async function loadArticles(opts: {
   return rows.map(toFeed);
 }
 
-export async function loadArticle(id: string) {
+export async function loadArticle(id: string, viewer?: AudienceViewer) {
   return prisma.newsArticle.findFirst({
-    where: { id, published: true },
+    where: {
+      id,
+      published: true,
+      ...(viewer ? newsAudienceWhere(viewer) : {}),
+    },
     include: { category: { select: { name: true, id: true } } },
   });
 }

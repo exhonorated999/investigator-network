@@ -9,6 +9,7 @@ import { signIn, signOut } from "@/auth";
 export type FormState = {
   ok: boolean;
   message?: string;
+  autoApproved?: boolean;
   fieldErrors?: Record<string, string>;
 };
 
@@ -18,7 +19,9 @@ export async function registerAction(
 ): Promise<FormState> {
   const parsed = registerSchema.safeParse({
     name: formData.get("name"),
+    audience: formData.get("audience"),
     agency: formData.get("agency"),
+    state: formData.get("state"),
     email: formData.get("email"),
     password: formData.get("password"),
   });
@@ -34,7 +37,7 @@ export async function registerAction(
     return { ok: false, fieldErrors };
   }
 
-  const { name, agency, email, password } = parsed.data;
+  const { name, audience, agency, state, email, password } = parsed.data;
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
@@ -44,15 +47,33 @@ export async function registerAction(
     };
   }
 
+  // Auto-approval policy:
+  //   • Civilian investigators are auto-approved.
+  //   • Law enforcement with a verified .gov email is auto-approved.
+  //   • Law enforcement without a .gov email waits for manual admin review.
+  const isGov = /\.gov(\.[a-z]{2})?$/i.test(email.split("@")[1] ?? "");
+  const autoApprove = audience === "CIVILIAN" || (audience === "LE" && isGov);
+
   const passwordHash = await hashPassword(password);
   await prisma.user.create({
-    data: { name, agency, email, passwordHash },
+    data: {
+      name,
+      audience,
+      agency,
+      state,
+      email,
+      passwordHash,
+      status: autoApprove ? "APPROVED" : "PENDING",
+      approvedAt: autoApprove ? new Date() : null,
+    },
   });
 
   return {
     ok: true,
-    message:
-      "Registration received. An administrator will review and approve your access. You'll be able to sign in once approved.",
+    autoApproved: autoApprove,
+    message: autoApprove
+      ? "Your account is approved. You can sign in and begin your training right away."
+      : "Registration received. An administrator will review and approve your access. You'll be able to sign in once approved.",
   };
 }
 

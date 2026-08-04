@@ -51,6 +51,56 @@ export default async function AdminCoursesPage() {
               <option key={c.id} value={c.name} />
             ))}
           </datalist>
+          <div className="flex flex-wrap items-center gap-4 sm:col-span-3">
+            <span className="eyebrow eyebrow-muted">Audience:</span>
+            <label className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-wider text-muted">
+              <input
+                type="checkbox"
+                name="aud_le"
+                defaultChecked
+                className="h-4 w-4 accent-[var(--accent)]"
+              />
+              Law Enforcement
+            </label>
+            <label className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-wider text-muted">
+              <input
+                type="checkbox"
+                name="aud_civ"
+                className="h-4 w-4 accent-[var(--accent)]"
+              />
+              Civilian
+            </label>
+            <label className="ml-auto flex items-center gap-2 font-mono text-[11px] uppercase tracking-wider text-muted">
+              <input
+                type="checkbox"
+                name="isPrivate"
+                className="h-4 w-4 accent-[var(--accent)]"
+              />
+              Private (enrol manually)
+            </label>
+          </div>
+          <div className="flex flex-wrap items-center gap-4 sm:col-span-3">
+            <span className="eyebrow eyebrow-muted">Pricing:</span>
+            <label className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-wider text-muted">
+              <input
+                type="radio"
+                name="pricing"
+                value="FREE"
+                defaultChecked
+                className="h-4 w-4 accent-[var(--accent)]"
+              />
+              Free
+            </label>
+            <label className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-wider text-muted">
+              <input
+                type="radio"
+                name="pricing"
+                value="PAID"
+                className="h-4 w-4 accent-[var(--accent)]"
+              />
+              Paid
+            </label>
+          </div>
           <button
             type="submit"
             className="btn btn-primary"

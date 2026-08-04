@@ -1,4 +1,4 @@
-import type { Role, UserStatus } from "@/generated/prisma";
+import type { Role, UserStatus, Audience } from "@/generated/prisma";
 import type { DefaultSession } from "next-auth";
 
 declare module "next-auth" {
@@ -8,6 +8,7 @@ declare module "next-auth" {
       role: Role;
       status: UserStatus;
       agency: string;
+      audience: Audience;
     } & DefaultSession["user"];
   }
 
@@ -15,6 +16,7 @@ declare module "next-auth" {
     role: Role;
     status: UserStatus;
     agency: string;
+    audience: Audience;
   }
 }
 
@@ -24,5 +26,6 @@ declare module "next-auth/jwt" {
     role: Role;
     status: UserStatus;
     agency: string;
+    audience: Audience;
   }
 }

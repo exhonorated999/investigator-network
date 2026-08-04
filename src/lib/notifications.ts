@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { unitData } from "@/lib/course";
+import { courseAudienceWhere, type AudienceViewer } from "@/lib/audience";
 
 export type NotifKind =
   | "live"
@@ -26,7 +27,10 @@ const DAY = 24 * 60 * 60 * 1000;
  * notification table needed yet: live sessions come from LIVE_SESSION units,
  * results from graded attempts, credentials from certificates.
  */
-export async function loadNotifications(userId: string): Promise<Notification[]> {
+export async function loadNotifications(
+  userId: string,
+  viewer?: AudienceViewer
+): Promise<Notification[]> {
   const now = Date.now();
   const items: Notification[] = [];
 
@@ -64,6 +68,8 @@ export async function loadNotifications(userId: string): Promise<Notification[]>
       where: {
         status: "PUBLISHED",
         enrollments: { none: { userId } },
+        isPrivate: false,
+        ...(viewer ? courseAudienceWhere(viewer) : {}),
         updatedAt: { gte: new Date(now - 21 * DAY) },
       },
       orderBy: { updatedAt: "desc" },

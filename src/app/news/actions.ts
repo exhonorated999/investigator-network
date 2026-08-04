@@ -24,8 +24,11 @@ export interface ModalArticle {
  * learner clicks a headline, so feed responses stay light.
  */
 export async function fetchArticle(id: string): Promise<ModalArticle | null> {
-  await requireUser();
-  const a = await loadArticle(id);
+  const session = await requireUser();
+  const a = await loadArticle(id, {
+    audience: session.user!.audience,
+    role: session.user!.role,
+  });
   if (!a) return null;
 
   let paras = paragraphs(a.body);

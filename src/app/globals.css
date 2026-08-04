@@ -109,6 +109,30 @@ body {
     color 0.3s ease;
 }
 
+/* -------------------------------------------------- civilian (PI) accent --
+   The Civilian / Private-Investigator side reuses the entire layout but
+   shifts the accent from law-enforcement cyan to a distinct emerald, so an
+   admin (and the user) can tell the two sides apart at a glance. Because the
+   whole system is variable-driven, overriding the accent tokens on the body
+   re-tints buttons, borders, glows and eyebrows automatically. Admins keep
+   the neutral cyan (their audience defaults to LE). */
+body[data-audience="CIVILIAN"] {
+  --accent: #10b981; /* emerald */
+  --accent-strong: #059669;
+  --accent-bright: #6ee7b7;
+  --border: rgba(16, 185, 129, 0.2);
+  --border-strong: rgba(16, 185, 129, 0.42);
+  --glow-blue: rgba(16, 185, 129, 0.32);
+  --glow-cyan: rgba(110, 231, 183, 0.22);
+}
+:root[data-theme="light"] body[data-audience="CIVILIAN"] {
+  --accent: #047857;
+  --accent-strong: #065f46;
+  --accent-bright: #059669;
+  --border: rgba(4, 120, 87, 0.22);
+  --border-strong: rgba(4, 120, 87, 0.42);
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-void: var(--void);

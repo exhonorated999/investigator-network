@@ -1,0 +1,37 @@
+[
+  {
+    "content": "Schema: Audience enum, User.audience+state, Course.audiences+isPrivate; migrate + generate",
+    "id": "p1-1",
+    "status": "completed"
+  },
+  {
+    "content": "Propagate audience through auth session, next-auth types, and Viewer",
+    "id": "p1-2",
+    "status": "completed"
+  },
+  {
+    "content": "Register: form fields (state, business/agency, LE/Civilian) + validation + auto-approval logic",
+    "id": "p1-3",
+    "status": "completed"
+  },
+  {
+    "content": "Admin: manual create-user with audience + approval override; audience column on users table",
+    "id": "p1-4",
+    "status": "completed"
+  },
+  {
+    "content": "Audience gating: courses (dashboard+access+notifications), community topics, news feed, DM directory",
+    "id": "p1-5",
+    "status": "completed"
+  },
+  {
+    "content": "Civilian theme accent + differentiated dashboard hero/badge; seed civilian community topics + PI news",
+    "id": "p1-6",
+    "status": "completed"
+  },
+  {
+    "content": "Verify: migrate, build, Playwright smoke as LE + civilian + admin; confirm isolation",
+    "id": "p1-7",
+    "status": "completed"
+  }
+]

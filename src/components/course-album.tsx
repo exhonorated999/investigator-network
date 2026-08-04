@@ -5,8 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import { toggleFavorite } from "@/app/dashboard/actions";
 
 export type Shelf = "assigned" | "available" | "completed";
-/** Tabs shown in the library: the three shelves plus a cross-cutting star view. */
-type View = Shelf | "favorites";
+/** Library toggle: my enrolled courses, free/paid available courses, or favorites. */
+type View = "enrolled" | "free" | "paid" | "favorites";
 
 export interface AlbumCourse {
   id: string;
@@ -20,14 +20,29 @@ export interface AlbumCourse {
   pct: number;
   favorite: boolean;
   shelf: Shelf;
+  pricing: "FREE" | "PAID";
 }
 
 const SHELVES: { id: View; label: string }[] = [
-  { id: "assigned", label: "Assigned" },
-  { id: "available", label: "Available" },
-  { id: "completed", label: "Completed" },
+  { id: "enrolled", label: "Enrolled" },
+  { id: "free", label: "Free" },
+  { id: "paid", label: "Paid" },
   { id: "favorites", label: "Favorites" },
 ];
+
+/** Which courses each tab shows. `enrolled` = anything the learner is in. */
+function matchesView(c: AlbumCourse, view: View): boolean {
+  switch (view) {
+    case "enrolled":
+      return c.shelf === "assigned" || c.shelf === "completed";
+    case "free":
+      return c.shelf === "available" && c.pricing === "FREE";
+    case "paid":
+      return c.shelf === "available" && c.pricing === "PAID";
+    case "favorites":
+      return c.favorite;
+  }
+}
 
 /** Deterministic hue per course so procedural artwork is stable. */
 function hueOf(seed: string): number {
@@ -92,25 +107,22 @@ function Artwork({ course, small }: { course: AlbumCourse; small?: boolean }) {
 export function CourseAlbum({ courses }: { courses: AlbumCourse[] }) {
   const counts = useMemo(
     () => ({
-      assigned: courses.filter((c) => c.shelf === "assigned").length,
-      available: courses.filter((c) => c.shelf === "available").length,
-      completed: courses.filter((c) => c.shelf === "completed").length,
-      favorites: courses.filter((c) => c.favorite).length,
+      enrolled: courses.filter((c) => matchesView(c, "enrolled")).length,
+      free: courses.filter((c) => matchesView(c, "free")).length,
+      paid: courses.filter((c) => matchesView(c, "paid")).length,
+      favorites: courses.filter((c) => matchesView(c, "favorites")).length,
     }),
     [courses]
   );
 
   const firstNonEmpty =
-    (SHELVES.find((s) => counts[s.id] > 0)?.id as View | undefined) ?? "assigned";
+    (SHELVES.find((s) => counts[s.id] > 0)?.id as View | undefined) ?? "enrolled";
 
   const [shelf, setShelf] = useState<View>(firstNonEmpty);
   const [index, setIndex] = useState(0);
 
   const list = useMemo(
-    () =>
-      shelf === "favorites"
-        ? courses.filter((c) => c.favorite)
-        : courses.filter((c) => c.shelf === shelf),
+    () => courses.filter((c) => matchesView(c, shelf)),
     [courses, shelf]
   );
 
@@ -173,13 +185,13 @@ export function CourseAlbum({ courses }: { courses: AlbumCourse[] }) {
 
       {!current ? (
         <p className="mt-6 flex-1 text-muted">
-          {shelf === "assigned"
-            ? "No active enrollments. Switch to Available to open your first case file."
-            : shelf === "completed"
-              ? "Nothing completed yet — finish a course to see it here."
-              : shelf === "favorites"
-                ? "No favorites yet — tap the ☆ on any course to pin it here."
-                : "You are enrolled in everything currently published."}
+          {shelf === "enrolled"
+            ? "No active enrollments yet. Switch to Free or Paid to open your first case file."
+            : shelf === "free"
+              ? "No free courses available right now."
+              : shelf === "paid"
+                ? "No paid courses available right now."
+                : "No favorites yet — tap the ☆ on any course to pin it here."}
         </p>
       ) : (
         <div className="mt-6 flex flex-1 flex-col gap-6 sm:flex-row">
@@ -233,7 +245,20 @@ export function CourseAlbum({ courses }: { courses: AlbumCourse[] }) {
           {/* --------------------------------------------------- album meta */}
           <div className="flex min-w-0 flex-1 flex-col">
             <div className="flex items-start justify-between gap-3">
-              <span className="eyebrow">{current.category ?? "Training"}</span>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="eyebrow">{current.category ?? "Training"}</span>
+                {current.shelf === "available" ? (
+                  <span
+                    className={`inline-block border px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.14em] ${
+                      current.pricing === "PAID"
+                        ? "border-gold/40 text-gold bg-[rgba(244,162,97,0.08)]"
+                        : "border-success/40 text-success bg-[rgba(74,222,128,0.08)]"
+                    }`}
+                  >
+                    {current.pricing === "PAID" ? "Paid" : "Free"}
+                  </span>
+                ) : null}
+              </div>
               <form action={toggleFavorite}>
                 <input type="hidden" name="courseId" value={current.id} />
                 <input type="hidden" name="slug" value={current.slug} />

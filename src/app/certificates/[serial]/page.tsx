@@ -88,14 +88,36 @@ export default async function CertificatePage({
             <h2 className="display-sm mt-3 glow-text">
               {cert.course.title}
             </h2>
+            {cert.course.trainingHours != null ? (
+              <p className="mt-3 font-mono text-xs uppercase tracking-[0.2em] text-accent-bright">
+                {formatHours(cert.course.trainingHours)} training hours
+              </p>
+            ) : null}
 
-            <div className="mx-auto mt-10 flex max-w-md items-center justify-between border-t border-border pt-4">
-              <span className="text-xs text-muted">Issued {issued}</span>
-              <span className="font-mono text-xs text-muted">{cert.serial}</span>
+            <div className="mx-auto mt-10 grid max-w-lg grid-cols-2 gap-6 border-t border-border pt-5 text-left sm:grid-cols-3">
+              <div>
+                <p className="eyebrow eyebrow-muted text-[9px]">Date of completion</p>
+                <p className="mt-1 text-sm text-foreground">{issued}</p>
+              </div>
+              <div>
+                <p className="eyebrow eyebrow-muted text-[9px]">Instructor</p>
+                <p className="mt-1 text-sm text-foreground">
+                  {cert.course.instructor || "Investigator Network"}
+                </p>
+              </div>
+              <div className="col-span-2 sm:col-span-1 sm:text-right">
+                <p className="eyebrow eyebrow-muted text-[9px]">Credential ID</p>
+                <p className="mt-1 font-mono text-[11px] text-muted">{cert.serial}</p>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
   );
+}
+
+/** "8" / "1.5" — drop a trailing ".0" so whole hours read cleanly. */
+function formatHours(h: number): string {
+  return Number.isInteger(h) ? String(h) : String(h);
 }

@@ -3,7 +3,7 @@ import { requireViewer } from "@/lib/viewer";
 import { SiteHeader } from "@/components/site-header";
 import { CommunityCard } from "@/components/widgets/community-card";
 import {
-  COMMUNITY_TOPICS,
+  topicsForAudience,
   loadFeed,
   loadTopicCounts,
   type FeedPost,
@@ -14,13 +14,14 @@ export const dynamic = "force-dynamic";
 export default async function CommunityPage() {
   const viewer = await requireViewer();
   const isAdmin = viewer.role === "ADMIN";
+  const topics = topicsForAudience(viewer.audience, viewer.role);
 
   const [perTopic, counts] = await Promise.all([
-    Promise.all(COMMUNITY_TOPICS.map((t) => loadFeed(viewer.id, t.id, isAdmin))),
+    Promise.all(topics.map((t) => loadFeed(viewer.id, t.id, isAdmin))),
     loadTopicCounts(),
   ]);
   const feeds: Record<string, FeedPost[]> = {};
-  COMMUNITY_TOPICS.forEach((t, i) => {
+  topics.forEach((t, i) => {
     feeds[t.id] = perTopic[i];
   });
 
@@ -48,6 +49,7 @@ export default async function CommunityPage() {
             feeds={feeds}
             counts={counts}
             isAdmin={isAdmin}
+            topics={topics}
             variant="page"
           />
         </div>

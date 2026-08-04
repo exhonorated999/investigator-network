@@ -166,6 +166,82 @@ export default async function CourseEditor({
               className="field"
             />
           </label>
+          <div className="flex flex-wrap items-center gap-4 border-t border-border pt-4">
+            <span className="eyebrow eyebrow-muted">Audience:</span>
+            <label className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-wider text-muted">
+              <input
+                type="checkbox"
+                name="aud_le"
+                defaultChecked={course.audiences.includes("LE")}
+                className="h-4 w-4 accent-[var(--accent)]"
+              />
+              Law Enforcement
+            </label>
+            <label className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-wider text-muted">
+              <input
+                type="checkbox"
+                name="aud_civ"
+                defaultChecked={course.audiences.includes("CIVILIAN")}
+                className="h-4 w-4 accent-[var(--accent)]"
+              />
+              Civilian
+            </label>
+            <label className="ml-auto flex items-center gap-2 font-mono text-[11px] uppercase tracking-wider text-muted">
+              <input
+                type="checkbox"
+                name="isPrivate"
+                defaultChecked={course.isPrivate}
+                className="h-4 w-4 accent-[var(--accent)]"
+              />
+              Private (enrol manually)
+            </label>
+          </div>
+          <div className="flex flex-wrap items-center gap-4">
+            <span className="eyebrow eyebrow-muted">Pricing:</span>
+            <label className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-wider text-muted">
+              <input
+                type="radio"
+                name="pricing"
+                value="FREE"
+                defaultChecked={course.pricing !== "PAID"}
+                className="h-4 w-4 accent-[var(--accent)]"
+              />
+              Free
+            </label>
+            <label className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-wider text-muted">
+              <input
+                type="radio"
+                name="pricing"
+                value="PAID"
+                defaultChecked={course.pricing === "PAID"}
+                className="h-4 w-4 accent-[var(--accent)]"
+              />
+              Paid
+            </label>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="grid gap-1.5">
+              <span className="eyebrow eyebrow-muted">Instructor (on certificate)</span>
+              <input
+                name="instructor"
+                defaultValue={course.instructor}
+                placeholder="e.g. Det. Alex Morgan"
+                className="field"
+              />
+            </label>
+            <label className="grid gap-1.5">
+              <span className="eyebrow eyebrow-muted">Training hours (on certificate)</span>
+              <input
+                name="trainingHours"
+                type="number"
+                min="0"
+                step="0.5"
+                defaultValue={course.trainingHours ?? ""}
+                placeholder="e.g. 8"
+                className="field"
+              />
+            </label>
+          </div>
           <div>
             <button className="btn btn-primary btn-sm">
               Save details

@@ -1,11 +1,16 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import type { Prisma, UserStatus } from "@/generated/prisma";
+import type { Prisma, UserStatus, Audience } from "@/generated/prisma";
+import { AUDIENCE_SHORT } from "@/lib/audience";
+import { CreateUserForm } from "./create-user-form";
+import { ConfirmSubmit } from "./confirm-button";
 import {
   approveUser,
   denyUser,
   suspendUser,
   reactivateUser,
+  removeUser,
+  restoreUser,
 } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -15,6 +20,7 @@ const STATUS_TABS: { key: string; label: string }[] = [
   { key: "APPROVED", label: "Approved" },
   { key: "SUSPENDED", label: "Suspended" },
   { key: "DENIED", label: "Denied" },
+  { key: "REMOVED", label: "Removed" },
   { key: "ALL", label: "All" },
 ];
 
@@ -23,6 +29,7 @@ const badgeClass: Record<UserStatus, string> = {
   APPROVED: "border-success/40 text-success bg-[rgba(74,222,128,0.08)]",
   DENIED: "border-danger/40 text-danger bg-[rgba(239,68,68,0.08)]",
   SUSPENDED: "border-muted/40 text-muted bg-[rgba(136,153,170,0.08)]",
+  REMOVED: "border-danger/40 text-danger bg-[rgba(239,68,68,0.12)]",
 };
 
 function ActionButton({
@@ -86,6 +93,10 @@ export default async function UsersPage({
         Review registrations and manage learner access.
       </p>
 
+      <div className="mt-6">
+        <CreateUserForm />
+      </div>
+
       <div className="mt-6 flex flex-wrap items-center gap-2">
         {STATUS_TABS.map((t) => {
           const active = t.key === status;
@@ -125,6 +136,7 @@ export default async function UsersPage({
           <thead className="border-b border-border text-left">
             <tr>
               <th className="eyebrow eyebrow-muted px-4 py-3">Name</th>
+              <th className="eyebrow eyebrow-muted px-4 py-3">Side</th>
               <th className="eyebrow eyebrow-muted px-4 py-3">Agency</th>
               <th className="eyebrow eyebrow-muted px-4 py-3">Email</th>
               <th className="eyebrow eyebrow-muted px-4 py-3">Status</th>
@@ -135,7 +147,7 @@ export default async function UsersPage({
           <tbody>
             {users.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-10 text-center text-muted">
+                <td colSpan={7} className="px-4 py-10 text-center text-muted">
                   No users found.
                 </td>
               </tr>
@@ -143,6 +155,17 @@ export default async function UsersPage({
               users.map((u) => (
                 <tr key={u.id} className="border-t border-border transition hover:bg-[rgba(0,180,216,0.03)]">
                   <td className="px-4 py-3 text-foreground">{u.name}</td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={`inline-block border px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] ${
+                        u.audience === "CIVILIAN"
+                          ? "border-purple/40 text-purple bg-[rgba(168,85,247,0.08)]"
+                          : "border-accent-bright/40 text-accent-bright bg-[rgba(0,180,216,0.06)]"
+                      }`}
+                    >
+                      {AUDIENCE_SHORT[u.audience as Audience]}
+                    </span>
+                  </td>
                   <td className="px-4 py-3 text-muted">{u.agency}</td>
                   <td className="px-4 py-3 font-mono text-[12px] text-muted">{u.email}</td>
                   <td className="px-4 py-3">
@@ -189,6 +212,23 @@ export default async function UsersPage({
                           variant="primary"
                         />
                       )}
+                      {u.status === "REMOVED" ? (
+                        <ActionButton
+                          action={restoreUser}
+                          userId={u.id}
+                          label="Restore"
+                          variant="primary"
+                        />
+                      ) : u.role !== "ADMIN" ? (
+                        <form action={removeUser}>
+                          <input type="hidden" name="userId" value={u.id} />
+                          <ConfirmSubmit
+                            label="Remove"
+                            message={`Remove ${u.name}? They will lose access immediately. You can restore the account later from the Removed tab.`}
+                            className="btn btn-ghost btn-sm border-danger/40 text-danger hover:border-danger hover:bg-[rgba(239,68,68,0.08)] hover:text-danger"
+                          />
+                        </form>
+                      ) : null}
                     </div>
                   </td>
                 </tr>

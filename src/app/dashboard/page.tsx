@@ -11,17 +11,20 @@ import {
   WidgetStub,
 } from "@/components/widgets/widget-shell";
 import { loadNotifications } from "@/lib/notifications";
+import { courseAudienceWhere } from "@/lib/audience";
 import { NewsCard } from "@/components/widgets/news-card";
 import { loadNewsFeed, loadNewsTopics, loadTopics } from "@/lib/news";
 import { CommunityCard } from "@/components/widgets/community-card";
 import { MessagesCard } from "@/components/widgets/messages-card";
 import {
-  COMMUNITY_TOPICS,
+  topicsForAudience,
   loadFeed,
   loadTopicCounts,
   type FeedPost,
 } from "@/lib/community";
 import { loadInbox, loadUnreadCount } from "@/lib/messages";
+import { loadUpcomingConferences } from "@/lib/conferences";
+import { ConferencesCard } from "@/components/widgets/conferences-card";
 import { loadLayout } from "@/lib/dashboard-prefs";
 import { SLOTS, SPAN_CLASS, type SlotChoice } from "@/lib/dashboard";
 
@@ -79,9 +82,9 @@ export default async function DashboardPage() {
         include: { course: { select: { title: true, slug: true } } },
       }),
       loadLayout(user.id),
-      loadNotifications(user.id),
-      loadNewsFeed(user.id, 5),
-      loadTopics(),
+      loadNotifications(user.id, viewer),
+      loadNewsFeed(user.id, 5, viewer),
+      loadTopics(viewer),
       loadNewsTopics(user.id),
     ]);
 
@@ -100,7 +103,12 @@ export default async function DashboardPage() {
   const completedSet = new Set(completedRows.map((c) => c.unitId));
 
   const available = await prisma.course.findMany({
-    where: { status: "PUBLISHED", id: { notIn: enrolledCourseIds } },
+    where: {
+      status: "PUBLISHED",
+      id: { notIn: enrolledCourseIds },
+      isPrivate: false,
+      ...courseAudienceWhere(viewer),
+    },
     orderBy: { updatedAt: "desc" },
     include: {
       category: true,
@@ -114,18 +122,21 @@ export default async function DashboardPage() {
   ]);
 
   // ---------------------------------------------------- community + messages
+  const communityTopics = topicsForAudience(viewer.audience, viewer.role);
   const [communityFeeds, communityCounts, inbox, unread] = await Promise.all([
     Promise.all(
-      COMMUNITY_TOPICS.map((t) => loadFeed(user.id, t.id, isAdmin))
+      communityTopics.map((t) => loadFeed(user.id, t.id, isAdmin))
     ),
     loadTopicCounts(),
     loadInbox(user.id),
     loadUnreadCount(user.id),
   ]);
   const feeds: Record<string, FeedPost[]> = {};
-  COMMUNITY_TOPICS.forEach((t, i) => {
+  communityTopics.forEach((t, i) => {
     feeds[t.id] = communityFeeds[i];
   });
+
+  const conferences = await loadUpcomingConferences(viewer, 6);
 
   // ------------------------------------------------------------- album data
   const enrolledAlbums: AlbumCourse[] = enrollments.map((e) => {
@@ -144,6 +155,7 @@ export default async function DashboardPage() {
       pct,
       favorite: favoriteIds.has(e.course.id),
       shelf: pct === 100 ? "completed" : "assigned",
+      pricing: e.course.pricing,
     };
   });
 
@@ -161,6 +173,7 @@ export default async function DashboardPage() {
       pct: 0,
       favorite: favoriteIds.has(c.id),
       shelf: "available",
+      pricing: c.pricing,
     };
   });
 
@@ -247,12 +260,16 @@ export default async function DashboardPage() {
             feeds={feeds}
             counts={communityCounts}
             isAdmin={isAdmin}
+            topics={communityTopics}
             number="08"
           />
         );
 
       case "messages":
         return <MessagesCard inbox={inbox} unread={unread} number="09" />;
+
+      case "conferences":
+        return <ConferencesCard items={conferences} number="10" />;
 
       case "network":
         return (
@@ -277,7 +294,11 @@ export default async function DashboardPage() {
         {/* ------------------------------------------------------------ hero */}
         <section className="reveal reveal-1 flex flex-wrap items-end justify-between gap-5">
           <div>
-            <span className="pill">Case file active</span>
+            <span className="pill">
+              {viewer.audience === "CIVILIAN"
+                ? "Private Investigator network"
+                : "Case file active"}
+            </span>
             <h1 className="display-lg mt-4">
               Welcome back, <span className="glow-text">{firstName}</span>
             </h1>
@@ -308,10 +329,22 @@ export default async function DashboardPage() {
           </div>
         </section>
 
+        {/* -------------------------------------------------- pinned cards --
+            "01 My Training" + "02 Dispatch Notifications" are pinned at the top
+            and are not customizable (see #9). Everything below is configurable. */}
+        <div className="reveal reveal-2 mt-9 grid gap-5 lg:grid-cols-6">
+          <div className="lg:col-span-4">
+            <CourseAlbum courses={albums} />
+          </div>
+          <div className="lg:col-span-2">
+            <NotificationsCard items={notifications} />
+          </div>
+        </div>
+
         {/* ---------------------------------------------------- slot canvas --
             We own the grid geometry; each slot's gear picker lets the learner
             choose which widget fills it (duplicates + Empty allowed). */}
-        <div className="reveal reveal-2 mt-9 grid gap-5 lg:grid-cols-6">
+        <div className="reveal reveal-3 mt-5 grid gap-5 lg:grid-cols-6">
           {layout.map((choice, i) => (
             <div key={i} className={SPAN_CLASS[SLOTS[i].span]}>
               <SlotCard index={i} choice={choice}>

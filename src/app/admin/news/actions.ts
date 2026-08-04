@@ -37,6 +37,11 @@ function parseDate(raw: string): Date | undefined {
   return Number.isNaN(d.getTime()) ? undefined : d;
 }
 
+function parseAudience(raw: FormDataEntryValue | null): "LE" | "CIVILIAN" | null {
+  const s = String(raw || "").trim().toUpperCase();
+  return s === "LE" || s === "CIVILIAN" ? s : null;
+}
+
 function fields(formData: FormData) {
   return {
     title: String(formData.get("title") || "").trim(),
@@ -69,6 +74,7 @@ export async function createArticle(formData: FormData) {
     data: {
       ...f,
       categoryId,
+      audience: parseAudience(formData.get("audience")),
       authorId: session.user?.id ?? null,
       published: formData.get("published") != null,
       ...(publishedAt ? { publishedAt } : {}),
@@ -95,6 +101,7 @@ export async function updateArticle(formData: FormData) {
     data: {
       ...f,
       categoryId,
+      audience: parseAudience(formData.get("audience")),
       published: formData.get("published") != null,
       ...(publishedAt ? { publishedAt } : {}),
     },

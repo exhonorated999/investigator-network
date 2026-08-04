@@ -38,6 +38,12 @@ export async function SiteHeader({
           </span>
         </Link>
 
+        {viewer?.audience === "CIVILIAN" ? (
+          <span className="hidden shrink-0 items-center gap-1.5 border border-accent/40 bg-[rgba(16,185,129,0.08)] px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.16em] text-accent-bright sm:inline-flex">
+            ◆ Private Investigator
+          </span>
+        ) : null}
+
         <nav className="flex items-center gap-5">
           <Link
             href="/dashboard"

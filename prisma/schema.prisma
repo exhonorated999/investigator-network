@@ -24,11 +24,23 @@ enum Role {
   ADMIN
 }
 
+/// Which side of the platform a person (or a course) belongs to. Active
+/// law-enforcement is the original audience; CIVILIAN is the walled-off
+/// private-investigator / CDFIR side. A user has exactly one audience; a
+/// course can serve one or both. Admins are audience-neutral (see everything).
+enum Audience {
+  LE
+  CIVILIAN
+}
+
 enum UserStatus {
   PENDING
   APPROVED
   DENIED
   SUSPENDED
+  /// Soft-deleted by an admin. Cannot log in, hidden from directories, but the
+  /// row (and all history) is retained so the account can be restored later.
+  REMOVED
 }
 
 model User {
@@ -39,6 +51,11 @@ model User {
   passwordHash String
   role         Role       @default(LEARNER)
   status       UserStatus @default(PENDING)
+  /// LE (default) or CIVILIAN. Set at registration or by an admin. Drives
+  /// what courses, community topics, news and DM contacts the user can see.
+  audience     Audience   @default(LE)
+  /// US state / region collected at registration. Free-text, optional.
+  state        String     @default("")
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
   approvedAt   DateTime?
@@ -62,6 +79,9 @@ model User {
   reactions    PostReaction[]
   convoParts   ConversationParticipant[]
   messagesSent Message[]
+  courseQuestions CourseQuestion[]
+  courseAnswers   CourseAnswer[]
+  courseActivity  CourseActivity[]
 
   /// Presence — last time this user's browser sent a heartbeat. A user counts
   /// as "online" if this is within the presence window (see lib/presence.ts).
@@ -96,6 +116,14 @@ enum UnitType {
   CERTIFICATE
 }
 
+/// Library classification for a course. FREE courses are open to any eligible
+/// learner; PAID courses are surfaced separately in the library so operators
+/// can distinguish premium offerings. (Classification only — no checkout.)
+enum Pricing {
+  FREE
+  PAID
+}
+
 model Category {
   id       String        @id @default(cuid())
   name     String        @unique
@@ -110,6 +138,22 @@ model Course {
   description String       @default("")
   coverImage  String?
   status      CourseStatus @default(DRAFT)
+  /// Audiences this course serves. Can be [LE], [CIVILIAN], or both. A civilian
+  /// only sees courses whose audiences include CIVILIAN; LE only sees LE. Admins
+  /// see all. Defaults to [LE] so existing courses stay law-enforcement.
+  audiences   Audience[]   @default([LE])
+  /// Private courses never appear in the library; a student must be manually
+  /// enrolled by an admin to see them.
+  isPrivate   Boolean      @default(false)
+  /// Library pricing classification (FREE / PAID). Drives the Free/Paid toggle
+  /// in the learner library. Defaults to FREE.
+  pricing     Pricing      @default(FREE)
+  /// Instructor of record — printed on the completion certificate. Free-text
+  /// so each course can name its own instructor.
+  instructor  String       @default("")
+  /// Accredited training hours for this course — printed on the certificate.
+  /// Null = not set (hidden on the certificate).
+  trainingHours Float?
   categoryId  String?
   category    Category?    @relation(fields: [categoryId], references: [id])
   createdAt   DateTime     @default(now())
@@ -119,6 +163,8 @@ model Course {
   enrollments  Enrollment[]
   certificates Certificate[]
   favorites    CourseFavorite[]
+  questions    CourseQuestion[]
+  activity     CourseActivity[]
   presentUsers User[]           @relation("PresenceCourse")
 }
 
@@ -373,6 +419,9 @@ model NewsArticle {
   sourceName String    @default("")
   sourceUrl  String    @default("")
   imageUrl   String?
+  /// Which side sees this article. null = both sides. Civilian-only articles
+  /// (e.g. the Private Investigator News feed) are CIVILIAN; LE-only are LE.
+  audience   Audience?
   categoryId String?
   category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   authorId   String?
@@ -492,4 +541,91 @@ model Message {
   createdAt      DateTime     @default(now())
 
   @@index([conversationId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Per-course discussion forum — learners ask questions inside a course; staff
+// answer them. Open questions surface on the admin dashboard so they can be
+// answered without leaving it. Distinct from the global Community feed (which
+// is topic-based, not tied to a course).
+// ---------------------------------------------------------------------------
+
+model CourseQuestion {
+  id        String   @id @default(cuid())
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  body      String
+  /// Marked resolved once an answer satisfies the asker (or staff closes it).
+  resolved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  answers   CourseAnswer[]
+
+  @@index([courseId, resolved, createdAt])
+  @@index([authorId])
+}
+
+model CourseAnswer {
+  id         String         @id @default(cuid())
+  questionId String
+  question   CourseQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  authorId   String
+  author     User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  body       String
+  /// True when written by an admin/instructor — rendered as an official answer.
+  staff      Boolean        @default(false)
+  createdAt  DateTime       @default(now())
+
+  @@index([questionId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Conferences & trainings feed — upcoming in-person / live events promoted to
+// members. Mirrors the Tools/Resources card. Audience-aware so the civilian
+// and LE sides can carry different (or shared) listings.
+// ---------------------------------------------------------------------------
+
+model Conference {
+  id        String    @id @default(cuid())
+  name      String
+  /// Event start (date + time). Feeds sort and filter on this.
+  startsAt  DateTime
+  /// Optional end — for multi-day events.
+  endsAt    DateTime?
+  location  String    @default("")
+  about     String    @default("")
+  /// Registration / info link.
+  url       String    @default("")
+  /// null = shown to both sides; otherwise limited to one audience.
+  audience  Audience?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([startsAt])
+}
+
+// ---------------------------------------------------------------------------
+// Time-on-course tracking — accumulated learner engagement seconds, bucketed
+// per calendar day so the admin metrics view can total by week/month/quarter/
+// year. Rows are written by recordHeartbeat: each heartbeat adds the elapsed
+// gap since the previous heartbeat (capped, so an idle tab can't inflate it)
+// to today's bucket for the course the learner was on.
+// ---------------------------------------------------------------------------
+
+model CourseActivity {
+  id       String   @id @default(cuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId String
+  course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  /// Calendar day (local midnight) this time was accrued on.
+  day      DateTime
+  /// Total engaged seconds accrued on this course, this day, by this user.
+  seconds  Int      @default(0)
+
+  @@unique([userId, courseId, day])
+  @@index([courseId, day])
 }

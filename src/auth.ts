@@ -3,7 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
 import { verifyPassword } from "@/lib/password";
 import { loginSchema } from "@/lib/validation";
-import type { Role, UserStatus } from "@/generated/prisma";
+import type { Role, UserStatus, Audience } from "@/generated/prisma";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   trustHost: true,
@@ -36,6 +36,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           role: user.role,
           status: user.status,
           agency: user.agency,
+          audience: user.audience,
         };
       },
     }),
@@ -47,6 +48,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.role = (user as { role: Role }).role;
         token.status = (user as { status: UserStatus }).status;
         token.agency = (user as { agency: string }).agency;
+        token.audience = (user as { audience: Audience }).audience;
       }
       return token;
     },
@@ -56,6 +58,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.role = token.role as Role;
         session.user.status = token.status as UserStatus;
         session.user.agency = token.agency as string;
+        session.user.audience = token.audience as Audience;
       }
       return session;
     },

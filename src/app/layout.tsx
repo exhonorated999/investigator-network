@@ -53,7 +53,10 @@ export default async function RootLayout({
           }}
         />
       </head>
-      <body className="min-h-full flex flex-col">
+      <body
+        className="min-h-full flex flex-col"
+        data-audience={session?.user?.audience ?? undefined}
+      >
         {signedIn ? <PresenceBeacon /> : null}
         {children}
       </body>

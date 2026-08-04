@@ -11,6 +11,8 @@ import {
   UNIT_ICON,
 } from "@/lib/course";
 import { UNIT_LABEL } from "@/lib/units";
+import { CourseForum } from "@/components/course-forum";
+import { loadQuestions } from "@/lib/course-forum";
 import { enroll } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -34,6 +36,14 @@ export default async function CourseOverview({
     where: { userId_courseId: { userId: user.id, courseId: course.id } },
   });
 
+  // Audience + privacy gating (admins bypass). A learner may only see a course
+  // on their own side, unless they've been explicitly enrolled into it. Private
+  // courses are invisible unless enrolled.
+  if (!isAdmin) {
+    const audienceOk = course.audiences.includes(user.audience);
+    if ((!audienceOk || course.isPrivate) && !enrollment) notFound();
+  }
+
   const completed = enrollment ? await progressMap(user.id, course) : new Set<string>();
   const pct = percentComplete(course, completed);
   const units = flattenUnits(course);
@@ -48,6 +58,10 @@ export default async function CourseOverview({
 
   const totalUnits = units.length;
   const doneCount = completed.size;
+
+  // Course forum — visible to enrolled learners and admins.
+  const canForum = isAdmin || !!enrollment;
+  const questions = canForum ? await loadQuestions(course.id) : [];
 
   return (
     <div className="min-h-screen">
@@ -216,6 +230,16 @@ export default async function CourseOverview({
             )}
           </div>
         </section>
+
+        {canForum ? (
+          <CourseForum
+            courseId={course.id}
+            slug={slug}
+            questions={questions}
+            viewerId={user.id}
+            isAdmin={isAdmin}
+          />
+        ) : null}
       </main>
     </div>
   );

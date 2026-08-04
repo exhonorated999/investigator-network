@@ -12,7 +12,8 @@ export default async function ArticlePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [viewer, article] = await Promise.all([requireViewer(), loadArticle(id)]);
+  const viewer = await requireViewer();
+  const article = await loadArticle(id, viewer);
   if (!article) notFound();
 
   const source = article.sourceName || hostOf(article.sourceUrl);

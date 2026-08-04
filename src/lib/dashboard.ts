@@ -10,7 +10,8 @@ export type WidgetId =
   | "news"
   | "community"
   | "messages"
-  | "network";
+  | "network"
+  | "conferences";
 
 export interface WidgetMeta {
   id: WidgetId;
@@ -47,6 +48,12 @@ export const WIDGETS: WidgetMeta[] = [
     id: "resources",
     label: "Tools & resources",
     description: "Reference material and investigative tools.",
+    span: 2,
+  },
+  {
+    id: "conferences",
+    label: "Conferences & trainings",
+    description: "Upcoming in-person and live events.",
     span: 2,
   },
   {
@@ -121,34 +128,32 @@ export const SPAN_CLASS: Record<WidgetMeta["span"], string> = {
 
 export type SlotChoice = WidgetId | "empty";
 
-/** Fixed slot geometry on the 6-column desktop grid. Order = render order. */
+/** Fixed slot geometry on the 6-column desktop grid. Order = render order.
+ * Note: "My training" (courses) and "Dispatch" (notifications) are NOT slots —
+ * they are pinned above the canvas and are not customizable (see #9). */
 export const SLOTS: { span: WidgetMeta["span"] }[] = [
   { span: 6 }, // 0 — full-width banner row
   { span: 4 }, // 1 ─┐ main row
   { span: 2 }, // 2 ─┘
-  { span: 2 }, // 3 ─┐ secondary row
-  { span: 4 }, // 4 ─┘
-  { span: 3 }, // 5 ─┐ open row
-  { span: 3 }, // 6 ─┘
+  { span: 3 }, // 3 ─┐ open row
+  { span: 3 }, // 4 ─┘
 ];
 
 /** Seeded layout for a learner who has never customised. */
 export const DEFAULT_LAYOUT: SlotChoice[] = [
   "stats",
-  "courses",
-  "notifications",
-  "resources",
   "news",
+  "resources",
   "community",
   "messages",
 ];
 
-/** The choices offered in each slot's picker dropdown. */
+/** The choices offered in each slot's picker dropdown. `courses` and
+ * `notifications` are intentionally excluded — they are pinned at the top. */
 export const SLOT_CHOICES: { id: SlotChoice; label: string }[] = [
-  { id: "courses", label: "Course library" },
-  { id: "notifications", label: "Notifications" },
   { id: "stats", label: "Progress snapshot" },
   { id: "resources", label: "Tools & resources" },
+  { id: "conferences", label: "Conferences & trainings" },
   { id: "news", label: "News feed" },
   { id: "community", label: "Community" },
   { id: "messages", label: "Messages" },

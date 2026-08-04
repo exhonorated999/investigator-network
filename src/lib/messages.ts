@@ -7,8 +7,9 @@
  * message time, so there is no per-message read table to maintain.
  */
 import { prisma } from "@/lib/prisma";
-import type { Role } from "@/generated/prisma";
+import type { Role, Audience } from "@/generated/prisma";
 import { timeAgo, type Author } from "@/lib/community";
+import { userAudienceWhere } from "@/lib/audience";
 
 export interface InboxItem {
   conversationId: string;
@@ -147,13 +148,16 @@ export async function findOrCreateConversation(
 /** Approved members the viewer can start a DM with (everyone but themselves). */
 export async function loadDirectory(
   viewerId: string,
-  query?: string
+  query?: string,
+  viewer?: { audience: Audience; role: string }
 ): Promise<DirectoryEntry[]> {
   const q = query?.trim();
   return prisma.user.findMany({
     where: {
       id: { not: viewerId },
       status: "APPROVED",
+      // Audience isolation: learners only see peers on their own side.
+      ...(viewer ? userAudienceWhere(viewer) : {}),
       ...(q
         ? {
             OR: [

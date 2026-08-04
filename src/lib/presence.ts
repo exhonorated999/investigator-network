@@ -19,6 +19,19 @@ export function presenceCutoff(now = new Date()): Date {
 }
 
 /**
+ * Largest gap we'll credit as "time on course" between two heartbeats. The
+ * beacon fires every 45s; if the gap is bigger than ~2 intervals the tab was
+ * backgrounded / the laptop slept, so we don't count that idle stretch.
+ */
+const MAX_ACCRUE_MS = HEARTBEAT_INTERVAL_MS * 2;
+
+function startOfDay(now = new Date()): Date {
+  const d = new Date(now);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+/**
  * Record a heartbeat. `path` is the learner-facing route they were on; we
  * resolve it to a course/unit so staff can see what someone is working on.
  *
@@ -29,6 +42,13 @@ export function presenceCutoff(now = new Date()): Date {
 export async function recordHeartbeat(userId: string, path: string) {
   const { courseId, unitId } = await resolveLocation(path);
 
+  // Read the previous heartbeat first so we can credit the elapsed gap as
+  // time-on-course for wherever they were during it.
+  const prev = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { lastSeenAt: true, lastSeenCourseId: true },
+  });
+
   await prisma.user.update({
     where: { id: userId },
     data: {
@@ -38,6 +58,22 @@ export async function recordHeartbeat(userId: string, path: string) {
       lastSeenUnitId: unitId,
     },
   });
+
+  // Accrue engaged time to the course the learner was on during the gap.
+  if (prev?.lastSeenCourseId && prev.lastSeenAt) {
+    const deltaMs = Date.now() - prev.lastSeenAt.getTime();
+    if (deltaMs > 0 && deltaMs <= MAX_ACCRUE_MS) {
+      const day = startOfDay();
+      const seconds = Math.round(deltaMs / 1000);
+      await prisma.courseActivity.upsert({
+        where: {
+          userId_courseId_day: { userId, courseId: prev.lastSeenCourseId, day },
+        },
+        create: { userId, courseId: prev.lastSeenCourseId, day, seconds },
+        update: { seconds: { increment: seconds } },
+      });
+    }
+  }
 }
 
 /**

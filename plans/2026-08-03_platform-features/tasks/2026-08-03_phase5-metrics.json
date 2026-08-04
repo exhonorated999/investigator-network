@@ -1,0 +1,32 @@
+[
+  {
+    "content": "[p5-1] Schema: CourseActivity daily time buckets + Course.instructor + Course.trainingHours; migrate/generate",
+    "id": "p5-1",
+    "status": "completed"
+  },
+  {
+    "content": "[p5-2] #4 Wire time accrual into recordHeartbeat; metrics lib (totals, top users, last seen by period)",
+    "id": "p5-2",
+    "status": "completed"
+  },
+  {
+    "content": "[p5-3] #4 Admin /admin/metrics page (period + course selectors) + nav link",
+    "id": "p5-3",
+    "status": "completed"
+  },
+  {
+    "content": "[p5-4] #10 Reminders lib + /admin/reminders (new enrollees since last live session) + nav link",
+    "id": "p5-4",
+    "status": "completed"
+  },
+  {
+    "content": "[p5-5] #11 Certificates: admin course instructor/hours fields + cert page render",
+    "id": "p5-5",
+    "status": "completed"
+  },
+  {
+    "content": "[p5-6] Verify: tsc + playwright smoke (metrics, reminders, certificate)",
+    "id": "p5-6",
+    "status": "completed"
+  }
+]

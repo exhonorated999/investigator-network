@@ -27,7 +27,10 @@ export async function loadLayout(userId: string): Promise<SlotChoice[]> {
   if (raw && raw.length === SLOTS.length) {
     for (let i = 0; i < SLOTS.length; i++) {
       const v = raw[i];
-      if (typeof v === "string" && isSlotChoice(v)) layout[i] = v;
+      if (typeof v !== "string" || !isSlotChoice(v)) continue;
+      // `courses`/`notifications` are now pinned above the canvas; if an old
+      // saved layout still references them in a slot, blank that slot.
+      layout[i] = v === "courses" || v === "notifications" ? "empty" : v;
     }
   }
   return layout;

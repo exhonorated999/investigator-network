@@ -1,0 +1,32 @@
+[
+  {
+    "content": "[p3-1] Schema: Pricing enum + Course.pricing; CourseQuestion/CourseAnswer models; migrate+generate",
+    "id": "p3-1",
+    "status": "completed"
+  },
+  {
+    "content": "[p3-2] #7 Library toggle: pricing on AlbumCourse + Enrolled/Free/Paid/Favorites tabs; admin course forms; dashboard data",
+    "id": "p3-2",
+    "status": "completed"
+  },
+  {
+    "content": "[p3-3] #9 Pin My Training + Dispatch cards at top; drop from slot canvas; sanitize saved layouts",
+    "id": "p3-3",
+    "status": "completed"
+  },
+  {
+    "content": "[p3-4] #5 Course forums lib + course page Q&A section + ask/answer actions",
+    "id": "p3-4",
+    "status": "completed"
+  },
+  {
+    "content": "[p3-5] #5 Admin dashboard: surface open course questions + inline answer",
+    "id": "p3-5",
+    "status": "completed"
+  },
+  {
+    "content": "[p3-6] Verify: tsc + playwright smoke of all three features",
+    "id": "p3-6",
+    "status": "completed"
+  }
+]

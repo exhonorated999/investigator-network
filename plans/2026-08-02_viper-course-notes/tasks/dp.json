@@ -1,0 +1,22 @@
+[
+  {
+    "content": "Attach DP10_iOS16_LinkScreen.pdf as course-asset (idempotent)",
+    "id": "1",
+    "status": "completed"
+  },
+  {
+    "content": "Author DataPilot notes: Acquire, Device Setup, Meta VR, Optical, Linked Screen, Consent, Walkthroughs, Live Training, Contacts, History",
+    "id": "2",
+    "status": "completed"
+  },
+  {
+    "content": "Replace unit cms6y88tn000piv8o8rmtlm2m data (keep Heyzine embed)",
+    "id": "3",
+    "status": "completed"
+  },
+  {
+    "content": "Verify render in browser + clean up",
+    "id": "4",
+    "status": "completed"
+  }
+]

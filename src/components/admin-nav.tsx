@@ -7,9 +7,12 @@ import { usePathname } from "next/navigation";
 const links = [
   { href: "/admin", label: "Dashboard", exact: true },
   { href: "/admin/analytics", label: "Analytics" },
+  { href: "/admin/metrics", label: "Course metrics" },
   { href: "/admin/users", label: "Users & approvals" },
   { href: "/admin/courses", label: "Courses" },
   { href: "/admin/news", label: "Newsroom" },
+  { href: "/admin/conferences", label: "Conferences" },
+  { href: "/admin/reminders", label: "Reminders" },
   { href: "/admin/grading", label: "Grading" },
   { href: "/admin/moderation", label: "Moderation" },
   { href: "/admin/preview", label: "View as learner" },

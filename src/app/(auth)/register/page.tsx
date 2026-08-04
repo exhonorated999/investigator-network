@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import Link from "next/link";
 import { registerAction, type FormState } from "../actions";
 import { Field, SubmitButton } from "@/components/form";
@@ -9,39 +9,81 @@ const initialState: FormState = { ok: false };
 
 export default function RegisterPage() {
   const [state, formAction] = useActionState(registerAction, initialState);
+  const [audience, setAudience] = useState<"LE" | "CIVILIAN">("LE");
 
   if (state.ok) {
+    const approved = state.autoApproved;
     return (
       <div className="text-center">
-        <p className="eyebrow eyebrow-gold">// Status: pending</p>
-        <h1 className="display-lg mt-2">Request received</h1>
-        <div className="mt-5 border border-success/40 bg-[rgba(74,222,128,0.08)] px-4 py-4">
+        <p className={`eyebrow ${approved ? "eyebrow-gold" : "eyebrow-gold"}`}>
+          {approved ? "// Status: approved" : "// Status: pending"}
+        </p>
+        <h1 className="display-lg mt-2">
+          {approved ? "You're in" : "Request received"}
+        </h1>
+        <div
+          className={`mt-5 border px-4 py-4 ${
+            approved
+              ? "border-success/40 bg-[rgba(74,222,128,0.08)]"
+              : "border-gold/40 bg-[rgba(244,162,97,0.08)]"
+          }`}
+        >
           <p className="text-sm text-foreground">{state.message}</p>
         </div>
-        <Link href="/login" className="btn btn-ghost btn-sm mt-6">
-          Back to sign in
+        <Link
+          href="/login"
+          className={`btn btn-sm mt-6 ${approved ? "btn-primary" : "btn-ghost"}`}
+        >
+          {approved ? "Sign in →" : "Back to sign in"}
         </Link>
       </div>
     );
   }
+
+  const isLE = audience === "LE";
 
   return (
     <div>
       <p className="eyebrow eyebrow-gold">// Request access</p>
       <h1 className="display-lg mt-2">Request access</h1>
       <p className="mt-3 text-sm text-muted">
-        Registrations are reviewed and approved by an administrator before access
-        is granted.
+        Civilian investigators and law-enforcement officers with a verified
+        <span className="font-mono text-foreground"> .gov </span>
+        email are approved instantly. Other law-enforcement requests are
+        reviewed by an administrator.
       </p>
 
-      <div className="mt-4 border border-gold/30 bg-[rgba(244,162,97,0.06)] px-4 py-2.5">
-        <p className="font-mono text-[11px] text-gold">
-          <span className="opacity-60">// </span>
-          ADMIN APPROVAL REQUIRED — NO IMMEDIATE ACCESS
-        </p>
-      </div>
-
       <form action={formAction} className="mt-6 flex flex-col gap-4">
+        {/* Audience segmented control */}
+        <input type="hidden" name="audience" value={audience} />
+        <div className="flex flex-col gap-2">
+          <span className="eyebrow eyebrow-muted">I am registering as</span>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setAudience("LE")}
+              aria-pressed={isLE}
+              className={`btn btn-sm ${isLE ? "btn-primary" : "btn-ghost"}`}
+            >
+              Law enforcement
+            </button>
+            <button
+              type="button"
+              onClick={() => setAudience("CIVILIAN")}
+              aria-pressed={!isLE}
+              className={`btn btn-sm ${!isLE ? "btn-primary" : "btn-ghost"}`}
+            >
+              Civilian investigator
+            </button>
+          </div>
+          {state.fieldErrors?.audience ? (
+            <p className="font-mono text-xs text-danger" role="alert">
+              <span className="opacity-60">// </span>
+              {state.fieldErrors.audience}
+            </p>
+          ) : null}
+        </div>
+
         <Field
           label="Full name"
           name="name"
@@ -49,13 +91,21 @@ export default function RegisterPage() {
           error={state.fieldErrors?.name}
         />
         <Field
-          label="Agency / department"
+          label={
+            isLE ? "Agency / department" : "Business / firm (if applicable)"
+          }
           name="agency"
           autoComplete="organization"
           error={state.fieldErrors?.agency}
         />
         <Field
-          label="Email"
+          label="State"
+          name="state"
+          autoComplete="address-level1"
+          error={state.fieldErrors?.state}
+        />
+        <Field
+          label={isLE ? "Email (.gov for instant approval)" : "Email"}
           name="email"
           type="email"
           autoComplete="email"

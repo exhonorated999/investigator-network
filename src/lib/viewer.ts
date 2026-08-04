@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import type { Role } from "@/generated/prisma";
+import type { Role, Audience } from "@/generated/prisma";
 
 export const PREVIEW_COOKIE = "preview_uid";
 
@@ -11,6 +11,8 @@ export interface Viewer {
   name: string;
   agency: string;
   role: Role;
+  /** LE or CIVILIAN — drives audience gating on learner-facing surfaces. */
+  audience: Audience;
   /** True when an admin is viewing the app as another (learner) account. */
   impersonating: boolean;
   /** The real signed-in admin's id, if the real user is an admin. */
@@ -42,6 +44,7 @@ export async function getViewerUser(): Promise<Viewer | null> {
           name: u.name,
           agency: u.agency,
           role: u.role,
+          audience: u.audience,
           impersonating: true,
           realAdminId: real.id,
         };
@@ -52,6 +55,7 @@ export async function getViewerUser(): Promise<Viewer | null> {
       name: real.name ?? "",
       agency: real.agency ?? "",
       role: real.role,
+      audience: real.audience,
       impersonating: false,
       realAdminId: real.id,
     };
@@ -62,6 +66,7 @@ export async function getViewerUser(): Promise<Viewer | null> {
     name: real.name ?? "",
     agency: real.agency ?? "",
     role: real.role,
+    audience: real.audience,
     impersonating: false,
     realAdminId: null,
   };

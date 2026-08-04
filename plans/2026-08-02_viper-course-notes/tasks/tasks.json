@@ -1,0 +1,22 @@
+[
+  {
+    "content": "Upload 4 VIPER PDFs as course-asset FileUpload records (idempotent)",
+    "id": "1",
+    "status": "completed"
+  },
+  {
+    "content": "Author Course Notes blocks: intro, Download & Install, Security & Docs, PDF library, FAQ",
+    "id": "2",
+    "status": "completed"
+  },
+  {
+    "content": "Create section + NOTES unit in Project V.I.P.E.R course, persist blocks",
+    "id": "3",
+    "status": "completed"
+  },
+  {
+    "content": "Verify render in browser and clean up scratch files",
+    "id": "4",
+    "status": "completed"
+  }
+]

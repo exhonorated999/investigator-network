@@ -10,6 +10,7 @@ export interface ArticleFormValues {
   sourceUrl: string;
   sourceName: string;
   category: string;
+  audience: "ALL" | "LE" | "CIVILIAN";
   summary: string;
   body: string;
   imageUrl: string;
@@ -22,6 +23,7 @@ const EMPTY: ArticleFormValues = {
   sourceUrl: "",
   sourceName: "",
   category: "",
+  audience: "ALL",
   summary: "",
   body: "",
   imageUrl: "",
@@ -260,6 +262,29 @@ export function ArticleForm({
             ))}
           </datalist>
         </div>
+      </div>
+
+      <div className="grid gap-2">
+        <label htmlFor="audience" className="eyebrow eyebrow-muted">
+          Audience
+        </label>
+        <select
+          id="audience"
+          name="audience"
+          value={v.audience}
+          onChange={(e) =>
+            set("audience", e.target.value as ArticleFormValues["audience"])
+          }
+          className="field"
+        >
+          <option value="ALL">Both sides (LE + Civilian)</option>
+          <option value="LE">Law Enforcement only</option>
+          <option value="CIVILIAN">Civilian (Private Investigator) only</option>
+        </select>
+        <p className="font-mono text-[11px] text-muted">
+          <span className="opacity-60">// </span>
+          Civilian-only articles form the Private Investigator News feed.
+        </p>
       </div>
 
       <div className="grid gap-2">

@@ -96,15 +96,15 @@ export default async function NewsIndexPage({
   const viewer = await requireViewer();
 
   const [topics, selected] = await Promise.all([
-    loadTopics(),
+    loadTopics(viewer),
     loadNewsTopics(viewer.id),
   ]);
 
   // An explicit `?topic=` overrides subscriptions; otherwise honour them.
   const active = topic && topics.some((t) => t.id === topic) ? topic : null;
   const articles = active
-    ? await loadArticles({ topicId: active })
-    : (await loadArticles({})).filter(
+    ? await loadArticles({ topicId: active, viewer })
+    : (await loadArticles({ viewer })).filter(
         (a) =>
           selected.length === 0 ||
           (a.categoryId != null && selected.includes(a.categoryId))

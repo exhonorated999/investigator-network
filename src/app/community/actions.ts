@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/rbac";
-import { isReactionKind, isTopic } from "@/lib/community";
+import { isReactionKind, isTopic, canAccessTopic } from "@/lib/community";
 
 const MAX_BODY = 4000;
 
@@ -21,6 +21,8 @@ export async function createPost(formData: FormData) {
   const body = String(formData.get("body") ?? "").trim();
   const imageUrl = String(formData.get("imageUrl") ?? "").trim() || null;
   if (!isTopic(topic) || !body) return;
+  // Audience gate: a learner may only post in topics on their own side.
+  if (!canAccessTopic(topic, session.user!.audience, session.user!.role)) return;
 
   await prisma.post.create({
     data: { authorId: userId, topic, body: body.slice(0, MAX_BODY), imageUrl },
@@ -40,6 +42,9 @@ export async function createComment(formData: FormData) {
 
   const post = await prisma.post.findUnique({ where: { id: postId } });
   if (!post) return;
+  // Audience gate: can't comment on the other side's posts.
+  if (!canAccessTopic(post.topic, session.user!.audience, session.user!.role))
+    return;
 
   // A reply's parent must belong to the same post.
   if (parentId) {

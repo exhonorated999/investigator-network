@@ -10,7 +10,32 @@ import { parseVideoInput, type VideoProvider } from "@/lib/video";
 import { parseEmbedInput } from "@/lib/embed";
 import { sendLiveSessionReminder } from "@/lib/email";
 import { saveFile } from "@/lib/storage";
-import type { UnitType, Prisma } from "@/generated/prisma";
+import type { UnitType, Prisma, Audience } from "@/generated/prisma";
+
+/**
+ * Read the two audience checkboxes (`aud_le`, `aud_civ`) into the enum array.
+ * Falls back to [LE] when neither is checked so a course is never audienceless
+ * (which would make it invisible to every learner).
+ */
+function parseAudiences(formData: FormData): Audience[] {
+  const out: Audience[] = [];
+  if (formData.get("aud_le") != null) out.push("LE");
+  if (formData.get("aud_civ") != null) out.push("CIVILIAN");
+  return out.length ? out : ["LE"];
+}
+
+/** Read the pricing radio/select into the Pricing enum. Defaults to FREE. */
+function parsePricing(formData: FormData): "FREE" | "PAID" {
+  return String(formData.get("pricing")).toUpperCase() === "PAID" ? "PAID" : "FREE";
+}
+
+/** Parse the optional training-hours field. Blank / invalid → null. */
+function parseHours(formData: FormData): number | null {
+  const raw = String(formData.get("trainingHours") || "").trim();
+  if (!raw) return null;
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= 0 ? n : null;
+}
 
 async function uniqueSlug(title: string): Promise<string> {
   const base = slugify(title) || "course";
@@ -49,7 +74,15 @@ export async function createCourse(formData: FormData) {
   const slug = await uniqueSlug(title);
 
   const course = await prisma.course.create({
-    data: { title, slug, description, categoryId },
+    data: {
+      title,
+      slug,
+      description,
+      categoryId,
+      audiences: parseAudiences(formData),
+      isPrivate: formData.get("isPrivate") != null,
+      pricing: parsePricing(formData),
+    },
   });
 
   revalidatePath("/admin/courses");
@@ -68,7 +101,17 @@ export async function updateCourse(formData: FormData) {
 
   await prisma.course.update({
     where: { id },
-    data: { title, description, coverImage, categoryId },
+    data: {
+      title,
+      description,
+      coverImage,
+      categoryId,
+      audiences: parseAudiences(formData),
+      isPrivate: formData.get("isPrivate") != null,
+      pricing: parsePricing(formData),
+      instructor: String(formData.get("instructor") || "").trim(),
+      trainingHours: parseHours(formData),
+    },
   });
   revalidatePath(`/admin/courses/${id}`);
   revalidatePath("/admin/courses");

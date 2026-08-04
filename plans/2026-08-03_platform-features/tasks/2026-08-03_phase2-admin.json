@@ -1,0 +1,27 @@
+[
+  {
+    "content": "[p2-1] Schema: add REMOVED to UserStatus enum + migrate",
+    "id": "p2-1",
+    "status": "completed"
+  },
+  {
+    "content": "[p2-2] Actions: removeUser (soft) + restoreUser in admin/users/actions.ts",
+    "id": "p2-2",
+    "status": "completed"
+  },
+  {
+    "content": "[p2-3] Users page: Removed tab, Remove/Restore buttons w/ confirm, badge color",
+    "id": "p2-3",
+    "status": "completed"
+  },
+  {
+    "content": "[p2-4] Redesign admin dashboard: fewer boxes, more visual hierarchy",
+    "id": "p2-4",
+    "status": "completed"
+  },
+  {
+    "content": "[p2-5] Verify: migrate/generate, tsc, playwright smoke of admin dash + remove/restore",
+    "id": "p2-5",
+    "status": "completed"
+  }
+]
