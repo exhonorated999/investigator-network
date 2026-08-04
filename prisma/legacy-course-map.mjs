@@ -26,8 +26,7 @@ export const LEGACY_COURSE_MAP = {
  * 2026 mentorship cohort with live Teams dates, not a reissue of the old
  * on-demand course. Legacy holders must not be granted a seat in it.
  */
-export const LEGACY_COURSE_SKIP = {
-  "icac-a-to-z": "New Cybertips A to Z is a paid 2026 cohort — do not grant.",
+export const LEGACY_COURSE_SKIP = {  "icac-a-to-z": "New Cybertips A to Z is a paid 2026 cohort — do not grant.",
   "icac-a-to-z-spring-2024":
     "New Cybertips A to Z is a paid 2026 cohort — do not grant.",
   "cybertip-investigations-a-to-z-part-1":
@@ -37,3 +36,16 @@ export const LEGACY_COURSE_SKIP = {
   "cybertip-investigations-a-to-z-part-3":
     "New Cybertips A to Z is a paid 2026 cohort — do not grant.",
 };
+
+/**
+ * Emails in the export that must never be imported, lowercase.
+ *
+ * The legacy site's own staff/admin accounts appear as ordinary rows. Importing
+ * them creates a duplicate dormant learner alongside the real admin account on
+ * this platform, which is confusing at best.
+ */
+export const LEGACY_EXCLUDE_EMAILS = new Set([
+  // LearnWorlds admin account ("INV-network") — the platform owner already has a
+  // native admin account here.
+  "justin@intellect-le.com",
+]);

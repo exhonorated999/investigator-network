@@ -37,7 +37,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { createHash, randomBytes } from "node:crypto";
 import pkg from "../src/generated/prisma/index.js";
-import { LEGACY_COURSE_MAP, LEGACY_COURSE_SKIP } from "./legacy-course-map.mjs";
+import { LEGACY_COURSE_MAP, LEGACY_COURSE_SKIP, LEGACY_EXCLUDE_EMAILS } from "./legacy-course-map.mjs";
 
 const { PrismaClient } = pkg;
 const prisma = new PrismaClient();
@@ -246,6 +246,7 @@ async function main() {
   const byEmail = new Map();
   const skippedNoEmail = [];
   const skippedBadEmail = [];
+  const excluded = [];
   let dupeRows = 0;
   const audienceWhy = new Map();
   const legacySlugCount = new Map();
@@ -258,6 +259,10 @@ async function main() {
     }
     if (!EMAIL_RE.test(email)) {
       skippedBadEmail.push(email);
+      continue;
+    }
+    if (LEGACY_EXCLUDE_EMAILS.has(email)) {
+      excluded.push(email);
       continue;
     }
 
@@ -439,6 +444,8 @@ async function main() {
   L.push(`skipped, bad email      ${skippedBadEmail.length}`);
   if (skippedBadEmail.length)
     L.push(`   e.g. ${skippedBadEmail.slice(0, 8).join(", ")}`);
+  L.push(`excluded by policy      ${excluded.length}`);
+  if (excluded.length) L.push(`   ${excluded.join(", ")}`);
   L.push("");
   L.push("-- accounts --------------------------------------------------------");
   L.push(`already on platform     ${alreadyPresent.length} (left untouched)`);
