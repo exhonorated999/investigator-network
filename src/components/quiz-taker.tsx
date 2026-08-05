@@ -89,16 +89,21 @@ export async function QuizTaker({
 
             {q.type === "MULTIPLE_CHOICE" ? (
               <div className="mt-4 space-y-2.5">
+                {q.multiSelect ? (
+                  <p className="mb-1 font-mono text-[11px] uppercase tracking-wider text-accent-bright">
+                    Select all that apply
+                  </p>
+                ) : null}
                 {q.choices.map((c) => (
                   <label
                     key={c.id}
                     className="flex cursor-pointer items-center gap-3 border border-border bg-well px-4 py-3 text-[15px] text-foreground transition hover:border-accent/50 hover:bg-[rgba(0,180,216,0.06)] has-[:checked]:border-accent has-[:checked]:bg-[rgba(0,180,216,0.1)] has-[:checked]:shadow-[0_0_16px_rgba(0,180,216,0.2)]"
                   >
                     <input
-                      type="radio"
+                      type={q.multiSelect ? "checkbox" : "radio"}
                       name={`q_${q.id}`}
                       value={c.id}
-                      required
+                      required={!q.multiSelect}
                       className="h-4 w-4 accent-[var(--accent)]"
                     />
                     {c.text || <span className="text-muted">(empty choice)</span>}

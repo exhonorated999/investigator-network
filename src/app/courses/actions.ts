@@ -146,7 +146,30 @@ export async function submitAttempt(formData: FormData) {
   const totalPoints = quiz.questions.reduce((n, q) => n + q.points, 0) || 1;
 
   for (const q of quiz.questions) {
-    if (q.type === "MULTIPLE_CHOICE") {
+    if (q.type === "MULTIPLE_CHOICE" && q.multiSelect) {
+      // Multi-select: full points only when the chosen set exactly matches the
+      // set of correct choices (no missing, no extra).
+      const picked = [
+        ...new Set(formData.getAll(`q_${q.id}`).map((v) => String(v)).filter(Boolean)),
+      ].sort();
+      const correctIds = q.choices
+        .filter((c) => c.isCorrect)
+        .map((c) => c.id)
+        .sort();
+      const exact =
+        picked.length === correctIds.length &&
+        picked.every((id, i) => id === correctIds[i]);
+      const awarded = exact ? q.points : 0;
+      earned += awarded;
+      await prisma.answer.create({
+        data: {
+          attemptId: attempt.id,
+          questionId: q.id,
+          selectedChoiceIds: picked,
+          awardedPoints: awarded,
+        },
+      });
+    } else if (q.type === "MULTIPLE_CHOICE") {
       const choiceId = String(formData.get(`q_${q.id}`) || "");
       const choice = q.choices.find((c) => c.id === choiceId);
       const awarded = choice?.isCorrect ? q.points : 0;

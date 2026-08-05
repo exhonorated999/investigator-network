@@ -50,7 +50,20 @@ export default async function GradeAttemptPage({
           const q = a.question;
           const selected = q.choices.find((c) => c.id === a.selectedChoiceId);
           const correct = q.choices.find((c) => c.isCorrect);
-          const isCorrect = selected?.isCorrect;
+          // Multi-select: reconstruct chosen texts from the id array, and treat
+          // "correct" as having earned full points (exact-match scoring).
+          const pickedIds = Array.isArray(a.selectedChoiceIds)
+            ? (a.selectedChoiceIds as string[])
+            : [];
+          const pickedTexts = q.choices
+            .filter((c) => pickedIds.includes(c.id))
+            .map((c) => c.text);
+          const correctTexts = q.choices
+            .filter((c) => c.isCorrect)
+            .map((c) => c.text);
+          const isCorrect = q.multiSelect
+            ? q.points > 0 && (a.awardedPoints ?? 0) >= q.points
+            : selected?.isCorrect;
           return (
             <div key={a.id} className={`panel rule-top p-4 ${q.type === "MULTIPLE_CHOICE" ? (isCorrect ? "rule-top" : "rule-top-danger") : "rule-top-gold"}`}>
               <div className="flex items-start justify-between gap-3">
@@ -68,15 +81,20 @@ export default async function GradeAttemptPage({
                 <div className="mt-3 space-y-1.5 text-[14px]">
                   <p className="text-muted">
                     Answered:{" "}
-                    <span
-                      className={isCorrect ? "text-success" : "text-danger"}
-                    >
-                      {selected?.text || "— no answer —"}
+                    <span className={isCorrect ? "text-success" : "text-danger"}>
+                      {q.multiSelect
+                        ? pickedTexts.join(", ") || "— no answer —"
+                        : selected?.text || "— no answer —"}
                     </span>
                   </p>
                   {!isCorrect ? (
                     <p className="text-muted">
-                      Correct: <span className="text-success">{correct?.text}</span>
+                      Correct:{" "}
+                      <span className="text-success">
+                        {q.multiSelect
+                          ? correctTexts.join(", ")
+                          : correct?.text}
+                      </span>
                     </p>
                   ) : null}
                   <p className="font-mono text-[11px] text-muted">

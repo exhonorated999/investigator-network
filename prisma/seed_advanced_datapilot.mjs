@@ -42,6 +42,11 @@ const LINKS = {
     "https://netorgft13969570-my.sharepoint.com/:u:/g/personal/justin_intellect-le_com/IQBboCSW-dzdRKQZlI9l4naBAeQ3-8drATJd3lc9gJbbkcQ?e=TzLejW",
   morningTeams: "https://teams.microsoft.com/meet/261360650429657?p=1DanzF7zw4VNoeIkde",
   afternoonTeams: "https://teams.microsoft.com/meet/25105180503081?p=tDodnQUnWqUQ2QLq0E",
+  // Mon Aug 31 2026. 08:30 Pacific = 15:30 UTC; 11:30 Pacific = 18:30 UTC.
+  // (August → Pacific Daylight Time, UTC-7.) Stored as absolute instants so the
+  // start time renders correctly in each learner's own timezone.
+  morningStart: "2026-08-31T15:30:00.000Z",
+  afternoonStart: "2026-08-31T18:30:00.000Z",
 };
 
 // --- NOTES document --------------------------------------------------------
@@ -261,6 +266,12 @@ const afternoonCtf = [
 // --- TEST questions --------------------------------------------------------
 // mc(prompt, [[text, correct], ...])
 const mc = (prompt, choices) => ({ type: "MULTIPLE_CHOICE", prompt, choices });
+const ms = (prompt, choices) => ({
+  type: "MULTIPLE_CHOICE",
+  prompt,
+  choices,
+  multiSelect: true,
+});
 const tf = (prompt, answer) =>
   mc(prompt, [
     ["True", answer === true],
@@ -312,8 +323,8 @@ const testQuestions = [
     "True or False: the Datapilot will charge your target device while still extracting data.",
     true
   ),
-  mc(
-    "What are the additional add-on features for Datapilot and Datapilot 10 / DPX? (All that apply — select a correct one.)",
+  ms(
+    "What are the additional add-on features for Datapilot and Datapilot 10 / DPX? (Select all that apply.)",
     [
       ["Techno Data Kit (for external USB and hard drives)", true],
       ["Datapilot Scout (for scanning devices for Child Sexual Abuse Material)", true],
@@ -371,8 +382,8 @@ const testQuestions = [
     ["Contacts", false],
     ["Text Messages", false],
   ]),
-  mc(
-    "Which features are available for iOS cell phone/tablet extractions? (Select all that apply — choose a correct one.)",
+  ms(
+    "Which features are available for iOS cell phone/tablet extractions? (Select all that apply.)",
     [
       ["Linked Screen", true],
       ["Datapilot Share", false],
@@ -446,7 +457,7 @@ async function main() {
       order: 0,
       data: {
         teamsJoinUrl: LINKS.morningTeams,
-        startsAt: "",
+        startsAt: LINKS.morningStart,
         durationMin: 180,
         replayUrl: "",
       },
@@ -477,7 +488,7 @@ async function main() {
       order: 0,
       data: {
         teamsJoinUrl: LINKS.afternoonTeams,
-        startsAt: "",
+        startsAt: LINKS.afternoonStart,
         durationMin: 180,
         replayUrl: "",
       },
@@ -526,6 +537,7 @@ async function main() {
         prompt: q.prompt,
         order: qorder++,
         points: 1,
+        multiSelect: q.multiSelect ?? false,
       },
     });
     let corder = 0;

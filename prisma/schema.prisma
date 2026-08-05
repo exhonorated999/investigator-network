@@ -345,6 +345,10 @@ model Question {
   prompt  String
   order   Int          @default(0)
   points  Int          @default(1)
+  /// When true (MULTIPLE_CHOICE only), the learner may tick several choices and
+  /// full points are awarded only when the selected set exactly matches the set
+  /// of correct choices. Renders as checkboxes instead of radios.
+  multiSelect Boolean   @default(false)
   choices Choice[]
   answers Answer[]
 
@@ -385,6 +389,9 @@ model Answer {
   question         Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
   selectedChoiceId String?
   selectedChoice   Choice?     @relation(fields: [selectedChoiceId], references: [id])
+  /// For multi-select questions: the array of chosen choice ids. Null/absent
+  /// for single-choice (which uses selectedChoiceId) and upload answers.
+  selectedChoiceIds Json?
   uploadedFileId   String?
   uploadedFile     FileUpload? @relation(fields: [uploadedFileId], references: [id])
   awardedPoints    Int?
