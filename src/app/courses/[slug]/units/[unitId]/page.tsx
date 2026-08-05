@@ -11,6 +11,7 @@ import { CompletionGate } from "@/components/completion-gate";
 import { InteractionProvider } from "@/components/blocks/interaction-store";
 import { readNotesDoc } from "@/lib/blocks";
 import { computeGate, loadInteractions } from "@/lib/interactions";
+import { testGate } from "@/lib/gating";
 import {
   loadCourseBySlug,
   flattenUnits,
@@ -67,6 +68,13 @@ export default async function CoursePlayer({
   const gate = isPreview
     ? { outstanding: [], total: 0, satisfied: 0, passed: true }
     : computeGate(notesBlocks, answers);
+
+  // A graded test can be locked behind the hands-on assignments. Admins
+  // previewing are never gated.
+  const test =
+    current.type === "QUIZ" && !isPreview
+      ? await testGate(user.id, course.id)
+      : null;
 
   return (
     <div className="min-h-screen md:grid md:grid-cols-[320px_1fr]">
@@ -182,7 +190,29 @@ export default async function CoursePlayer({
           >
             <div className="mt-8">
               {current.type === "QUIZ" ? (
-                <QuizTaker unitId={current.id} slug={slug} userId={user.id} />
+                test && !test.unlocked ? (
+                  <div className="panel rule-top-gold border-gold/40 p-6">
+                    <span className="tag-chip">🔒 Locked</span>
+                    <h3 className="display-sm mt-4">Finish your assignments first</h3>
+                    <p className="mt-3 max-w-[60ch] text-[15px] text-muted">
+                      The final test unlocks once you&apos;ve completed all{" "}
+                      {test.total} capture-the-flag assignments. You&apos;ve
+                      finished {test.done} of {test.total}.
+                    </p>
+                    <ul className="mt-4 space-y-1.5">
+                      {test.outstanding.map((title) => (
+                        <li
+                          key={title}
+                          className="flex items-center gap-2 font-mono text-xs text-muted"
+                        >
+                          <span className="text-muted/40">○</span> {title}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : (
+                  <QuizTaker unitId={current.id} slug={slug} userId={user.id} />
+                )
               ) : (
                 <UnitView unit={current} slug={slug} />
               )}

@@ -8,6 +8,7 @@ import { readNotesDoc } from "@/lib/blocks";
 import { computeGate, loadInteractions } from "@/lib/interactions";
 import { saveFile } from "@/lib/storage";
 import { maybeIssueCertificate } from "@/lib/certificate";
+import { testGate } from "@/lib/gating";
 
 /** Enroll the current user in a published course, then open the first unit. */
 export async function enroll(formData: FormData) {
@@ -120,6 +121,12 @@ export async function submitAttempt(formData: FormData) {
     where: { userId_courseId: { userId, courseId } },
   });
   if (!enrolled) redirect(`/courses/${slug}`);
+
+  // Prerequisite gate: the test is locked until every capture-the-flag
+  // assignment is complete. The form is hidden in that state, but re-check here.
+  if (!(await testGate(userId, courseId)).unlocked) {
+    redirect(`/courses/${slug}/units/${unitId}`);
+  }
 
   // Block resubmission if a passed or pending attempt already exists.
   const latest = await prisma.attempt.findFirst({

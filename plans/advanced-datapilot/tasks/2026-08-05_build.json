@@ -1,0 +1,27 @@
+[
+  {
+    "content": "Add test-prerequisite gate lib (file assignments before test)",
+    "id": "1",
+    "status": "completed"
+  },
+  {
+    "content": "Wire gate into player render + submitAttempt server action",
+    "id": "2",
+    "status": "completed"
+  },
+  {
+    "content": "Write seed script: course, 4 sections, notes, live sessions, CTF assignments",
+    "id": "3",
+    "status": "completed"
+  },
+  {
+    "content": "Add 23 test questions (19 MC + 4 upload) with choices to seed",
+    "id": "4",
+    "status": "completed"
+  },
+  {
+    "content": "Run seed, verify structure + gate, typecheck",
+    "id": "5",
+    "status": "completed"
+  }
+]
