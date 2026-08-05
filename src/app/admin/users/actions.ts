@@ -59,7 +59,7 @@ export async function createUser(
       };
   }
 
-  await prisma.user.create({
+  const created = await prisma.user.create({
     data: {
       name,
       email,
@@ -74,12 +74,34 @@ export async function createUser(
     },
   });
 
+  // Optional: enroll the new account into one or more courses immediately.
+  const courseIds = formData
+    .getAll("courseIds")
+    .map((v) => String(v))
+    .filter(Boolean);
+  let enrolledCount = 0;
+  if (courseIds.length) {
+    const valid = await prisma.course.findMany({
+      where: { id: { in: courseIds } },
+      select: { id: true },
+    });
+    if (valid.length) {
+      const res = await prisma.enrollment.createMany({
+        data: valid.map((c) => ({ userId: created.id, courseId: c.id })),
+        skipDuplicates: true,
+      });
+      enrolledCount = res.count;
+    }
+  }
+
   refresh();
   return {
     ok: true,
     message: `${name} created as ${
       audience === "CIVILIAN" ? "Civilian" : "Law Enforcement"
-    } and approved.`,
+    } and approved${
+      enrolledCount ? ` · enrolled in ${enrolledCount} course${enrolledCount === 1 ? "" : "s"}` : ""
+    }.`,
   };
 }
 
@@ -197,6 +219,69 @@ export async function reactivateUser(formData: FormData) {
   refresh();
 }
 
+export type RoleState = { ok: boolean; message?: string };
+
+/**
+ * Change a user's role / side. The admin console exposes three choices:
+ *   - "LE"       → Learner on the Law-Enforcement side
+ *   - "CIVILIAN" → Learner on the Civilian side
+ *   - "ADMIN"    → Admin (audience-neutral; side is left untouched)
+ *
+ * Authority rules mirror the rest of this module: the super admin is
+ * untouchable, you cannot change your own role here, and granting OR revoking
+ * the admin role requires the super admin.
+ */
+export async function setUserRole(
+  _prev: RoleState,
+  formData: FormData
+): Promise<RoleState> {
+  const session = await requireAdmin();
+  const userId = String(formData.get("userId"));
+  const role = String(formData.get("role"));
+
+  if (!["LE", "CIVILIAN", "ADMIN"].includes(role))
+    return { ok: false, message: "Pick a valid role." };
+
+  const target = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true, audience: true, isSuperAdmin: true },
+  });
+  if (!target) return { ok: false, message: "User not found." };
+  if (target.isSuperAdmin)
+    return { ok: false, message: "The super admin's role cannot be changed." };
+  if (userId === session.user.id)
+    return { ok: false, message: "You cannot change your own role." };
+
+  // Granting admin, or demoting an existing admin, is super-admin-only.
+  const touchesAdmin = role === "ADMIN" || target.role === "ADMIN";
+  if (touchesAdmin) {
+    const actor = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { isSuperAdmin: true },
+    });
+    if (!actor?.isSuperAdmin)
+      return {
+        ok: false,
+        message: "Only the super admin can grant or revoke the admin role.",
+      };
+  }
+
+  const data =
+    role === "ADMIN"
+      ? { role: "ADMIN" as const }
+      : role === "CIVILIAN"
+      ? { role: "LEARNER" as const, audience: "CIVILIAN" as const }
+      : { role: "LEARNER" as const, audience: "LE" as const };
+
+  await prisma.user.update({ where: { id: userId }, data });
+  revalidatePath(`/admin/users/${userId}`);
+  refresh();
+
+  const label =
+    role === "ADMIN" ? "Admin" : role === "CIVILIAN" ? "Civilian" : "Law Enforcement";
+  return { ok: true, message: `Role updated to ${label}.` };
+}
+
 /** Enroll a user into a course from the admin user-detail page. */
 export async function adminEnrollUser(formData: FormData) {
   await requireAdmin();
@@ -219,7 +304,29 @@ export async function adminEnrollUser(formData: FormData) {
   refresh();
 }
 
-/** Remove a user's enrollment (and their progress) in a course. */
+/** Enroll a user into several courses at once (multi-select on the detail page). */
+export async function adminEnrollUserMany(formData: FormData) {
+  await requireAdmin();
+  const userId = String(formData.get("userId"));
+  const courseIds = formData
+    .getAll("courseIds")
+    .map((v) => String(v))
+    .filter(Boolean);
+  if (!userId || courseIds.length === 0) return;
+
+  const valid = await prisma.course.findMany({
+    where: { id: { in: courseIds } },
+    select: { id: true },
+  });
+  if (valid.length === 0) return;
+
+  await prisma.enrollment.createMany({
+    data: valid.map((c) => ({ userId, courseId: c.id })),
+    skipDuplicates: true,
+  });
+  revalidatePath(`/admin/users/${userId}`);
+  refresh();
+}
 export async function adminUnenrollUser(formData: FormData) {
   await requireAdmin();
   const userId = String(formData.get("userId"));

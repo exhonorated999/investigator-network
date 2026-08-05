@@ -17,11 +17,11 @@
   {
     "content": "Run --commit and verify DB state",
     "id": "4",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
     "content": "Typecheck + git commit",
     "id": "5",
-    "status": "pending"
+    "status": "completed"
   }
 ]

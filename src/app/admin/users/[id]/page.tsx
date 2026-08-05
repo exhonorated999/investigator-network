@@ -5,8 +5,9 @@ import { requireAdmin } from "@/lib/rbac";
 import { AUDIENCE_SHORT } from "@/lib/audience";
 import type { Audience } from "@/generated/prisma";
 import { ConfirmSubmit } from "../confirm-button";
-import { adminEnrollUser, adminUnenrollUser } from "../actions";
+import { adminEnrollUserMany, adminUnenrollUser } from "../actions";
 import { PasswordResetForm } from "./password-reset-form";
+import { RoleForm } from "./role-form";
 
 export const dynamic = "force-dynamic";
 
@@ -136,6 +137,40 @@ export default async function UserDetailPage({
         </div>
       </div>
 
+      {/* ------------------------------------------------ role & access */}
+      <section className="panel mt-6 p-5">
+        <h2 className="font-display text-lg font-semibold text-foreground">
+          Role &amp; access
+        </h2>
+        <p className="mt-1 text-[13px] text-muted">
+          Move this account between the Law-Enforcement and Civilian sides, or
+          grant admin.
+        </p>
+        <div className="mt-4">
+          {canManage ? (
+            <RoleForm
+              userId={user.id}
+              current={
+                user.role === "ADMIN"
+                  ? "ADMIN"
+                  : user.audience === "CIVILIAN"
+                  ? "CIVILIAN"
+                  : "LE"
+              }
+              canGrantAdmin={actorIsSuper}
+            />
+          ) : (
+            <p className="font-mono text-[11px] text-muted">
+              {user.isSuperAdmin
+                ? "// The super admin's role cannot be changed."
+                : user.id === session.user.id
+                ? "// You cannot change your own role."
+                : "// Only the super admin can change another admin's role."}
+            </p>
+          )}
+        </div>
+      </section>
+
       {/* ---------------------------------------------------- enrolments */}
       <section className="panel mt-6 p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -236,34 +271,47 @@ export default async function UserDetailPage({
           </div>
         )}
 
-        {/* Manual enrol */}
+        {/* Manual enrol — pick any number of courses at once */}
         <form
-          action={adminEnrollUser}
-          className="mt-5 flex flex-wrap items-end gap-2 border-t border-border pt-5"
+          action={adminEnrollUserMany}
+          className="mt-5 border-t border-border pt-5"
         >
           <input type="hidden" name="userId" value={user.id} />
-          <label className="grid gap-1.5">
-            <span className="eyebrow eyebrow-muted">Enroll in a course</span>
-            <select name="courseId" required className="field w-72" defaultValue="">
-              <option value="" disabled>
-                Select a course…
-              </option>
-              {enrollableCourses.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.title}
-                  {c.status !== "PUBLISHED" ? " (draft)" : ""}
-                  {c.isPrivate ? " · private" : ""}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button type="submit" className="btn btn-primary btn-sm">
-            Enroll
-          </button>
-          {enrollableCourses.length === 0 && (
-            <span className="font-mono text-[11px] text-muted">
+          <span className="eyebrow eyebrow-muted">Enroll in courses</span>
+          {enrollableCourses.length === 0 ? (
+            <p className="mt-2 font-mono text-[11px] text-muted">
               Enrolled in every course.
-            </span>
+            </p>
+          ) : (
+            <>
+              <div className="mt-2 grid max-h-56 gap-1.5 overflow-y-auto border border-border bg-background p-3 sm:grid-cols-2">
+                {enrollableCourses.map((c) => (
+                  <label
+                    key={c.id}
+                    className="flex items-center gap-2.5 text-[13px] text-foreground"
+                  >
+                    <input
+                      type="checkbox"
+                      name="courseIds"
+                      value={c.id}
+                      className="h-4 w-4 accent-[var(--accent)]"
+                    />
+                    <span>
+                      {c.title}
+                      {c.status !== "PUBLISHED" ? (
+                        <span className="text-muted"> (draft)</span>
+                      ) : null}
+                      {c.isPrivate ? (
+                        <span className="text-muted"> · private</span>
+                      ) : null}
+                    </span>
+                  </label>
+                ))}
+              </div>
+              <button type="submit" className="btn btn-primary btn-sm mt-3">
+                Enroll selected
+              </button>
+            </>
           )}
         </form>
       </section>

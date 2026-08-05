@@ -1,0 +1,32 @@
+[
+  {
+    "content": "actions.ts: add setUserRole + adminEnrollUserMany; enroll courseIds on createUser",
+    "id": "1",
+    "status": "in_progress"
+  },
+  {
+    "content": "create-user-form.tsx: add multi-course checkbox picker (courses prop)",
+    "id": "2",
+    "status": "pending"
+  },
+  {
+    "content": "users/page.tsx: fetch courses, pass to CreateUserForm",
+    "id": "3",
+    "status": "pending"
+  },
+  {
+    "content": "[id]/role-form.tsx: client role/side selector",
+    "id": "4",
+    "status": "pending"
+  },
+  {
+    "content": "[id]/page.tsx: add role section + multi-select enrol",
+    "id": "5",
+    "status": "pending"
+  },
+  {
+    "content": "Typecheck + verify in browser + commit",
+    "id": "6",
+    "status": "pending"
+  }
+]

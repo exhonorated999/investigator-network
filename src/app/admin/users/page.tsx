@@ -91,6 +91,12 @@ export default async function UsersPage({
     take: 200,
   });
 
+  // Courses offered in the "create user" enrol picker.
+  const courses = await prisma.course.findMany({
+    orderBy: [{ status: "asc" }, { title: "asc" }],
+    select: { id: true, title: true, status: true, isPrivate: true },
+  });
+
   const buildHref = (s: string) =>
     `/admin/users?status=${s}${q ? `&q=${encodeURIComponent(q)}` : ""}`;
 
@@ -103,7 +109,7 @@ export default async function UsersPage({
       </p>
 
       <div className="mt-6">
-        <CreateUserForm canGrantAdmin={actorIsSuper} />
+        <CreateUserForm canGrantAdmin={actorIsSuper} courses={courses} />
       </div>
 
       <div className="mt-6 flex flex-wrap items-center gap-2">

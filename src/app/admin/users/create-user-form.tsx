@@ -15,12 +15,25 @@ function Submit() {
   );
 }
 
+export type CourseOption = {
+  id: string;
+  title: string;
+  status: string;
+  isPrivate: boolean;
+};
+
 /**
  * Admin manual enrolment. Collapsed by default; expanding reveals the form.
  * Creating a user here approves them instantly on the chosen side, overriding
  * the normal approval gate.
  */
-export function CreateUserForm({ canGrantAdmin = false }: { canGrantAdmin?: boolean }) {
+export function CreateUserForm({
+  canGrantAdmin = false,
+  courses = [],
+}: {
+  canGrantAdmin?: boolean;
+  courses?: CourseOption[];
+}) {
   const [open, setOpen] = useState(false);
   const [state, action] = useActionState(createUser, initial);
   const [audience, setAudience] = useState<"LE" | "CIVILIAN">("LE");
@@ -83,6 +96,36 @@ export function CreateUserForm({ canGrantAdmin = false }: { canGrantAdmin?: bool
             <span className="eyebrow eyebrow-muted">Temporary password</span>
             <input name="password" type="text" className="field" required minLength={8} />
           </label>
+
+          {courses.length > 0 ? (
+            <div className="grid gap-2 sm:col-span-2">
+              <span className="eyebrow eyebrow-muted">
+                Enroll in courses (optional)
+              </span>
+              <div className="grid max-h-48 gap-1.5 overflow-y-auto border border-border bg-background p-3 sm:grid-cols-2">
+                {courses.map((c) => (
+                  <label
+                    key={c.id}
+                    className="flex items-center gap-2.5 text-[13px] text-foreground"
+                  >
+                    <input
+                      type="checkbox"
+                      name="courseIds"
+                      value={c.id}
+                      className="h-4 w-4 accent-[var(--accent)]"
+                    />
+                    <span>
+                      {c.title}
+                      {c.status !== "PUBLISHED" ? (
+                        <span className="text-muted"> (draft)</span>
+                      ) : null}
+                      {c.isPrivate ? <span className="text-muted"> · private</span> : null}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          ) : null}
 
           <label className="flex items-center gap-2.5 font-mono text-[11px] uppercase tracking-wider text-muted sm:col-span-2">
             {canGrantAdmin ? (
