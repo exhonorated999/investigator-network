@@ -1,0 +1,9 @@
+# Force `npm install` instead of `npm ci`.
+#
+# `npm ci` requires the committed package-lock.json to match the install target
+# EXACTLY. Our lock is generated on Windows, which omits Linux-only optional
+# binaries (e.g. @unrs/resolver-binding-wasm32-wasi -> @emnapi/core|runtime),
+# so `npm ci` fails on Railway's Linux builder with "Missing ... from lock file".
+# `npm install` resolves platform-correct optionals at build time.
+[phases.install]
+cmds = ["npm install --no-audit --no-fund"]
