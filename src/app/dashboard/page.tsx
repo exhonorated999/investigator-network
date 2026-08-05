@@ -30,28 +30,8 @@ import { SLOTS, SPAN_CLASS, type SlotChoice } from "@/lib/dashboard";
 
 export const dynamic = "force-dynamic";
 
-const RESOURCES: { label: string; note: string; href: string }[] = [
-  {
-    label: "Report writing templates",
-    note: "Case narrative + supplemental formats",
-    href: "/dashboard",
-  },
-  {
-    label: "Interview & interrogation aids",
-    note: "Question frameworks, Miranda checklist",
-    href: "/dashboard",
-  },
-  {
-    label: "Evidence handling checklist",
-    note: "Chain of custody quick reference",
-    href: "/dashboard",
-  },
-  {
-    label: "Financial records subpoena guide",
-    note: "Bank, crypto and money-service requests",
-    href: "/dashboard",
-  },
-];
+// Tools & resources are curated by staff. Empty until real resources are added.
+const RESOURCES: { label: string; note: string; href: string }[] = [];
 
 export default async function DashboardPage() {
   const viewer = await requireViewer();
@@ -231,15 +211,19 @@ export default async function DashboardPage() {
             count={RESOURCES.length}
           >
             <div>
-              {RESOURCES.map((r) => (
-                <CourseRow
-                  key={r.label}
-                  href={r.href}
-                  title={r.label}
-                  meta={r.note}
-                  right={<span className="shrink-0 text-muted">→</span>}
-                />
-              ))}
+              {RESOURCES.length === 0 ? (
+                <p className="text-sm text-muted">No resources yet.</p>
+              ) : (
+                RESOURCES.map((r) => (
+                  <CourseRow
+                    key={r.label}
+                    href={r.href}
+                    title={r.label}
+                    meta={r.note}
+                    right={<span className="shrink-0 text-muted">→</span>}
+                  />
+                ))
+              )}
             </div>
           </WidgetCard>
         );

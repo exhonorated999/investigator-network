@@ -1,0 +1,27 @@
+[
+  {
+    "content": "Empty hardcoded Tools & resources list in dashboard/page.tsx",
+    "id": "1",
+    "status": "completed"
+  },
+  {
+    "content": "Build bulk script: wipe sample data + enroll adv-datapilot + mark cert-holders complete (dry-run default)",
+    "id": "2",
+    "status": "completed"
+  },
+  {
+    "content": "Run dry-run, verify match/unmatched counts",
+    "id": "3",
+    "status": "completed"
+  },
+  {
+    "content": "Run --commit and verify DB state",
+    "id": "4",
+    "status": "in_progress"
+  },
+  {
+    "content": "Typecheck + git commit",
+    "id": "5",
+    "status": "pending"
+  }
+]
