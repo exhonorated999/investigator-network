@@ -687,6 +687,36 @@ model Conference {
 }
 
 // ---------------------------------------------------------------------------
+// Free tools & resources — curated external links surfaced on the learner
+// dashboard "Tools & resources" card, grouped by discipline so members can
+// toggle between DFIR / Investigations / ICAC. Audience-aware like Conference.
+// ---------------------------------------------------------------------------
+
+enum ResourceCategory {
+  DFIR
+  INVESTIGATIONS
+  ICAC
+}
+
+model Resource {
+  id          String           @id @default(cuid())
+  name        String
+  /// Short blurb describing what the tool/resource is.
+  description String           @default("")
+  /// External link to the tool/resource.
+  url         String
+  category    ResourceCategory
+  /// null = shown to both sides; otherwise limited to one audience.
+  audience    Audience?
+  /// Manual ordering within a category (lower shows first).
+  sortOrder   Int              @default(0)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([category])
+}
+
+// ---------------------------------------------------------------------------
 // Time-on-course tracking — accumulated learner engagement seconds, bucketed
 // per calendar day so the admin metrics view can total by week/month/quarter/
 // year. Rows are written by recordHeartbeat: each heartbeat adds the elapsed

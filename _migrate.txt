@@ -1,0 +1,29 @@
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+Datasource "db": PostgreSQL database "neondb", schema "public" at "ep-wispy-bonus-afjj7rzs.c-2.us-west-2.aws.neon.tech"
+
+Applying migration `20260807150809_add_resource`
+
+The following migration(s) have been created and applied from new schema changes:
+
+prisma\migrations/
+  └─ 20260807150809_add_resource/
+    └─ migration.sql
+
+Your database is now in sync with your schema.
+
+Running generate... (Use --skip-generate to skip the generators)
+[2K[1A[2K[GRunning generate... - Prisma Client
+[2K[1A[2K[G✔ Generated Prisma Client (v6.19.3) to .\src\generated\prisma in 214ms
+
+┌─────────────────────────────────────────────────────────┐
+│  Update available 6.19.3 -> 7.9.1                       │
+│                                                         │
+│  This is a major update - please follow the guide at    │
+│  https://pris.ly/d/major-version-upgrade                │
+│                                                         │
+│  Run the following to update                            │
+│    npm i --save-dev prisma@latest                       │
+│    npm i @prisma/client@latest                          │
+└─────────────────────────────────────────────────────────┘
+

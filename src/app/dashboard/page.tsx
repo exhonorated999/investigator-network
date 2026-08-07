@@ -6,7 +6,6 @@ import { CourseAlbum, type AlbumCourse } from "@/components/course-album";
 import { NotificationsCard } from "@/components/widgets/notifications-card";
 import { SlotCard } from "@/components/widgets/slot-card";
 import {
-  CourseRow,
   WidgetCard,
   WidgetStub,
 } from "@/components/widgets/widget-shell";
@@ -25,13 +24,12 @@ import {
 import { loadInbox, loadUnreadCount } from "@/lib/messages";
 import { loadUpcomingConferences } from "@/lib/conferences";
 import { ConferencesCard } from "@/components/widgets/conferences-card";
+import { loadResourcesForViewer } from "@/lib/resources";
+import { ResourcesCard } from "@/components/widgets/resources-card";
 import { loadLayout } from "@/lib/dashboard-prefs";
 import { SLOTS, SPAN_CLASS, type SlotChoice } from "@/lib/dashboard";
 
 export const dynamic = "force-dynamic";
-
-// Tools & resources are curated by staff. Empty until real resources are added.
-const RESOURCES: { label: string; note: string; href: string }[] = [];
 
 export default async function DashboardPage() {
   const viewer = await requireViewer();
@@ -117,6 +115,7 @@ export default async function DashboardPage() {
   });
 
   const conferences = await loadUpcomingConferences(viewer, 6);
+  const resources = await loadResourcesForViewer(viewer);
 
   // ------------------------------------------------------------- album data
   const enrolledAlbums: AlbumCourse[] = enrollments.map((e) => {
@@ -204,28 +203,16 @@ export default async function DashboardPage() {
 
       case "resources":
         return (
-          <WidgetCard
+          <ResourcesCard
             number="06"
-            eyebrow="Field kit"
-            title="Tools & resources"
-            count={RESOURCES.length}
-          >
-            <div>
-              {RESOURCES.length === 0 ? (
-                <p className="text-sm text-muted">No resources yet.</p>
-              ) : (
-                RESOURCES.map((r) => (
-                  <CourseRow
-                    key={r.label}
-                    href={r.href}
-                    title={r.label}
-                    meta={r.note}
-                    right={<span className="shrink-0 text-muted">→</span>}
-                  />
-                ))
-              )}
-            </div>
-          </WidgetCard>
+            items={resources.map((r) => ({
+              id: r.id,
+              name: r.name,
+              description: r.description,
+              url: r.url,
+              category: r.category,
+            }))}
+          />
         );
 
       case "news":

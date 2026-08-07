@@ -25,13 +25,13 @@
     "status": "completed"
   },
   {
-    "content": "Verify build passes",
+    "content": "Verify build + typecheck passes",
     "id": "6",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
-    "content": "Admin metrics: list users enrolled since last live session date (new enrollees for reminders)",
+    "content": "Admin metrics: surface new-enrollees-since-last-live panel + link",
     "id": "7",
-    "status": "pending"
+    "status": "completed"
   }
 ]

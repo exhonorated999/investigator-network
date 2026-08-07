@@ -12,6 +12,7 @@ const links = [
   { href: "/admin/courses", label: "Courses" },
   { href: "/admin/news", label: "Newsroom" },
   { href: "/admin/conferences", label: "Conferences" },
+  { href: "/admin/resources", label: "Resources" },
   { href: "/admin/reminders", label: "Reminders" },
   { href: "/admin/grading", label: "Grading" },
   { href: "/admin/moderation", label: "Moderation" },
