@@ -10,6 +10,39 @@ import { saveFile } from "@/lib/storage";
 import { maybeIssueCertificate } from "@/lib/certificate";
 import { testGate } from "@/lib/gating";
 
+/**
+ * Ensure the acting user may record progress on a course.
+ *
+ * Learners must already be enrolled (they can only reach a unit through an
+ * enrollment). Admins, however, can open any course in preview without an
+ * enrollment — so a completion click would otherwise silently no-op. When an
+ * admin acts on a course they are not enrolled in, we auto-enroll them so the
+ * "Mark as complete" / submit flows behave exactly as they do for a learner,
+ * letting admins test the full completion → certificate path.
+ *
+ * Returns true when the caller may proceed; false means bounce them back to the
+ * course landing page.
+ */
+async function ensureCanRecord(
+  userId: string,
+  role: string | undefined,
+  courseId: string
+): Promise<boolean> {
+  const enrolled = await prisma.enrollment.findUnique({
+    where: { userId_courseId: { userId, courseId } },
+  });
+  if (enrolled) return true;
+  if (role === "ADMIN") {
+    await prisma.enrollment.upsert({
+      where: { userId_courseId: { userId, courseId } },
+      update: {},
+      create: { userId, courseId },
+    });
+    return true;
+  }
+  return false;
+}
+
 /** Enroll the current user in a published course, then open the first unit. */
 export async function enroll(formData: FormData) {
   const session = await requireUser();
@@ -57,10 +90,9 @@ export async function setUnitComplete(formData: FormData) {
   if (!unit) redirect("/dashboard");
   const courseId = unit.section.course.id;
 
-  const enrolled = await prisma.enrollment.findUnique({
-    where: { userId_courseId: { userId, courseId } },
-  });
-  if (!enrolled) redirect(`/courses/${slug}`);
+  if (!(await ensureCanRecord(userId, session.user.role, courseId))) {
+    redirect(`/courses/${slug}`);
+  }
 
   // A NOTES unit can require its interactive blocks to be answered first. The
   // button is already disabled client-side, but the gate is re-checked here
@@ -117,10 +149,9 @@ export async function submitAttempt(formData: FormData) {
   const courseId = unit.section.course.id;
   const quiz = unit.quiz;
 
-  const enrolled = await prisma.enrollment.findUnique({
-    where: { userId_courseId: { userId, courseId } },
-  });
-  if (!enrolled) redirect(`/courses/${slug}`);
+  if (!(await ensureCanRecord(userId, session.user.role, courseId))) {
+    redirect(`/courses/${slug}`);
+  }
 
   // Prerequisite gate: the test is locked until every capture-the-flag
   // assignment is complete. The form is hidden in that state, but re-check here.
@@ -140,6 +171,10 @@ export async function submitAttempt(formData: FormData) {
   const attempt = await prisma.attempt.create({
     data: { quizId: quiz.id, userId, status: "PENDING_GRADING" },
   });
+
+  // The attempt is now of record — discard any in-progress draft so a resumed
+  // visit starts clean.
+  await prisma.quizDraft.deleteMany({ where: { userId, quizId: quiz.id } });
 
   let needsGrading = false;
   let earned = 0;
@@ -253,10 +288,9 @@ export async function submitAssignment(formData: FormData) {
   if (!unit) redirect("/dashboard");
   const courseId = unit.section.course.id;
 
-  const enrolled = await prisma.enrollment.findUnique({
-    where: { userId_courseId: { userId, courseId } },
-  });
-  if (!enrolled) redirect(`/courses/${slug}`);
+  if (!(await ensureCanRecord(userId, session.user.role, courseId))) {
+    redirect(`/courses/${slug}`);
+  }
 
   const stored = await saveFile(file as File, `assignments/${unitId}`);
   await prisma.fileUpload.create({

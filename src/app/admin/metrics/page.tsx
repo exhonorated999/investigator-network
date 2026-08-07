@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import type { PeriodKey } from "@/lib/analytics";
 import { PERIOD_LABEL } from "@/lib/analytics";
 import { courseTimeTotals, courseTopLearners, formatTime } from "@/lib/metrics";
+import { loadLiveTrainingReminders } from "@/lib/reminders";
+import { CopyEmails } from "../reminders/copy-emails";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +43,24 @@ export default async function MetricsPage({
       : null,
     selectedId ? courseTopLearners(selectedId, period) : Promise.resolve([]),
   ]);
+
+  // New-enrollee reminders (since the last live session) for the selected
+  // course. Reuses the same source as the standalone Reminders page.
+  const reminders = await loadLiveTrainingReminders();
+  const reminder = reminders.find((r) => r.courseId === selectedId) ?? null;
+
+  const fmtSession = (d: Date | null) =>
+    d
+      ? d.toLocaleString(undefined, {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+        })
+      : "—";
+  const fmtDay = (d: Date) =>
+    d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 
   const href = (p: string, c: string) =>
     `/admin/metrics?period=${p}${c ? `&course=${c}` : ""}`;
@@ -154,6 +174,72 @@ export default async function MetricsPage({
                       <td className="px-4 py-3 text-muted">{l.unitsCompleted}</td>
                       <td className="px-4 py-3 text-right font-mono text-[12px] text-muted">
                         {relTime(l.lastSeenAt)}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : null}
+
+      {/* New enrollees since the last live session — for the selected course */}
+      {reminder ? (
+        <div className="mt-8">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="eyebrow eyebrow-gold">// LIVE-TRAINING REMINDERS</p>
+              <h2 className="display-sm mt-1 text-foreground">
+                New enrollees since last live session
+              </h2>
+              <p className="mt-1 font-mono text-[11px] text-muted">
+                Last session: {fmtSession(reminder.lastSessionAt)} · Next:{" "}
+                {fmtSession(reminder.nextSessionAt)}
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <span
+                className={`border px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.14em] ${
+                  reminder.enrollees.length > 0
+                    ? "border-gold/40 bg-[rgba(244,162,97,0.08)] text-gold"
+                    : "border-border text-muted"
+                }`}
+              >
+                {reminder.enrollees.length} new
+              </span>
+              <CopyEmails emails={reminder.enrollees.map((e) => e.email)} />
+              <Link href="/admin/reminders" className="btn btn-ghost btn-sm">
+                All courses →
+              </Link>
+            </div>
+          </div>
+
+          <div className="panel rule-top mt-3 overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="border-b border-border text-left">
+                <tr>
+                  <th className="eyebrow eyebrow-muted px-4 py-3">Name</th>
+                  <th className="eyebrow eyebrow-muted px-4 py-3">Email</th>
+                  <th className="eyebrow eyebrow-muted px-4 py-3 text-right">Enrolled</th>
+                </tr>
+              </thead>
+              <tbody>
+                {reminder.enrollees.length === 0 ? (
+                  <tr>
+                    <td colSpan={3} className="px-4 py-10 text-center text-muted">
+                      No new enrollees since the last live session.
+                    </td>
+                  </tr>
+                ) : (
+                  reminder.enrollees.map((e) => (
+                    <tr key={e.userId} className="border-t border-border">
+                      <td className="px-4 py-3 text-foreground">{e.name}</td>
+                      <td className="px-4 py-3 font-mono text-[12px] text-muted">
+                        {e.email}
+                      </td>
+                      <td className="px-4 py-3 text-right font-mono text-[11px] text-muted">
+                        {fmtDay(e.enrolledAt)}
                       </td>
                     </tr>
                   ))

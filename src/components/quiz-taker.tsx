@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { submitAttempt } from "@/app/courses/actions";
+import { QuizForm, type QuizFormQuestion } from "@/components/quiz-form";
 
 export async function QuizTaker({
   unitId,
@@ -46,6 +46,25 @@ export async function QuizTaker({
 
   const failed = latest && latest.status === "GRADED" && !latest.passed;
 
+  // Resume support: rehydrate any saved-but-unsubmitted answers.
+  const draftRow = await prisma.quizDraft.findUnique({
+    where: { userId_quizId: { userId, quizId: quiz.id } },
+    select: { answers: true },
+  });
+  const initialDraft = (draftRow?.answers ?? {}) as Record<
+    string,
+    string | string[]
+  >;
+
+  const questions: QuizFormQuestion[] = quiz.questions.map((q) => ({
+    id: q.id,
+    type: q.type,
+    prompt: q.prompt,
+    points: q.points,
+    multiSelect: q.multiSelect,
+    choices: q.choices.map((c) => ({ id: c.id, text: c.text })),
+  }));
+
   return (
     <div>
       {failed ? (
@@ -62,78 +81,13 @@ export async function QuizTaker({
         </div>
       )}
 
-      <form
-        action={submitAttempt}
-        encType="multipart/form-data"
-        className="space-y-6"
-      >
-        <input type="hidden" name="unitId" value={unitId} />
-        <input type="hidden" name="slug" value={slug} />
-
-        {quiz.questions.map((q, i) => (
-          <fieldset
-            key={q.id}
-            className="panel rule-top p-5"
-          >
-            <legend className="flex items-center gap-3 px-1">
-              <span className="font-mono text-sm font-bold text-accent-bright">
-                Q{(i + 1).toString().padStart(2, "0")}
-              </span>
-              <span className="text-[15px] font-semibold text-foreground">
-                {q.prompt}
-              </span>
-              <span className="tag-chip">
-                {q.points} pt{q.points === 1 ? "" : "s"}
-              </span>
-            </legend>
-
-            {q.type === "MULTIPLE_CHOICE" ? (
-              <div className="mt-4 space-y-2.5">
-                {q.multiSelect ? (
-                  <p className="mb-1 font-mono text-[11px] uppercase tracking-wider text-accent-bright">
-                    Select all that apply
-                  </p>
-                ) : null}
-                {q.choices.map((c) => (
-                  <label
-                    key={c.id}
-                    className="flex cursor-pointer items-center gap-3 border border-border bg-well px-4 py-3 text-[15px] text-foreground transition hover:border-accent/50 hover:bg-[rgba(0,180,216,0.06)] has-[:checked]:border-accent has-[:checked]:bg-[rgba(0,180,216,0.1)] has-[:checked]:shadow-[0_0_16px_rgba(0,180,216,0.2)]"
-                  >
-                    <input
-                      type={q.multiSelect ? "checkbox" : "radio"}
-                      name={`q_${q.id}`}
-                      value={c.id}
-                      required={!q.multiSelect}
-                      className="h-4 w-4 accent-[var(--accent)]"
-                    />
-                    {c.text || <span className="text-muted">(empty choice)</span>}
-                  </label>
-                ))}
-              </div>
-            ) : (
-              <div className="mt-4">
-                <label className="group flex cursor-pointer flex-col items-center justify-center gap-2 border-2 border-dashed border-accent/30 bg-[rgba(0,180,216,0.04)] px-6 py-8 text-center transition hover:border-accent/60 hover:bg-[rgba(0,180,216,0.08)]">
-                  <span className="text-2xl text-accent">📎</span>
-                  <span className="eyebrow">Drop file or click to browse</span>
-                  <input
-                    type="file"
-                    name={`file_${q.id}`}
-                    required
-                    className="text-sm text-foreground file:mr-3 file:rounded-lg file:border-0 file:bg-surface-2 file:px-3 file:py-2 file:text-sm file:text-foreground"
-                  />
-                </label>
-                <p className="mt-2 font-mono text-xs text-muted">
-                  Upload your document. This answer is graded by an instructor.
-                </p>
-              </div>
-            )}
-          </fieldset>
-        ))}
-
-        <button className="btn btn-primary">
-          {failed ? "Resubmit test" : "Submit test"}
-        </button>
-      </form>
+      <QuizForm
+        unitId={unitId}
+        slug={slug}
+        questions={questions}
+        initialDraft={initialDraft}
+        submitLabel={failed ? "Resubmit test" : "Submit test"}
+      />
     </div>
   );
 }

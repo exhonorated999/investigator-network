@@ -1,0 +1,37 @@
+[
+  {
+    "content": "Rewrite isCourseComplete: hybrid courses complete on 1 live OR all videos",
+    "id": "1",
+    "status": "completed"
+  },
+  {
+    "content": "Auto-enroll admins on completion actions so preview 'Mark as complete' works",
+    "id": "2",
+    "status": "completed"
+  },
+  {
+    "content": "Add QuizDraft model + migration for resumable test",
+    "id": "3",
+    "status": "completed"
+  },
+  {
+    "content": "Add /api/quiz-draft route (save/clear draft)",
+    "id": "4",
+    "status": "completed"
+  },
+  {
+    "content": "Client QuizForm: prefill from draft + autosave; refactor QuizTaker; clear draft on submit",
+    "id": "5",
+    "status": "completed"
+  },
+  {
+    "content": "Verify build passes",
+    "id": "6",
+    "status": "in_progress"
+  },
+  {
+    "content": "Admin metrics: list users enrolled since last live session date (new enrollees for reminders)",
+    "id": "7",
+    "status": "pending"
+  }
+]

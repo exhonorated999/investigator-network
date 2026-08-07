@@ -75,6 +75,7 @@ model User {
   unitProgress  UnitProgress[]
   interactions  BlockInteraction[]
   attempts      Attempt[]
+  quizDrafts    QuizDraft[]
   uploads       FileUpload[]
   certificates  Certificate[]
   gradedAnswers Answer[]        @relation("GradedBy")
@@ -335,6 +336,27 @@ model Quiz {
   passScore Int        @default(70)
   questions Question[]
   attempts  Attempt[]
+  drafts    QuizDraft[]
+}
+
+/// A learner's in-progress answers for a quiz, saved automatically so a long
+/// test can be left and resumed later without losing work. One draft per user
+/// per quiz; it is cleared when the learner submits an attempt. Only
+/// multiple-choice selections are stored — a browser will not let JavaScript
+/// re-populate a file input, so document-upload answers must be re-attached.
+model QuizDraft {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quizId    String
+  quiz      Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  /// Map of questionId -> selected choice id (single-select) or array of choice
+  /// ids (multi-select). Shape mirrors what the submit action expects.
+  answers   Json     @default("{}")
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, quizId])
+  @@index([quizId])
 }
 
 model Question {
