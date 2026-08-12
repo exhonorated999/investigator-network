@@ -219,6 +219,52 @@ export async function reactivateUser(formData: FormData) {
   refresh();
 }
 
+export type UpdateDetailsState = { ok: boolean; message?: string };
+
+/**
+ * Edit a user's core profile fields (name, email, agency, state) — for fixing
+ * typos made at registration or account creation. Authority mirrors the rest
+ * of this module via `canManage`: the super admin is untouchable, you cannot
+ * edit yourself here, and editing another admin requires the super admin.
+ * Email must stay unique.
+ */
+export async function updateUserDetails(
+  _prev: UpdateDetailsState,
+  formData: FormData
+): Promise<UpdateDetailsState> {
+  const session = await requireAdmin();
+  const userId = String(formData.get("userId"));
+
+  const name = String(formData.get("name") ?? "").trim();
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const agency = String(formData.get("agency") ?? "").trim();
+  const state = String(formData.get("state") ?? "").trim();
+
+  if (!(await canManage(session.user.id, userId)))
+    return { ok: false, message: "You are not allowed to edit this user." };
+
+  if (name.length < 2) return { ok: false, message: "Enter a full name." };
+  if (!/^\S+@\S+\.\S+$/.test(email))
+    return { ok: false, message: "Enter a valid email." };
+
+  // Email must remain unique across accounts.
+  const clash = await prisma.user.findUnique({
+    where: { email },
+    select: { id: true },
+  });
+  if (clash && clash.id !== userId)
+    return { ok: false, message: "Another account already uses that email." };
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { name, email, agency, state },
+  });
+
+  revalidatePath(`/admin/users/${userId}`);
+  refresh();
+  return { ok: true, message: "Details saved." };
+}
+
 export type RoleState = { ok: boolean; message?: string };
 
 /**

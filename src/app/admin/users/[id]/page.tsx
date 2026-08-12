@@ -8,6 +8,7 @@ import { ConfirmSubmit } from "../confirm-button";
 import { adminEnrollUserMany, adminUnenrollUser } from "../actions";
 import { PasswordResetForm } from "./password-reset-form";
 import { RoleForm } from "./role-form";
+import { EditDetailsForm } from "./edit-details-form";
 
 export const dynamic = "force-dynamic";
 
@@ -136,6 +137,36 @@ export default async function UserDetailPage({
           </span>
         </div>
       </div>
+
+      {/* ------------------------------------------------ edit details */}
+      <section className="panel mt-6 p-5">
+        <h2 className="font-display text-lg font-semibold text-foreground">
+          Edit details
+        </h2>
+        <p className="mt-1 text-[13px] text-muted">
+          Correct typos in the name, email, agency, or state entered at
+          registration.
+        </p>
+        <div className="mt-4">
+          {canManage ? (
+            <EditDetailsForm
+              userId={user.id}
+              name={user.name}
+              email={user.email}
+              agency={user.agency}
+              state={user.state}
+            />
+          ) : (
+            <p className="font-mono text-[11px] text-muted">
+              {user.isSuperAdmin
+                ? "// The super admin's details cannot be edited here."
+                : user.id === session.user.id
+                ? "// Edit your own details from account settings."
+                : "// Only the super admin can edit another admin's details."}
+            </p>
+          )}
+        </div>
+      </section>
 
       {/* ------------------------------------------------ role & access */}
       <section className="panel mt-6 p-5">
