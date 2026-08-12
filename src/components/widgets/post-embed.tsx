@@ -70,6 +70,23 @@ export function PostEmbed({ body }: { body: string }) {
     );
   }
 
+  if (e.kind === "instagram" && e.embedUrl) {
+    return (
+      <div className="mt-3 flex justify-center overflow-hidden border border-border bg-white">
+        <iframe
+          src={e.embedUrl}
+          title="Instagram post"
+          loading="lazy"
+          scrolling="no"
+          allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+          allowFullScreen
+          className="w-full max-w-[420px] border-0"
+          style={{ height: 660 }}
+        />
+      </div>
+    );
+  }
+
   const showImage = Boolean(preview?.imageUrl) && imageOk;
   const source = preview?.sourceName?.trim() || e.platform;
 

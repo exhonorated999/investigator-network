@@ -9,7 +9,7 @@
  * so a pasted `javascript:` or data URL can never produce an embed.
  */
 
-export type LinkEmbedKind = "youtube" | "vimeo" | "link";
+export type LinkEmbedKind = "youtube" | "vimeo" | "instagram" | "link";
 
 export interface LinkEmbed {
   kind: LinkEmbedKind;
@@ -96,6 +96,21 @@ function vimeoId(u: URL): string | null {
   return m ? m[1] : null;
 }
 
+/**
+ * Instagram refuses to serve OpenGraph metadata to servers, so a scraped card
+ * collapses to a generic login-wall placeholder. Its public `/embed` endpoint,
+ * however, renders the actual post (photo or reel, with an inline play button)
+ * inside an iframe without any auth or API token. Detect post/reel/tv URLs and
+ * point at that endpoint instead of trying to scrape.
+ */
+function instagramEmbed(u: URL): string | null {
+  if (!/(^|\.)instagram\.com$/i.test(u.hostname)) return null;
+  const m = u.pathname.match(/\/(p|reel|reels|tv)\/([A-Za-z0-9_-]+)/);
+  if (!m) return null;
+  const kind = m[1] === "reels" ? "reel" : m[1];
+  return `https://www.instagram.com/${kind}/${m[2]}/embed`;
+}
+
 const PLATFORMS: { test: RegExp; label: string }[] = [
   { test: /(^|\.)instagram\.com$/i, label: "Instagram" },
   { test: /(^|\.)linkedin\.com$/i, label: "LinkedIn" },
@@ -142,6 +157,17 @@ export function detectLinkEmbed(body: string): LinkEmbed | null {
       url: raw,
       embedUrl: `https://player.vimeo.com/video/${vim}`,
       platform: "Vimeo",
+      host,
+    };
+  }
+
+  const igEmbed = instagramEmbed(u);
+  if (igEmbed) {
+    return {
+      kind: "instagram",
+      url: cleanUrl(raw),
+      embedUrl: igEmbed,
+      platform: "Instagram",
       host,
     };
   }
