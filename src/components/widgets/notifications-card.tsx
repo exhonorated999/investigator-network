@@ -67,9 +67,16 @@ export function NotificationsCard({ items }: { items: Notification[] }) {
                   >
                     {n.title}
                   </span>
-                  <span className="mt-0.5 block truncate text-sm text-muted group-hover:text-foreground">
-                    {n.body}
-                  </span>
+                  {n.course ? (
+                    <span className="mt-0.5 block truncate font-mono text-[10px] uppercase tracking-wider text-foreground/80">
+                      {n.course}
+                    </span>
+                  ) : null}
+                  {n.body && n.body !== n.course ? (
+                    <span className="mt-0.5 block truncate text-sm text-muted group-hover:text-foreground">
+                      {n.body}
+                    </span>
+                  ) : null}
                 </span>
                 <span className="shrink-0 font-mono text-[10px] text-muted">
                   {when(n)}

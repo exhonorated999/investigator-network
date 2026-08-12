@@ -14,6 +14,8 @@ export interface Notification {
   kind: NotifKind;
   title: string;
   body: string;
+  /** Course this notification belongs to, shown as a always-visible label. */
+  course: string | null;
   /** When the event happens (live sessions) or happened (everything else). */
   at: Date | null;
   href: string;
@@ -97,7 +99,8 @@ export async function loadNotifications(
       id: `live-${unit.id}`,
       kind: "live",
       title: live ? "Live session in progress" : "Upcoming live session",
-      body: `${unit.title} — ${course.title}`,
+      body: unit.title,
+      course: course.title,
       at: starts,
       href: `/courses/${course.slug}/units/${unit.id}`,
       tone: live ? "success" : "cyan",
@@ -115,7 +118,8 @@ export async function loadNotifications(
         id: `grading-${attempt.id}`,
         kind: "grading",
         title: "Awaiting instructor review",
-        body: `${attempt.quiz.title} — ${course.title}`,
+        body: attempt.quiz.title,
+        course: course.title,
         at: attempt.submittedAt,
         href,
         tone: "gold",
@@ -126,6 +130,7 @@ export async function loadNotifications(
         kind: "result",
         title: attempt.passed ? "Test passed" : "Test not passed",
         body: `${attempt.quiz.title} — score ${attempt.score ?? 0}%`,
+        course: course.title,
         at: attempt.submittedAt,
         href,
         tone: attempt.passed ? "success" : "danger",
@@ -140,6 +145,7 @@ export async function loadNotifications(
       kind: "certificate",
       title: "Certificate issued",
       body: cert.course.title,
+      course: cert.course.title,
       at: cert.issuedAt,
       href: `/certificates/${cert.serial}`,
       tone: "gold",
@@ -153,6 +159,7 @@ export async function loadNotifications(
       kind: "release",
       title: "New training available",
       body: course.title,
+      course: course.title,
       at: course.updatedAt,
       href: `/courses/${course.slug}`,
       tone: "cyan",
