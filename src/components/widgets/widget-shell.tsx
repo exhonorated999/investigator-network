@@ -34,7 +34,7 @@ export function WidgetCard({
           </span>
         ) : null}
       </header>
-      <div className="mt-4 flex-1">{children}</div>
+      <div className="mt-4 flex-1 min-h-0 max-h-[560px] overflow-y-auto pr-1">{children}</div>
     </section>
   );
 }

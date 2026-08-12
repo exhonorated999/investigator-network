@@ -117,7 +117,7 @@ export function NewsCard({
         <TopicPicker topics={topics} selected={selected} />
       </header>
 
-      <div className="mt-4 flex-1">
+      <div className="mt-4 flex-1 min-h-0 max-h-[560px] overflow-y-auto pr-1">
         {articles.length === 0 ? (
           <p className="text-[15px] text-muted">
             {selected.length > 0
