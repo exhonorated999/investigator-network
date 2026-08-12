@@ -9,7 +9,13 @@
  * so a pasted `javascript:` or data URL can never produce an embed.
  */
 
-export type LinkEmbedKind = "youtube" | "vimeo" | "instagram" | "link";
+export type LinkEmbedKind =
+  | "youtube"
+  | "vimeo"
+  | "instagram"
+  | "twitter"
+  | "linkedin"
+  | "link";
 
 export interface LinkEmbed {
   kind: LinkEmbedKind;
@@ -111,6 +117,33 @@ function instagramEmbed(u: URL): string | null {
   return `https://www.instagram.com/${kind}/${m[2]}/embed`;
 }
 
+/** Numeric status id for an X / Twitter post, or null. */
+function tweetId(u: URL): string | null {
+  if (!/(^|\.)(x|twitter)\.com$/i.test(u.hostname)) return null;
+  const m = u.pathname.match(/\/status(?:es)?\/(\d+)/);
+  return m ? m[1] : null;
+}
+
+/**
+ * LinkedIn share links carry an activity/ugcPost/share id, either as a
+ * `urn:li:activity:<id>` token or an `…-activity-<id>-…` slug. Its official
+ * `/embed/feed/update/…` endpoint renders the post (text, image, or video)
+ * inside an iframe. Returns that embed URL, or null when no id is present.
+ */
+function linkedinEmbed(u: URL): string | null {
+  if (!/(^|\.)linkedin\.com$/i.test(u.hostname)) return null;
+  const full = `${u.pathname}${u.search}`;
+  const urn = full.match(/urn:li:(activity|ugcPost|share):(\d+)/i);
+  if (urn) {
+    return `https://www.linkedin.com/embed/feed/update/urn:li:${urn[1]}:${urn[2]}`;
+  }
+  const slug = full.match(/(?:activity|ugcpost|share)[-:](\d{6,})/i);
+  if (slug) {
+    return `https://www.linkedin.com/embed/feed/update/urn:li:activity:${slug[1]}`;
+  }
+  return null;
+}
+
 const PLATFORMS: { test: RegExp; label: string }[] = [
   { test: /(^|\.)instagram\.com$/i, label: "Instagram" },
   { test: /(^|\.)linkedin\.com$/i, label: "LinkedIn" },
@@ -168,6 +201,27 @@ export function detectLinkEmbed(body: string): LinkEmbed | null {
       url: cleanUrl(raw),
       embedUrl: igEmbed,
       platform: "Instagram",
+      host,
+    };
+  }
+
+  const tweet = tweetId(u);
+  if (tweet) {
+    return {
+      kind: "twitter",
+      url: cleanUrl(raw),
+      platform: "X",
+      host,
+    };
+  }
+
+  const liEmbed = linkedinEmbed(u);
+  if (liEmbed) {
+    return {
+      kind: "linkedin",
+      url: cleanUrl(raw),
+      embedUrl: liEmbed,
+      platform: "LinkedIn",
       host,
     };
   }

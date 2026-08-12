@@ -1,7 +1,41 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { detectLinkEmbed, shortUrlLabel } from "@/lib/link-embed";
+
+declare global {
+  interface Window {
+    twttr?: { widgets?: { load?: (el?: HTMLElement) => void } };
+  }
+}
+
+/**
+ * Loads X's widget script once and resolves when `window.twttr.widgets` is
+ * ready. Multiple embeds share the single in-flight promise.
+ */
+let twttrReady: Promise<void> | null = null;
+function loadTwitterWidgets(): Promise<void> {
+  if (typeof window === "undefined") return Promise.resolve();
+  if (window.twttr?.widgets) return Promise.resolve();
+  if (twttrReady) return twttrReady;
+
+  twttrReady = new Promise<void>((resolve) => {
+    const existing = document.getElementById("twitter-wjs") as HTMLScriptElement | null;
+    if (existing) {
+      existing.addEventListener("load", () => resolve());
+      if (window.twttr?.widgets) resolve();
+      return;
+    }
+    const s = document.createElement("script");
+    s.id = "twitter-wjs";
+    s.src = "https://platform.twitter.com/widgets.js";
+    s.async = true;
+    s.charset = "utf-8";
+    s.addEventListener("load", () => resolve());
+    document.body.appendChild(s);
+  });
+  return twttrReady;
+}
 
 /**
  * Renders a rich embed for the first link found in a post body.
@@ -53,6 +87,10 @@ export function PostEmbed({ body }: { body: string }) {
 
   if (!e) return null;
 
+  if (e.kind === "twitter") {
+    return <TweetEmbed url={e.url} />;
+  }
+
   if ((e.kind === "youtube" || e.kind === "vimeo") && e.embedUrl) {
     return (
       <div className="mt-3 overflow-hidden border border-border">
@@ -82,6 +120,22 @@ export function PostEmbed({ body }: { body: string }) {
           allowFullScreen
           className="w-full max-w-[420px] border-0"
           style={{ height: 660 }}
+        />
+      </div>
+    );
+  }
+
+  if (e.kind === "linkedin" && e.embedUrl) {
+    return (
+      <div className="mt-3 flex justify-center overflow-hidden border border-border bg-white">
+        <iframe
+          src={e.embedUrl}
+          title="LinkedIn post"
+          loading="lazy"
+          allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+          allowFullScreen
+          className="w-full max-w-[550px] border-0"
+          style={{ height: 600 }}
         />
       </div>
     );
@@ -150,5 +204,37 @@ export function PostEmbed({ body }: { body: string }) {
         </span>
       </div>
     </a>
+  );
+}
+
+/**
+ * Renders an X (Twitter) post using the official widget script. The blockquote
+ * is the documented no-JS fallback; once widgets.js loads it is replaced in
+ * place with the rendered, video-playable embed in the dark theme.
+ */
+function TweetEmbed({ url }: { url: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let live = true;
+    loadTwitterWidgets().then(() => {
+      if (live && ref.current) window.twttr?.widgets?.load?.(ref.current);
+    });
+    return () => {
+      live = false;
+    };
+  }, [url]);
+
+  return (
+    <div ref={ref} className="mt-3 overflow-hidden [&_.twitter-tweet]:!mx-auto">
+      <blockquote
+        className="twitter-tweet"
+        data-theme="dark"
+        data-dnt="true"
+        data-conversation="none"
+      >
+        <a href={url}>{url}</a>
+      </blockquote>
+    </div>
   );
 }
