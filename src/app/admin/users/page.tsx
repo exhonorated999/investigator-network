@@ -65,7 +65,7 @@ export default async function UsersPage({
 }: {
   searchParams: Promise<{ status?: string; q?: string }>;
 }) {
-  const { status = "PENDING", q = "" } = await searchParams;
+  const { status = "ALL", q = "" } = await searchParams;
 
   const session = await requireAdmin();
   const actor = await prisma.user.findUnique({
