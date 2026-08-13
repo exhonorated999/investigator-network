@@ -1,9 +1,16 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { TopicPicker } from "@/components/widgets/topic-picker";
 import { hostOf, type FeedArticle, type Topic } from "@/lib/news";
 
 function stamp(d: Date): string {
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return new Date(d).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
 }
 
 /** Where a headline goes: the in-app reader when text was pasted, else out. */
@@ -12,87 +19,93 @@ export function articleHref(a: FeedArticle): string {
 }
 
 /**
- * Server-rendered navigation for a headline. In-app articles route to the
- * dedicated /news/[id] reader page; external ones open their source in a new
- * tab. No client modal, so a click always works regardless of hydration.
+ * One accordion row. First click previews the article (expands to reveal its
+ * artwork and full excerpt while any other open row collapses). A second click
+ * on the already-previewed row opens it — the in-app reader for pasted stories,
+ * or the original source in a new tab for external links.
  */
-function CardLink({
+function ArticleRow({
   a,
-  className,
-  children,
+  open,
+  onSelect,
 }: {
   a: FeedArticle;
-  className?: string;
-  children: React.ReactNode;
+  open: boolean;
+  onSelect: (a: FeedArticle) => void;
 }) {
-  const external = !a.hasBody && !!a.sourceUrl;
-  if (external) {
-    return (
-      <a
-        href={a.sourceUrl!}
-        target="_blank"
-        rel="noreferrer noopener"
-        className={className}
-      >
-        {children}
-      </a>
-    );
-  }
-  return (
-    <Link href={`/news/${a.id}`} className={className}>
-      {children}
-    </Link>
-  );
-}
-
-export function ArticleRow({ a }: { a: FeedArticle }) {
   const external = !a.hasBody && !!a.sourceUrl;
   const source = a.sourceName || hostOf(a.sourceUrl);
 
-  const inner = (
-    <>
-      <div className="flex items-center gap-2">
-        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-gold">
-          {a.categoryName ?? "General"}
-        </span>
-        <span className="font-mono text-[10px] text-muted">
-          {stamp(a.publishedAt)}
-        </span>
-      </div>
-      <p className="mt-1 text-[15px] leading-snug text-foreground transition group-hover:text-accent-bright">
-        {a.title}
-        {external ? (
-          <span className="ml-1 align-middle font-mono text-[10px] text-muted">
-            ↗
-          </span>
-        ) : null}
-      </p>
-      {a.summary ? (
-        <p className="mt-1 line-clamp-2 text-[13px] leading-snug text-muted">
-          {a.summary}
-        </p>
-      ) : null}
-      {source ? (
-        <p className="mt-1 font-mono text-[10px] uppercase tracking-wider text-muted opacity-70">
-          {source}
-        </p>
-      ) : null}
-    </>
-  );
-
-  const cls =
-    "group block border-b border-border py-3 first:pt-0 last:border-b-0 last:pb-0";
-
   return (
-    <CardLink a={a} className={`${cls} w-full text-left`}>
-      {inner}
-    </CardLink>
+    <div className="border-b border-border last:border-b-0">
+      <button
+        type="button"
+        onClick={() => onSelect(a)}
+        aria-expanded={open}
+        className="group block w-full py-3 text-left"
+      >
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-gold">
+            {a.categoryName ?? "General"}
+          </span>
+          <span className="font-mono text-[10px] text-muted">
+            {stamp(a.publishedAt)}
+          </span>
+        </div>
+
+        <p className="mt-1 text-[15px] leading-snug text-foreground transition group-hover:text-accent-bright">
+          {a.title}
+        </p>
+
+        {/* Preview reveal: artwork + full excerpt, only while open. */}
+        <div
+          className={`grid transition-all duration-300 ease-out ${
+            open ? "mt-2 grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+          }`}
+        >
+          <div className="overflow-hidden">
+            {a.imageUrl ? (
+              <div className="bracket mb-2 block aspect-[16/8] w-full overflow-hidden">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={a.imageUrl}
+                  alt=""
+                  className="h-full w-full object-cover opacity-90"
+                />
+              </div>
+            ) : null}
+            {a.summary ? (
+              <p className="text-[13px] leading-relaxed text-muted">
+                {a.summary}
+              </p>
+            ) : null}
+            <p className="mt-2 font-mono text-[10px] uppercase tracking-wider text-accent-bright/80">
+              Click again to {external ? "open source ↗" : "read article →"}
+            </p>
+          </div>
+        </div>
+
+        {/* Compact excerpt, only while closed. */}
+        {!open && a.summary ? (
+          <p className="mt-1 line-clamp-2 text-[13px] leading-snug text-muted">
+            {a.summary}
+          </p>
+        ) : null}
+
+        {source ? (
+          <p className="mt-1 font-mono text-[10px] uppercase tracking-wider text-muted opacity-70">
+            {source}
+            {external ? " ↗" : ""}
+          </p>
+        ) : null}
+      </button>
+    </div>
   );
 }
 
 /**
- * Dashboard news card. Lead story gets the artwork treatment; the rest are
- * compact rows so the card stays the same height as its neighbours.
+ * Dashboard news card. The feed is a single-open accordion: clicking a story
+ * previews it inline (artwork + excerpt); clicking the open story opens it.
  */
 export function NewsCard({
   articles,
@@ -105,7 +118,23 @@ export function NewsCard({
   selected: string[];
   number?: string;
 }) {
-  const [lead, ...rest] = articles;
+  const router = useRouter();
+  // Lead story previews by default, mirroring the old artwork-lead layout.
+  const [openId, setOpenId] = useState<string | null>(articles[0]?.id ?? null);
+
+  function select(a: FeedArticle) {
+    if (a.id !== openId) {
+      setOpenId(a.id);
+      return;
+    }
+    // Second click on the previewed story: open it.
+    const external = !a.hasBody && !!a.sourceUrl;
+    if (external) {
+      window.open(a.sourceUrl, "_blank", "noopener,noreferrer");
+    } else {
+      router.push(`/news/${a.id}`);
+    }
+  }
 
   return (
     <section className="panel rule-top flex h-full flex-col p-5">
@@ -125,28 +154,16 @@ export function NewsCard({
               : "No articles yet. Staff post curated reading here."}
           </p>
         ) : (
-          <>
-            {lead.imageUrl ? (
-              <CardLink
-                a={lead}
-                className="bracket group mb-3 block aspect-[16/7] w-full overflow-hidden"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={lead.imageUrl}
-                  alt=""
-                  className="h-full w-full object-cover opacity-80 transition duration-500 group-hover:scale-[1.03] group-hover:opacity-100"
-                />
-              </CardLink>
-            ) : null}
-
-            <div>
-              <ArticleRow a={lead} />
-              {rest.map((a) => (
-                <ArticleRow key={a.id} a={a} />
-              ))}
-            </div>
-          </>
+          <div>
+            {articles.map((a) => (
+              <ArticleRow
+                key={a.id}
+                a={a}
+                open={a.id === openId}
+                onSelect={select}
+              />
+            ))}
+          </div>
         )}
       </div>
 
