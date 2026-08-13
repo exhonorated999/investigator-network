@@ -49,6 +49,6 @@ yarn-error.log*
 next-env.d.ts
 /src/generated/ 
 *.tmp 
-"_build2.txt"  
-"_rlog.txt"  
-"_*.txt"  
+# scratch/diagnostic output
+_*.txt
+_*.mjs

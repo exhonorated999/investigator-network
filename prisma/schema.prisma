@@ -738,3 +738,24 @@ model CourseActivity {
   @@unique([userId, courseId, day])
   @@index([courseId, day])
 }
+
+// ---------------------------------------------------------------------------
+// Transactional email log — used for send-once idempotency so the live-session
+// reminder cron never double-emails a learner for the same session. Deliberately
+// relation-free (plain ids) so it's a purely additive table. `kind` namespaces
+// different email types (e.g. "live_reminder") in case others are added later.
+// ---------------------------------------------------------------------------
+
+model EmailLog {
+  id        String   @id @default(cuid())
+  kind      String
+  /// The live-session Unit id (or other subject id) this email was about.
+  unitId    String
+  userId    String
+  /// Address the email was sent to (denormalized for auditing).
+  email     String
+  sentAt    DateTime @default(now())
+
+  @@unique([kind, unitId, userId])
+  @@index([kind, unitId])
+}
