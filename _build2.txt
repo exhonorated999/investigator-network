@@ -1,0 +1,85 @@
+
+> investigator-network@0.1.0 build
+> next build
+
+▲ Next.js 16.2.12 (Turbopack)
+- Environments: .env
+- Experiments (use with caution):
+  · serverActions
+
+  Creating an optimized production build ...
+Turbopack build encountered 1 warnings:
+./next.config.ts
+Encountered unexpected file in NFT list
+A file was traced that indicates that the whole project was traced unintentionally. Somewhere in the import trace below, there are:
+- filesystem operations (like path.join, path.resolve or fs.readFile), or
+- very dynamic requires (like require('./' + foo)).
+To resolve this, you can
+- remove them if possible, or
+- only use them in development, or
+- make sure they are statically scoped to some subfolder: path.join(process.cwd(), 'data', bar), or
+- add ignore comments: path.join(/*turbopackIgnore: true*/ process.cwd(), bar)
+
+Import trace:
+  App Route:
+    ./next.config.ts
+    ./src/lib/storage.ts
+    ./src/app/api/files/[id]/route.ts
+
+
+✓ Compiled successfully in 10.0s
+  Running TypeScript ...
+  Finished TypeScript in 7.6s ...
+  Collecting page data using 15 workers ...
+  Generating static pages using 15 workers (0/13) ...
+  Generating static pages using 15 workers (3/13) 
+  Generating static pages using 15 workers (6/13) 
+  Generating static pages using 15 workers (9/13) 
+✓ Generating static pages using 15 workers (13/13) in 267ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ƒ /_not-found
+├ ƒ /activate/[token]
+├ ƒ /admin
+├ ƒ /admin/analytics
+├ ƒ /admin/conferences
+├ ƒ /admin/courses
+├ ƒ /admin/courses/[id]
+├ ƒ /admin/courses/[id]/units/[unitId]
+├ ƒ /admin/grading
+├ ƒ /admin/grading/[attemptId]
+├ ƒ /admin/metrics
+├ ƒ /admin/moderation
+├ ƒ /admin/news
+├ ƒ /admin/news/[id]
+├ ƒ /admin/preview
+├ ƒ /admin/reminders
+├ ƒ /admin/resources
+├ ƒ /admin/users
+├ ƒ /admin/users/[id]
+├ ƒ /api/auth/[...nextauth]
+├ ƒ /api/calendar
+├ ƒ /api/files/[id]
+├ ƒ /api/interactions
+├ ƒ /api/link-preview
+├ ƒ /api/notes
+├ ƒ /api/notes/asset
+├ ƒ /api/presence
+├ ƒ /api/quiz-draft
+├ ƒ /certificates/[serial]
+├ ƒ /change-password
+├ ƒ /community
+├ ƒ /courses/[slug]
+├ ƒ /courses/[slug]/units/[unitId]
+├ ƒ /dashboard
+├ ƒ /login
+├ ƒ /messages
+├ ƒ /news
+├ ƒ /news/[id]
+└ ƒ /register
+
+
+ƒ  (Dynamic)  server-rendered on demand
+

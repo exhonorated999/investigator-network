@@ -4,7 +4,21 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { TopicPicker } from "@/components/widgets/topic-picker";
-import { hostOf, type FeedArticle, type Topic } from "@/lib/news";
+import type { FeedArticle, Topic } from "@/lib/news";
+
+/**
+ * Client-safe hostname extractor. Deliberately inlined rather than imported
+ * from "@/lib/news": that module pulls in Prisma at module scope, and importing
+ * any runtime value from it into this client component would drag the database
+ * client into the browser bundle and crash the dashboard on load.
+ */
+function hostOf(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "";
+  }
+}
 
 function stamp(d: Date): string {
   return new Date(d).toLocaleDateString("en-US", {
