@@ -1,8 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { Orbitron, Rajdhani, JetBrains_Mono } from "next/font/google";
 import { auth } from "@/auth";
 import { PresenceBeacon } from "@/components/presence-beacon";
+import { InstallPrompt } from "@/components/install-prompt";
 import "./globals.css";
 
 const orbitron = Orbitron({
@@ -27,6 +28,20 @@ export const metadata: Metadata = {
   title: "Investigator Network — Training Platform",
   description:
     "Investigator Network: professional investigator training, courses, and certification.",
+  applicationName: "Investigator Network",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Investigator",
+  },
+  icons: {
+    apple: "/apple-touch-icon.png",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0d0f14",
+  viewportFit: "cover",
 };
 
 export default async function RootLayout({
@@ -62,6 +77,7 @@ export default async function RootLayout({
       >
         {signedIn ? <PresenceBeacon /> : null}
         {children}
+        <InstallPrompt />
       </body>
     </html>
   );
