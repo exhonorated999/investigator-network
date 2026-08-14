@@ -60,6 +60,52 @@ function ActionButton({
   );
 }
 
+function CoursesCell({
+  enrollments,
+}: {
+  enrollments: { courseId: string; course: { title: string } }[];
+}) {
+  if (enrollments.length === 0) {
+    return <span className="font-mono text-[11px] text-muted">—</span>;
+  }
+  const titles = enrollments.map((e) => e.course.title);
+  return (
+    <details className="group inline-block">
+      <summary
+        title={titles.join(", ")}
+        className="flex w-max cursor-pointer list-none items-center gap-1.5 border border-border px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-accent-bright transition hover:border-border-strong [&::-webkit-details-marker]:hidden"
+      >
+        <svg
+          width="9"
+          height="9"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="transition group-open:rotate-90"
+          aria-hidden
+        >
+          <path d="m9 18 6-6-6-6" />
+        </svg>
+        {enrollments.length} course{enrollments.length === 1 ? "" : "s"}
+      </summary>
+      <ul className="mt-2 flex max-w-[240px] flex-col gap-1">
+        {titles.map((t, i) => (
+          <li
+            key={i}
+            className="flex items-start gap-1.5 text-[12px] leading-snug text-foreground"
+          >
+            <span className="mt-[2px] text-accent-bright">▸</span>
+            <span>{t}</span>
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
+}
+
 export default async function UsersPage({
   searchParams,
 }: {
@@ -89,6 +135,12 @@ export default async function UsersPage({
     where,
     orderBy: { createdAt: "desc" },
     take: 200,
+    include: {
+      enrollments: {
+        orderBy: { enrolledAt: "desc" },
+        select: { courseId: true, course: { select: { title: true } } },
+      },
+    },
   });
 
   // Courses offered in the "create user" enrol picker.
@@ -156,13 +208,14 @@ export default async function UsersPage({
               <th className="eyebrow eyebrow-muted px-4 py-3">Email</th>
               <th className="eyebrow eyebrow-muted px-4 py-3">Status</th>
               <th className="eyebrow eyebrow-muted px-4 py-3">Registered</th>
+              <th className="eyebrow eyebrow-muted px-4 py-3">Courses</th>
               <th className="eyebrow eyebrow-muted px-4 py-3 text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
             {users.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-10 text-center text-muted">
+                <td colSpan={8} className="px-4 py-10 text-center text-muted">
                   No users found.
                 </td>
               </tr>
@@ -218,6 +271,9 @@ export default async function UsersPage({
                   </td>
                   <td className="px-4 py-3 font-mono text-[11px] text-muted">
                     {u.createdAt.toLocaleDateString()}
+                  </td>
+                  <td className="px-4 py-3 align-top">
+                    <CoursesCell enrollments={u.enrollments} />
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-2">

@@ -34,7 +34,7 @@ export function AdminNav() {
         />
         <span className="hidden leading-none md:inline">
           <span className="eyebrow eyebrow-muted block text-[8px]">Intellect LE</span>
-          <span className="display-sm block text-[13px] text-foreground">Investigator Network</span>
+          <span className="block font-display text-[12px] font-bold uppercase leading-tight tracking-[0.03em] text-foreground">Investigator Network</span>
         </span>
       </Link>
       {links.map((l) => {
