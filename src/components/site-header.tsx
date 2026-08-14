@@ -83,12 +83,18 @@ export async function SiteHeader({
             </Link>
           ) : null}
           {name ? (
-            <span className="hidden items-center gap-2 border-l border-border pl-5 lg:flex">
-              <span className="flex h-7 w-7 items-center justify-center rounded-full border border-border-strong bg-[rgba(0,180,216,0.1)] font-mono text-[11px] text-accent-bright">
+            <Link
+              href="/profile"
+              title="Your profile"
+              className="group flex items-center gap-2 border-l border-border pl-4 transition sm:pl-5"
+            >
+              <span className="flex h-7 w-7 items-center justify-center rounded-full border border-border-strong bg-[rgba(0,180,216,0.1)] font-mono text-[11px] text-accent-bright transition group-hover:border-accent-bright">
                 {name.trim().charAt(0).toUpperCase()}
               </span>
-              <span className="text-sm text-muted">{name}</span>
-            </span>
+              <span className="hidden text-sm text-muted transition group-hover:text-accent-bright lg:inline">
+                {name}
+              </span>
+            </Link>
           ) : null}
           <ThemeToggle />
           <SignOutButton />

@@ -8,12 +8,16 @@ export function Field({
   type = "text",
   autoComplete,
   error,
+  defaultValue,
+  placeholder,
 }: {
   label: string;
   name: string;
   type?: string;
   autoComplete?: string;
   error?: string;
+  defaultValue?: string;
+  placeholder?: string;
 }) {
   return (
     <div className="flex flex-col gap-2">
@@ -25,6 +29,8 @@ export function Field({
         name={name}
         type={type}
         autoComplete={autoComplete}
+        defaultValue={defaultValue}
+        placeholder={placeholder}
         className="field"
         aria-invalid={error ? true : undefined}
       />

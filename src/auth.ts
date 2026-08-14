@@ -5,7 +5,7 @@ import { verifyPassword } from "@/lib/password";
 import { loginSchema } from "@/lib/validation";
 import type { Role, UserStatus, Audience } from "@/generated/prisma";
 
-export const { handlers, signIn, signOut, auth } = NextAuth({
+export const { handlers, signIn, signOut, auth, unstable_update: updateSession } = NextAuth({
   trustHost: true,
   session: { strategy: "jwt" },
   pages: { signIn: "/login" },
@@ -47,7 +47,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id as string;
         token.role = (user as { role: Role }).role;
@@ -57,6 +57,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.mustChangePassword = (
           user as { mustChangePassword: boolean }
         ).mustChangePassword;
+      }
+      // Profile edits call updateSession({ user: { name, agency } }) so the
+      // cached JWT reflects the new values immediately, without a re-login.
+      if (trigger === "update" && session) {
+        const next = (session as { user?: { name?: string; agency?: string } })
+          .user;
+        if (typeof next?.name === "string") token.name = next.name;
+        if (typeof next?.agency === "string") token.agency = next.agency;
       }
       return token;
     },
