@@ -114,6 +114,54 @@ export function sendLiveSessionReminder(
 }
 
 /**
+ * Alert an admin that a direct message has been sitting unread for a while
+ * (the cron only fires this once it has been waiting past the threshold).
+ */
+export function sendAdminMessageAlert(
+  to: string,
+  adminName: string,
+  opts: { fromName: string; preview: string; waitingSince: Date }
+) {
+  const when = formatPacific(opts.waitingSince);
+  const preview = opts.preview.trim().slice(0, 200);
+  return send({
+    to,
+    subject: `Waiting message from ${opts.fromName} — Investigator Network`,
+    text:
+      `Hi ${adminName},\n\n` +
+      `You have an unread direct message from ${opts.fromName} that has been ` +
+      `waiting since ${when}.\n\n` +
+      (preview ? `Message:\n"${preview}"\n\n` : "") +
+      `Open your inbox to reply:\n${appUrl()}/messages\n\n` +
+      `— Investigator Network`,
+  });
+}
+
+/**
+ * Alert an admin that a course question has gone unanswered by staff past the
+ * threshold, so it can be picked up from the admin dashboard queue.
+ */
+export function sendAdminQuestionAlert(
+  to: string,
+  adminName: string,
+  opts: { courseTitle: string; askedBy: string; preview: string; waitingSince: Date }
+) {
+  const when = formatPacific(opts.waitingSince);
+  const preview = opts.preview.trim().slice(0, 200);
+  return send({
+    to,
+    subject: `Unanswered course question — ${opts.courseTitle}`,
+    text:
+      `Hi ${adminName},\n\n` +
+      `A course question in "${opts.courseTitle}" from ${opts.askedBy} has been ` +
+      `waiting for a staff answer since ${when}.\n\n` +
+      (preview ? `Question:\n"${preview}"\n\n` : "") +
+      `Answer it from your dashboard queue:\n${appUrl()}/dashboard\n\n` +
+      `— Investigator Network`,
+  });
+}
+
+/**
  * Format a session start time for display in Pacific, resolving naive
  * wall-clock timestamps via the shared session-time parser.
  */
@@ -123,5 +171,12 @@ function formatSessionTime(raw: string): string {
 }
 
 function loginUrl() {
-  return (process.env.AUTH_URL || "http://localhost:3000") + "/login";
+  return appUrl() + "/login";
+}
+
+function appUrl() {
+  return (process.env.APP_URL || process.env.AUTH_URL || "http://localhost:3000").replace(
+    /\/+$/,
+    ""
+  );
 }

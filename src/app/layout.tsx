@@ -3,6 +3,7 @@ import Script from "next/script";
 import { Orbitron, Rajdhani, JetBrains_Mono } from "next/font/google";
 import { auth } from "@/auth";
 import { PresenceBeacon } from "@/components/presence-beacon";
+import { NotificationWatcher } from "@/components/notification-watcher";
 import { InstallPrompt } from "@/components/install-prompt";
 import "./globals.css";
 
@@ -76,6 +77,7 @@ export default async function RootLayout({
         data-audience={session?.user?.audience ?? undefined}
       >
         {signedIn ? <PresenceBeacon /> : null}
+        {signedIn ? <NotificationWatcher /> : null}
         {children}
         <InstallPrompt />
       </body>
