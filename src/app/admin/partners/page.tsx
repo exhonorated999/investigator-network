@@ -144,7 +144,7 @@ export default async function PartnersAdminPage() {
                             alt={p.name}
                             width={44}
                             height={44}
-                            className="h-11 w-11 shrink-0 rounded border border-border bg-surface object-contain p-1"
+                            className="h-11 w-11 shrink-0 rounded border border-border bg-white object-contain p-1"
                           />
                         ) : (
                           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded border border-border bg-surface font-display text-lg text-muted">
