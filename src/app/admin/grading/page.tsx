@@ -3,15 +3,54 @@ import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
+interface QueueItem {
+  key: string;
+  href: string;
+  name: string;
+  agency: string;
+  subtitle: string;
+  submittedAt: Date;
+}
+
 export default async function AdminGradingPage() {
-  const pending = await prisma.attempt.findMany({
-    where: { status: "PENDING_GRADING" },
-    orderBy: { submittedAt: "asc" },
-    include: {
-      user: true,
-      quiz: { include: { unit: { include: { section: { include: { course: true } } } } } },
-    },
-  });
+  const [pendingAttempts, pendingSubmissions] = await Promise.all([
+    prisma.attempt.findMany({
+      where: { status: "PENDING_GRADING" },
+      orderBy: { submittedAt: "asc" },
+      include: {
+        user: true,
+        quiz: { include: { unit: { include: { section: { include: { course: true } } } } } },
+      },
+    }),
+    prisma.assignmentSubmission.findMany({
+      where: { status: "PENDING_GRADING" },
+      orderBy: { submittedAt: "asc" },
+      include: {
+        user: true,
+        unit: { include: { section: { include: { course: true } } } },
+      },
+    }),
+  ]);
+
+  // Merge the two pending queues into one list, oldest first.
+  const queue: QueueItem[] = [
+    ...pendingAttempts.map((a) => ({
+      key: `attempt:${a.id}`,
+      href: `/admin/grading/${a.id}`,
+      name: a.user.name,
+      agency: a.user.agency,
+      subtitle: `${a.quiz.unit.section.course.title} — ${a.quiz.title}`,
+      submittedAt: a.submittedAt,
+    })),
+    ...pendingSubmissions.map((s) => ({
+      key: `submission:${s.id}`,
+      href: `/admin/grading/submission/${s.id}`,
+      name: s.user.name,
+      agency: s.user.agency,
+      subtitle: `${s.unit.section.course.title} — ${s.unit.title}`,
+      submittedAt: s.submittedAt,
+    })),
+  ].sort((a, b) => a.submittedAt.getTime() - b.submittedAt.getTime());
 
   const recent = await prisma.attempt.findMany({
     where: { status: "GRADED" },
@@ -34,24 +73,24 @@ export default async function AdminGradingPage() {
 
       <section className="mt-6">
         <p className="eyebrow eyebrow-muted">
-          Awaiting grading ({pending.length})
+          Awaiting grading ({queue.length})
         </p>
-        {pending.length === 0 ? (
+        {queue.length === 0 ? (
           <p className="panel mt-3 px-4 py-6 text-[15px] text-muted">
             Nothing to grade right now.
           </p>
         ) : (
           <ul className="panel mt-3 divide-y divide-border overflow-hidden">
-            {pending.map((a) => (
-              <li key={a.id}>
+            {queue.map((a) => (
+              <li key={a.key}>
                 <Link
-                  href={`/admin/grading/${a.id}`}
+                  href={a.href}
                   className="flex items-center gap-4 px-4 py-3 transition hover:bg-[rgba(0,180,216,0.04)]"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[15px] text-foreground">{a.user.name}</p>
+                    <p className="truncate text-[15px] text-foreground">{a.name}</p>
                     <p className="truncate font-mono text-[11px] text-muted">
-                      {a.user.agency} · {a.quiz.unit.section.course.title} — {a.quiz.title}
+                      {a.agency} · {a.subtitle}
                     </p>
                   </div>
                   <span className="hidden shrink-0 font-mono text-[11px] text-muted sm:block">

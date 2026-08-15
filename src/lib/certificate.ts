@@ -12,6 +12,11 @@ import { prisma } from "@/lib/prisma";
  *    session OR finishing the entire on-demand video track. Course Notes and
  *    the certificate placeholder unit are never required on this path.
  *
+ *    GRADED HYBRID variant — a hybrid course that ALSO has FILE_ASSIGNMENT
+ *    units (e.g. Advanced Datapilot 10 for SAPS): the exercises are mandatory
+ *    and pass-graded, and the training path is stricter — finish ALL videos OR
+ *    attend ALL live dates, AND pass every exercise.
+ *
  *  - STANDARD (everything else): every unit in the course must be COMPLETE.
  */
 
@@ -48,7 +53,23 @@ export async function isCourseComplete(
 
   const liveUnits = units.filter((u) => u.type === "LIVE_SESSION");
   const videoUnits = units.filter((u) => u.type === "VIDEO");
-  const isHybrid = liveUnits.length > 0 && videoUnits.length > 0;
+  const assignmentUnits = units.filter((u) => u.type === "FILE_ASSIGNMENT");
+  const hasLive = liveUnits.length > 0;
+  const hasVideo = videoUnits.length > 0;
+  const hasAssignments = assignmentUnits.length > 0;
+
+  // Graded hands-on hybrid (e.g. Advanced Datapilot 10 for SAPS): the exercises
+  // are mandatory, and the training itself is satisfied by finishing the ENTIRE
+  // on-demand video track OR attending EVERY live date. Notes and the
+  // certificate placeholder are not required.
+  if (hasLive && hasVideo && hasAssignments) {
+    const finishedAllVideos = videoUnits.every((u) => done.has(u.id));
+    const attendedAllLive = liveUnits.every((u) => done.has(u.id));
+    const passedAllExercises = assignmentUnits.every((u) => done.has(u.id));
+    return (finishedAllVideos || attendedAllLive) && passedAllExercises;
+  }
+
+  const isHybrid = hasLive && hasVideo;
 
   if (isHybrid) {
     const attendedLive = liveUnits.some((u) => done.has(u.id));

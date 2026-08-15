@@ -79,6 +79,8 @@ model User {
   uploads       FileUpload[]
   certificates  Certificate[]
   gradedAnswers Answer[]        @relation("GradedBy")
+  assignmentSubmissions AssignmentSubmission[] @relation("SubmissionAuthor")
+  gradedSubmissions     AssignmentSubmission[] @relation("SubmissionGrader")
   dashboardPref DashboardPref?
   favorites     CourseFavorite[]
   articles      NewsArticle[]
@@ -249,6 +251,7 @@ model Unit {
   quiz     Quiz?
   progress UnitProgress[]
   interactions BlockInteraction[]
+  submissions  AssignmentSubmission[]
 
   @@index([sectionId])
 }
@@ -326,6 +329,15 @@ enum QuestionType {
 enum AttemptStatus {
   PENDING_GRADING
   GRADED
+}
+
+/// Grade state for a FILE_ASSIGNMENT upload on a unit whose completionRule is
+/// "GRADED". A submission starts PENDING_GRADING; an admin marks it PASSED
+/// (which completes the unit) or FAILED (learner may resubmit).
+enum SubmissionStatus {
+  PENDING_GRADING
+  PASSED
+  FAILED
 }
 
 model Quiz {
@@ -424,6 +436,30 @@ model Answer {
   @@index([attemptId])
 }
 
+/// One learner upload for a graded FILE_ASSIGNMENT unit. History is kept:
+/// a FAILED submission stays as a record and the learner adds a new one, so a
+/// unit can accumulate several submissions. The "current" state is the latest
+/// row by submittedAt. The unit's UnitProgress is only set COMPLETE when a
+/// submission is PASSED.
+model AssignmentSubmission {
+  id           String           @id @default(cuid())
+  userId       String
+  user         User             @relation("SubmissionAuthor", fields: [userId], references: [id], onDelete: Cascade)
+  unitId       String
+  unit         Unit             @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  fileUploadId String           @unique
+  file         FileUpload       @relation(fields: [fileUploadId], references: [id], onDelete: Cascade)
+  status       SubmissionStatus @default(PENDING_GRADING)
+  feedback     String?
+  gradedById   String?
+  gradedBy     User?            @relation("SubmissionGrader", fields: [gradedById], references: [id])
+  gradedAt     DateTime?
+  submittedAt  DateTime         @default(now())
+
+  @@index([unitId, status])
+  @@index([userId, unitId])
+}
+
 // ---------------------------------------------------------------------------
 // Files & certificates
 // ---------------------------------------------------------------------------
@@ -440,6 +476,7 @@ model FileUpload {
   createdAt   DateTime @default(now())
 
   answers Answer[]
+  submission AssignmentSubmission?
 }
 
 model Certificate {

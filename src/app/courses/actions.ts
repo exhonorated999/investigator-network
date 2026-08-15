@@ -292,8 +292,23 @@ export async function submitAssignment(formData: FormData) {
     redirect(`/courses/${slug}`);
   }
 
+  // Graded units require an admin pass/fail before they count. Everything else
+  // completes on upload (legacy behavior).
+  const isGraded = unit.completionRule === "GRADED";
+
+  // Once passed, the assignment is locked — no further uploads.
+  if (isGraded) {
+    const alreadyPassed = await prisma.assignmentSubmission.findFirst({
+      where: { userId, unitId, status: "PASSED" },
+      select: { id: true },
+    });
+    if (alreadyPassed) {
+      redirect(`/courses/${slug}/units/${unitId}`);
+    }
+  }
+
   const stored = await saveFile(file as File, `assignments/${unitId}`);
-  await prisma.fileUpload.create({
+  const upload = await prisma.fileUpload.create({
     data: {
       ownerUserId: userId,
       path: stored.path,
@@ -304,14 +319,25 @@ export async function submitAssignment(formData: FormData) {
     },
   });
 
-  // Uploading the assignment marks the unit complete.
-  await prisma.unitProgress.upsert({
-    where: { userId_unitId: { userId, unitId } },
-    update: { status: "COMPLETE", completedAt: new Date() },
-    create: { userId, unitId, status: "COMPLETE", completedAt: new Date() },
-  });
-
-  await maybeIssueCertificate(userId, courseId);
+  if (isGraded) {
+    // A new upload supersedes any still-pending submission for this unit, so the
+    // grading queue never shows stale duplicates. The learner does NOT complete
+    // the unit here — an admin PASS does that (see gradeSubmission).
+    await prisma.assignmentSubmission.deleteMany({
+      where: { userId, unitId, status: "PENDING_GRADING" },
+    });
+    await prisma.assignmentSubmission.create({
+      data: { userId, unitId, fileUploadId: upload.id, status: "PENDING_GRADING" },
+    });
+  } else {
+    // Uploading the assignment marks the unit complete.
+    await prisma.unitProgress.upsert({
+      where: { userId_unitId: { userId, unitId } },
+      update: { status: "COMPLETE", completedAt: new Date() },
+      create: { userId, unitId, status: "COMPLETE", completedAt: new Date() },
+    });
+    await maybeIssueCertificate(userId, courseId);
+  }
 
   revalidatePath(`/courses/${slug}/units/${unitId}`);
   revalidatePath("/dashboard");

@@ -69,6 +69,19 @@ export default async function CoursePlayer({
     ? { outstanding: [], total: 0, satisfied: 0, passed: true }
     : computeGate(notesBlocks, answers);
 
+  // For a graded FILE_ASSIGNMENT, load the learner's latest submission so the
+  // unit view can show pending / passed / failed and allow resubmission.
+  const assignmentSubmission =
+    current.type === "FILE_ASSIGNMENT" &&
+    current.completionRule === "GRADED" &&
+    !isPreview
+      ? await prisma.assignmentSubmission.findFirst({
+          where: { userId: user.id, unitId: current.id },
+          orderBy: { submittedAt: "desc" },
+          select: { status: true, feedback: true },
+        })
+      : null;
+
   // A graded test can be locked behind the hands-on assignments. Admins
   // previewing are never gated.
   const test =
@@ -214,7 +227,7 @@ export default async function CoursePlayer({
                   <QuizTaker unitId={current.id} slug={slug} userId={user.id} />
                 )
               ) : (
-                <UnitView unit={current} slug={slug} />
+                <UnitView unit={current} slug={slug} submission={assignmentSubmission} />
               )}
             </div>
 

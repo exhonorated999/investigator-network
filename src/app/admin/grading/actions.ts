@@ -74,3 +74,58 @@ export async function gradeAttempt(formData: FormData) {
   revalidatePath(`/admin/grading/${attemptId}`);
   redirect("/admin/grading");
 }
+
+/**
+ * Pass/fail a FILE_ASSIGNMENT submission (units with completionRule "GRADED").
+ * PASS marks the unit COMPLETE and attempts to issue the course certificate;
+ * FAIL leaves the unit incomplete so the learner can resubmit.
+ */
+export async function gradeSubmission(formData: FormData) {
+  const session = await requireAdmin();
+  const adminId = session.user.id;
+  const submissionId = String(formData.get("submissionId"));
+  const decision = String(formData.get("decision")); // "pass" | "fail"
+  const feedback = String(formData.get("feedback") || "").trim() || null;
+
+  const submission = await prisma.assignmentSubmission.findUnique({
+    where: { id: submissionId },
+    include: { unit: { include: { section: true } } },
+  });
+  if (!submission) redirect("/admin/grading");
+
+  const passed = decision === "pass";
+  await prisma.assignmentSubmission.update({
+    where: { id: submissionId },
+    data: {
+      status: passed ? "PASSED" : "FAILED",
+      feedback,
+      gradedById: adminId,
+      gradedAt: new Date(),
+    },
+  });
+
+  if (passed) {
+    await prisma.unitProgress.upsert({
+      where: { userId_unitId: { userId: submission.userId, unitId: submission.unitId } },
+      update: { status: "COMPLETE", completedAt: new Date() },
+      create: {
+        userId: submission.userId,
+        unitId: submission.unitId,
+        status: "COMPLETE",
+        completedAt: new Date(),
+      },
+    });
+    await maybeIssueCertificate(submission.userId, submission.unit.section.courseId);
+  } else {
+    // A failed resubmission should not leave a stale COMPLETE from any prior pass
+    // (there is none in normal flow, but stay defensive).
+    await prisma.unitProgress.updateMany({
+      where: { userId: submission.userId, unitId: submission.unitId },
+      data: { status: "INCOMPLETE", completedAt: null },
+    });
+  }
+
+  revalidatePath("/admin/grading");
+  revalidatePath(`/admin/grading/submission/${submissionId}`);
+  redirect("/admin/grading");
+}
