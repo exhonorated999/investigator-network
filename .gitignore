@@ -53,3 +53,4 @@ next-env.d.ts
 _*.txt
 _*.mjs
 _*.py
+_*.js 

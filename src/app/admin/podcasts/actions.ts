@@ -25,6 +25,15 @@ function normalizeUrl(raw: FormDataEntryValue | null): string | null {
   return s;
 }
 
+/** Audio URL may be a site-relative static asset (/podcast-audio/x.m4a) or an
+ * absolute https URL; leave relative paths alone, https-prefix bare hosts. */
+function normalizeAudioUrl(raw: FormDataEntryValue | null): string | null {
+  const s = String(raw || "").trim();
+  if (!s) return null;
+  if (s.startsWith("/") || /^https?:\/\//i.test(s)) return s;
+  return `https://${s}`;
+}
+
 /** Persist an uploaded audio file and return its FileUpload id, else null. */
 async function saveAudio(
   file: FormDataEntryValue | null,
@@ -51,8 +60,9 @@ export async function createPodcast(formData: FormData) {
   if (!title) return;
 
   const audioFileId = await saveAudio(formData.get("audio"), session.user.id);
-  // Audio is required to create an episode.
-  if (!audioFileId) return;
+  const audioUrl = normalizeAudioUrl(formData.get("audioUrl"));
+  // Audio is required to create an episode — an upload or a direct URL.
+  if (!audioFileId && !audioUrl) return;
 
   await prisma.podcast.create({
     data: {
@@ -60,6 +70,7 @@ export async function createPodcast(formData: FormData) {
       description: String(formData.get("description") || "").trim(),
       category: normalizeCategory(String(formData.get("category") || "")),
       audioFileId,
+      audioUrl,
       rulingUrl: normalizeUrl(formData.get("rulingUrl")),
       audience: parseAudience(formData.get("audience")),
       active: formData.get("active") != null,
@@ -89,6 +100,7 @@ export async function updatePodcast(formData: FormData) {
       audience: parseAudience(formData.get("audience")),
       active: formData.get("active") != null,
       sortOrder: Number(formData.get("sortOrder") || 0) || 0,
+      audioUrl: normalizeAudioUrl(formData.get("audioUrl")),
       ...(newAudioId ? { audioFileId: newAudioId } : {}),
     },
   });

@@ -114,9 +114,16 @@ export default async function PodcastsAdminPage() {
             <input
               type="file"
               name="audio"
-              required
               accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/aac,audio/ogg,.mp3,.m4a,.wav"
               className="field"
+            />
+          </label>
+          <label className="grid gap-1.5 sm:col-span-2">
+            <span className="eyebrow eyebrow-muted">…or audio URL (static asset or https)</span>
+            <input
+              name="audioUrl"
+              className="field"
+              placeholder="/podcast-audio/episode.m4a  or  https://…"
             />
           </label>
           <label className="flex items-center gap-2 sm:col-span-2">
@@ -176,7 +183,10 @@ export default async function PodcastsAdminPage() {
                       <audio
                         controls
                         preload="none"
-                        src={`/api/files/${p.audioFileId}`}
+                        src={
+                          (p.audioUrl && p.audioUrl.trim()) ||
+                          (p.audioFileId ? `/api/files/${p.audioFileId}` : undefined)
+                        }
                         className="h-9 w-full max-w-md"
                       />
                     </div>
@@ -279,6 +289,15 @@ export default async function PodcastsAdminPage() {
                         name="audio"
                         accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/aac,audio/ogg,.mp3,.m4a,.wav"
                         className="field"
+                      />
+                    </label>
+                    <label className="grid gap-1.5 sm:col-span-2">
+                      <span className="eyebrow eyebrow-muted">Audio URL (static asset or https)</span>
+                      <input
+                        name="audioUrl"
+                        className="field"
+                        defaultValue={p.audioUrl ?? ""}
+                        placeholder="/podcast-audio/episode.m4a  or  https://…"
                       />
                     </label>
                     <label className="flex items-center gap-2 sm:col-span-2">

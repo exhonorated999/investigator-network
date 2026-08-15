@@ -56,7 +56,9 @@ function toView(p: Podcast): PodcastView {
     title: p.title,
     description: p.description,
     category: p.category,
-    audioUrl: `/api/files/${p.audioFileId}`,
+    audioUrl:
+      (p.audioUrl && p.audioUrl.trim()) ||
+      (p.audioFileId ? `/api/files/${p.audioFileId}` : ""),
     rulingUrl: p.rulingUrl,
     publishedAt: p.publishedAt,
   };

@@ -825,7 +825,10 @@ model Podcast {
   /// Topic bucket, e.g. ICAC / General Investigations / Sex Offender / Patrol.
   category    String    @default("General Investigations")
   /// FileUpload.id of the uploaded audio, served via /api/files/[id].
-  audioFileId String
+  audioFileId String?
+  /// Direct audio URL (static asset like /podcast-audio/x.m4a or an external
+  /// https URL). Takes precedence over audioFileId when set.
+  audioUrl    String?
   /// Link to the underlying court ruling / opinion (optional but recommended).
   rulingUrl   String?
   /// null = shown to both sides; otherwise limited to one audience.
