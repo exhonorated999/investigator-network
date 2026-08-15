@@ -1,0 +1,37 @@
+[
+  {
+    "content": "Schema: add AssignmentSubmission model + SubmissionStatus enum + relations; migrate",
+    "id": "1",
+    "status": "completed"
+  },
+  {
+    "content": "Data: set completionRule=GRADED on the 6 SAPS exercise units",
+    "id": "2",
+    "status": "completed"
+  },
+  {
+    "content": "submitAssignment: graded branch (pending submission, no auto-complete, supersede prior pending)",
+    "id": "3",
+    "status": "completed"
+  },
+  {
+    "content": "Admin grading: merge submissions into queue + detail page + gradeSubmission action",
+    "id": "4",
+    "status": "completed"
+  },
+  {
+    "content": "Learner UI: FILE_ASSIGNMENT graded states (pending/passed/failed+feedback, resubmit)",
+    "id": "5",
+    "status": "completed"
+  },
+  {
+    "content": "Certificate: isCourseComplete graded true-hybrid branch",
+    "id": "6",
+    "status": "completed"
+  },
+  {
+    "content": "Verify: tsc + next build",
+    "id": "7",
+    "status": "completed"
+  }
+]

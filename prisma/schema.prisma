@@ -810,6 +810,38 @@ model PartnerClick {
 }
 
 // ---------------------------------------------------------------------------
+// Case-law podcast library — AI-generated audio explainers that translate
+// court rulings into plain-language guidance for investigators. Admin uploads
+// the audio (served via /api/files/[id]) and links the underlying ruling.
+// `category` is a free string constrained to a code-defined list (see
+// lib/podcasts.ts) so new topics can be added without a migration.
+// ---------------------------------------------------------------------------
+
+model Podcast {
+  id          String    @id @default(cuid())
+  title       String
+  /// Plain-language summary of what the ruling means for investigations.
+  description String    @default("")
+  /// Topic bucket, e.g. ICAC / General Investigations / Sex Offender / Patrol.
+  category    String    @default("General Investigations")
+  /// FileUpload.id of the uploaded audio, served via /api/files/[id].
+  audioFileId String
+  /// Link to the underlying court ruling / opinion (optional but recommended).
+  rulingUrl   String?
+  /// null = shown to both sides; otherwise limited to one audience.
+  audience    Audience?
+  /// Hide an episode without deleting the row.
+  active      Boolean   @default(true)
+  /// Manual ordering nudge; primary sort is publishedAt (newest first).
+  sortOrder   Int       @default(0)
+  publishedAt DateTime  @default(now())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([active, publishedAt])
+}
+
+// ---------------------------------------------------------------------------
 // Time-on-course tracking — accumulated learner engagement seconds, bucketed
 // per calendar day so the admin metrics view can total by week/month/quarter/
 // year. Rows are written by recordHeartbeat: each heartbeat adds the elapsed

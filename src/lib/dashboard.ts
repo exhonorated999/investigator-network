@@ -12,6 +12,7 @@ export type WidgetId =
   | "messages"
   | "network"
   | "partners"
+  | "podcasts"
   | "conferences";
 
 export interface WidgetMeta {
@@ -61,6 +62,12 @@ export const WIDGETS: WidgetMeta[] = [
     id: "partners",
     label: "Partner Spotlight",
     description: "Rotating acknowledgement of the partners who support the network.",
+    span: 2,
+  },
+  {
+    id: "podcasts",
+    label: "Case-law Podcasts",
+    description: "Latest AI-generated audio explainers of rulings that affect investigations.",
     span: 2,
   },
   {
@@ -145,6 +152,7 @@ export const SLOTS: { span: WidgetMeta["span"] }[] = [
   { span: 3 }, // 3 ─┐ open row
   { span: 3 }, // 4 ─┘
   { span: 2 }, // 5 — partner spotlight (appended; see loadLayout back-compat)
+  { span: 2 }, // 6 — case-law podcasts (appended; see loadLayout back-compat)
 ];
 
 /** Seeded layout for a learner who has never customised. */
@@ -155,6 +163,7 @@ export const DEFAULT_LAYOUT: SlotChoice[] = [
   "community",
   "messages",
   "partners",
+  "podcasts",
 ];
 
 /** The choices offered in each slot's picker dropdown. `courses` and
@@ -164,6 +173,7 @@ export const SLOT_CHOICES: { id: SlotChoice; label: string }[] = [
   { id: "resources", label: "Tools & resources" },
   { id: "conferences", label: "Conferences & trainings" },
   { id: "partners", label: "Partner Spotlight" },
+  { id: "podcasts", label: "Case-law Podcasts" },
   { id: "news", label: "News feed" },
   { id: "community", label: "Community" },
   { id: "messages", label: "Messages" },

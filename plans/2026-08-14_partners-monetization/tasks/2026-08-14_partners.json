@@ -1,0 +1,32 @@
+[
+  {
+    "content": "[schema] Add PartnerTier enum + Partner model, migrate, regenerate client",
+    "id": "1",
+    "status": "completed"
+  },
+  {
+    "content": "[loaders] Create src/lib/partners.ts (viewer/spotlight/all loaders)",
+    "id": "2",
+    "status": "completed"
+  },
+  {
+    "content": "[files] Make partner-logo a public asset in files route",
+    "id": "3",
+    "status": "completed"
+  },
+  {
+    "content": "[admin] Create /admin/partners CRUD (actions + page) + admin-nav link",
+    "id": "4",
+    "status": "completed"
+  },
+  {
+    "content": "[widget] PartnersCard + register partners widget in dashboard.ts + dashboard page",
+    "id": "5",
+    "status": "completed"
+  },
+  {
+    "content": "[directory] /partners page + user nav link; then tsc + build verify",
+    "id": "6",
+    "status": "completed"
+  }
+]

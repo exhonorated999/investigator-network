@@ -1,0 +1,27 @@
+[
+  {
+    "content": "[schema] Add PartnerClick model + relation, migrate, regen client",
+    "id": "1",
+    "status": "completed"
+  },
+  {
+    "content": "[route] Click-tracking redirect route /api/partners/[id]/click",
+    "id": "2",
+    "status": "completed"
+  },
+  {
+    "content": "[links] Point widget + directory logos/links through the click route",
+    "id": "3",
+    "status": "completed"
+  },
+  {
+    "content": "[stats] loadPartnerClickStats loader (month/quarter/year/all per partner)",
+    "id": "4",
+    "status": "completed"
+  },
+  {
+    "content": "[admin] Metrics panel on /admin/partners; tsc + build; commit + push",
+    "id": "5",
+    "status": "completed"
+  }
+]

@@ -1,0 +1,32 @@
+[
+  {
+    "content": "[alerts-1] Add sendAdminMessageAlert + sendAdminQuestionAlert to lib/email.ts",
+    "id": "email",
+    "status": "completed"
+  },
+  {
+    "content": "[alerts-2] Create lib/admin-alerts.ts: find 4h-waiting messages + questions",
+    "id": "querylib",
+    "status": "completed"
+  },
+  {
+    "content": "[alerts-3] Create cron route + scripts/cron-admin-alerts.mjs trigger",
+    "id": "cron",
+    "status": "completed"
+  },
+  {
+    "content": "[alerts-4] Create /api/notifications/poll route (unread + open-question counts)",
+    "id": "pollapi",
+    "status": "completed"
+  },
+  {
+    "content": "[alerts-5] Create notification-watcher client component + mount in layout",
+    "id": "watcher",
+    "status": "completed"
+  },
+  {
+    "content": "[alerts-6] Typecheck + build + local verify",
+    "id": "verify",
+    "status": "completed"
+  }
+]

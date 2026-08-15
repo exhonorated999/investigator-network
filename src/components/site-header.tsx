@@ -70,6 +70,12 @@ export async function SiteHeader({
             Partners
           </Link>
           <Link
+            href="/podcasts"
+            className="eyebrow eyebrow-muted hidden transition hover:text-accent-bright sm:block"
+          >
+            Podcasts
+          </Link>
+          <Link
             href="/messages"
             className="eyebrow eyebrow-muted relative hidden transition hover:text-accent-bright sm:block"
           >

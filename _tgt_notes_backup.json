@@ -1,0 +1,83 @@
+{
+  "blocks": [
+    {
+      "id": "b607ad93a779f",
+      "type": "callout",
+      "title": "How to use this section",
+      "variant": "note",
+      "markdown": "Work through the presentation and the step-by-step guides below. Each guide is interactive — click through the walkthrough or open it full screen. Use these as a reference any time while working in DATAPILOT Desktop."
+    },
+    {
+      "id": "b311be68c32a6",
+      "text": "Course Presentation",
+      "type": "heading",
+      "level": 2,
+      "eyebrow": "OVERVIEW"
+    },
+    {
+      "id": "b2be77feed131",
+      "url": "https://heyzine.com/flip-book/47cbfb9ec6.html",
+      "type": "embed",
+      "title": "DATAPILOT Desktop Presentation",
+      "height": 720
+    },
+    {
+      "id": "b68a8a683bf5f",
+      "type": "divider",
+      "label": ""
+    },
+    {
+      "id": "b7de1e5f2aae7",
+      "text": "Creating a Case in DATAPILOT Desktop",
+      "type": "heading",
+      "level": 2,
+      "eyebrow": "GUIDE"
+    },
+    {
+      "id": "b320c183b9d4f",
+      "url": "https://scribehow.com/embed/Accessing_and_Creating_New_Case_in_DATAPILOT_Desktop__ADTJM20eTMqfI1T8OTSb2Q?removeLogo=true",
+      "type": "embed",
+      "title": "Creating a Case in DATAPILOT Desktop",
+      "height": 640
+    },
+    {
+      "id": "b368b0ba3cefc",
+      "type": "divider",
+      "label": ""
+    },
+    {
+      "id": "b6afef6565715",
+      "text": "Reviewing Reports in DATAPILOT Desktop",
+      "type": "heading",
+      "level": 2,
+      "eyebrow": "GUIDE"
+    },
+    {
+      "id": "bc6140daea6fc",
+      "url": "https://scribehow.com/embed/Reviewing_Reports_in_NEW_Datapilot_Desktop_Reader__jDAd2oOyT7Kj0EU5cmoiAw?skipIntro=true&removeLogo=true&as=video",
+      "type": "embed",
+      "title": "Reviewing Reports in DATAPILOT Desktop",
+      "height": 800
+    },
+    {
+      "id": "b8355faf0682a",
+      "type": "divider",
+      "label": ""
+    },
+    {
+      "id": "b505088ddb25d",
+      "text": "Flagging Evidence in DATAPILOT Desktop",
+      "type": "heading",
+      "level": 2,
+      "eyebrow": "GUIDE"
+    },
+    {
+      "id": "ba873916c0a2c",
+      "url": "https://scribehow.com/embed/Flagging_Evidence_in_Datapilot_Desktop__Cw-SxiZmRaWCdZJVhz820Q?skipIntro=true&removeLogo=true",
+      "type": "embed",
+      "title": "Flagging Evidence in DATAPILOT Desktop",
+      "height": 640
+    }
+  ],
+  "version": 1
+}

@@ -8,7 +8,7 @@ import { readFile } from "@/lib/storage";
  * Files are stored on disk (UPLOAD_DIR); only metadata lives in the DB.
  */
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
@@ -28,7 +28,8 @@ export async function GET(
   const isPublicAsset =
     file.purpose === "course-cover" ||
     file.purpose === "course-asset" ||
-    file.purpose === "partner-logo";
+    file.purpose === "partner-logo" ||
+    file.purpose === "podcast-audio";
   if (!isOwner && !isAdmin && !isPublicAsset) {
     return new NextResponse("Forbidden", { status: 403 });
   }
@@ -40,11 +41,48 @@ export async function GET(
     return new NextResponse("File missing", { status: 404 });
   }
 
+  const contentType = file.mimeType || "application/octet-stream";
+  const total = buffer.byteLength;
+
+  // Range support — required for reliable <audio>/<video> seeking. Browsers
+  // send `Range: bytes=start-end`; reply with 206 + the requested slice.
+  const range = req.headers.get("range");
+  if (range) {
+    const match = /^bytes=(\d*)-(\d*)$/.exec(range.trim());
+    if (match) {
+      const startRaw = match[1];
+      const endRaw = match[2];
+      let start = startRaw ? parseInt(startRaw, 10) : 0;
+      let end = endRaw ? parseInt(endRaw, 10) : total - 1;
+      if (Number.isNaN(start)) start = 0;
+      if (Number.isNaN(end)) end = total - 1;
+      end = Math.min(end, total - 1);
+      if (start > end || start >= total) {
+        return new NextResponse("Range Not Satisfiable", {
+          status: 416,
+          headers: { "Content-Range": `bytes */${total}` },
+        });
+      }
+      const chunk = buffer.subarray(start, end + 1);
+      return new NextResponse(new Uint8Array(chunk), {
+        status: 206,
+        headers: {
+          "Content-Type": contentType,
+          "Content-Range": `bytes ${start}-${end}/${total}`,
+          "Accept-Ranges": "bytes",
+          "Content-Length": String(chunk.byteLength),
+          "Content-Disposition": `inline; filename="${encodeURIComponent(file.filename)}"`,
+        },
+      });
+    }
+  }
+
   return new NextResponse(new Uint8Array(buffer), {
     headers: {
-      "Content-Type": file.mimeType || "application/octet-stream",
+      "Content-Type": contentType,
+      "Accept-Ranges": "bytes",
       "Content-Disposition": `inline; filename="${encodeURIComponent(file.filename)}"`,
-      "Content-Length": String(buffer.byteLength),
+      "Content-Length": String(total),
     },
   });
 }

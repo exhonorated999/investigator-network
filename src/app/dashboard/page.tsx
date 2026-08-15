@@ -28,6 +28,8 @@ import { loadResourcesForViewer } from "@/lib/resources";
 import { ResourcesCard } from "@/components/widgets/resources-card";
 import { loadSpotlightPartners } from "@/lib/partners";
 import { PartnersCard } from "@/components/widgets/partners-card";
+import { loadRecentPodcasts } from "@/lib/podcasts";
+import { PodcastsCard } from "@/components/widgets/podcasts-card";
 import { loadLayout } from "@/lib/dashboard-prefs";
 import { SLOTS, SPAN_CLASS, type SlotChoice } from "@/lib/dashboard";
 
@@ -119,6 +121,7 @@ export default async function DashboardPage() {
   const conferences = await loadUpcomingConferences(viewer, 6);
   const resources = await loadResourcesForViewer(viewer);
   const spotlightPartners = await loadSpotlightPartners(viewer);
+  const recentPodcasts = await loadRecentPodcasts(viewer, 4);
 
   // ------------------------------------------------------------- album data
   const enrolledAlbums: AlbumCourse[] = enrollments.map((e) => {
@@ -247,6 +250,18 @@ export default async function DashboardPage() {
 
       case "partners":
         return <PartnersCard items={spotlightPartners} number="11" />;
+
+      case "podcasts":
+        return (
+          <PodcastsCard
+            items={recentPodcasts.map((p) => ({
+              id: p.id,
+              title: p.title,
+              category: p.category,
+            }))}
+            number="12"
+          />
+        );
 
       case "network":
         return (
