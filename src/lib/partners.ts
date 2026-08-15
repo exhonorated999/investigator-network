@@ -88,3 +88,52 @@ export async function loadAllPartners() {
     orderBy: [{ tier: "asc" }, { sortOrder: "asc" }, { name: "asc" }],
   });
 }
+
+export interface PartnerClickStat {
+  partnerId: string;
+  month: number;
+  quarter: number;
+  year: number;
+  allTime: number;
+}
+
+/**
+ * Per-partner click counts bucketed for the current month / quarter / year,
+ * plus all-time — the numbers an admin shows a sponsor to demonstrate ROI.
+ * Month/quarter/year are calendar-to-date from the same start-of-year fetch;
+ * all-time is a separate aggregate so historical clicks are included.
+ */
+export async function loadPartnerClickStats(): Promise<Map<string, PartnerClickStat>> {
+  const now = new Date();
+  const y = now.getFullYear();
+  const startOfYear = new Date(y, 0, 1);
+  const startOfQuarter = new Date(y, Math.floor(now.getMonth() / 3) * 3, 1);
+  const startOfMonth = new Date(y, now.getMonth(), 1);
+
+  const [allTime, yearRows] = await Promise.all([
+    prisma.partnerClick.groupBy({ by: ["partnerId"], _count: { _all: true } }),
+    prisma.partnerClick.findMany({
+      where: { clickedAt: { gte: startOfYear } },
+      select: { partnerId: true, clickedAt: true },
+    }),
+  ]);
+
+  const map = new Map<string, PartnerClickStat>();
+  const ensure = (id: string) => {
+    let s = map.get(id);
+    if (!s) {
+      s = { partnerId: id, month: 0, quarter: 0, year: 0, allTime: 0 };
+      map.set(id, s);
+    }
+    return s;
+  };
+
+  for (const g of allTime) ensure(g.partnerId).allTime = g._count._all;
+  for (const r of yearRows) {
+    const s = ensure(r.partnerId);
+    s.year++;
+    if (r.clickedAt >= startOfQuarter) s.quarter++;
+    if (r.clickedAt >= startOfMonth) s.month++;
+  }
+  return map;
+}

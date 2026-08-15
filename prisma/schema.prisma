@@ -788,7 +788,25 @@ model Partner {
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
 
+  clicks     PartnerClick[]
+
   @@index([tier])
+}
+
+/// One recorded click on a partner placement (spotlight widget or directory).
+/// Kept as raw rows so admin ROI reporting can bucket by any period
+/// (month / quarter / year). Volume is low, so per-row storage is fine.
+model PartnerClick {
+  id        String   @id @default(cuid())
+  partnerId String
+  partner   Partner  @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  /// The signed-in user who clicked, if available (no FK — purely for future
+  /// de-duplication / reach analysis, never shown to sponsors individually).
+  userId    String?
+  clickedAt DateTime @default(now())
+
+  @@index([partnerId, clickedAt])
+  @@index([clickedAt])
 }
 
 // ---------------------------------------------------------------------------

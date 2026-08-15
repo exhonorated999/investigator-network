@@ -79,7 +79,7 @@ export function PartnersCard({
         className="flex h-full flex-col"
       >
         <a
-          href={p.url}
+          href={`/api/partners/${p.id}/click`}
           target="_blank"
           rel="noopener noreferrer sponsored"
           key={p.id}

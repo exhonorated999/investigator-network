@@ -17,7 +17,7 @@ function PartnerCard({ p }: { p: PartnerView }) {
   const host = hostOf(p.url);
   return (
     <a
-      href={p.url}
+      href={`/api/partners/${p.id}/click`}
       target="_blank"
       rel="noopener noreferrer sponsored"
       className="group panel flex flex-col p-5 transition hover:border-accent"

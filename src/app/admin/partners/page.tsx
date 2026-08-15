@@ -1,4 +1,4 @@
-import { loadAllPartners, PARTNER_TIERS } from "@/lib/partners";
+import { loadAllPartners, loadPartnerClickStats, PARTNER_TIERS } from "@/lib/partners";
 import {
   createPartner,
   updatePartner,
@@ -16,11 +16,35 @@ const AUDIENCE_CHIP: Record<string, string> = {
 
 export default async function PartnersAdminPage() {
   const partners = await loadAllPartners();
+  const clickStats = await loadPartnerClickStats();
 
   const grouped = PARTNER_TIERS.map((t) => ({
     ...t,
     items: partners.filter((p) => p.tier === t.id),
   }));
+
+  const now = new Date();
+  const periodLabels = {
+    month: now.toLocaleDateString(undefined, { month: "long", year: "numeric" }),
+    quarter: `Q${Math.floor(now.getMonth() / 3) + 1} ${now.getFullYear()}`,
+    year: String(now.getFullYear()),
+  };
+  // Partners with any activity first, then alphabetical — the ROI table.
+  const statRows = [...partners]
+    .map((p) => ({
+      p,
+      s: clickStats.get(p.id) ?? { partnerId: p.id, month: 0, quarter: 0, year: 0, allTime: 0 },
+    }))
+    .sort((a, b) => b.s.allTime - a.s.allTime || a.p.name.localeCompare(b.p.name));
+  const totals = statRows.reduce(
+    (acc, { s }) => ({
+      month: acc.month + s.month,
+      quarter: acc.quarter + s.quarter,
+      year: acc.year + s.year,
+      allTime: acc.allTime + s.allTime,
+    }),
+    { month: 0, quarter: 0, year: 0, allTime: 0 }
+  );
 
   return (
     <div className="reveal">
@@ -35,6 +59,95 @@ export default async function PartnersAdminPage() {
         </a>
         . Placements are always labeled &mdash; no popups, no content-blocking ads.
       </p>
+
+      {/* Click metrics — ROI for sponsors */}
+      <div className="panel rule-top mt-6 p-5">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="eyebrow eyebrow-gold">Engagement</p>
+            <h2 className="display-sm mt-1 text-foreground">Ad clicks</h2>
+          </div>
+          <p className="max-w-md text-[13px] text-muted">
+            Every click on a partner&rsquo;s spotlight card or directory listing is
+            counted. Share these with sponsors to show return on investment.
+          </p>
+        </div>
+
+        <div className="mt-4 overflow-x-auto">
+          <table className="w-full min-w-[560px] border-collapse text-left">
+            <thead>
+              <tr className="border-b border-border">
+                <th className="py-2 pr-4 eyebrow eyebrow-muted font-normal">Partner</th>
+                <th className="py-2 px-3 text-right eyebrow eyebrow-muted font-normal">
+                  {periodLabels.month}
+                </th>
+                <th className="py-2 px-3 text-right eyebrow eyebrow-muted font-normal">
+                  {periodLabels.quarter}
+                </th>
+                <th className="py-2 px-3 text-right eyebrow eyebrow-muted font-normal">
+                  {periodLabels.year}
+                </th>
+                <th className="py-2 pl-3 text-right eyebrow eyebrow-muted font-normal">
+                  All time
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {statRows.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-4 text-[14px] text-muted">
+                    No partners yet.
+                  </td>
+                </tr>
+              ) : (
+                statRows.map(({ p, s }) => (
+                  <tr key={p.id} className="border-b border-border/60">
+                    <td className="py-2.5 pr-4">
+                      <span className="text-[14px] text-foreground">{p.name}</span>
+                      {!p.active ? (
+                        <span className="ml-2 font-mono text-[10px] uppercase tracking-wider text-danger">
+                          hidden
+                        </span>
+                      ) : null}
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-mono text-[14px] text-foreground">
+                      {s.month}
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-mono text-[14px] text-foreground">
+                      {s.quarter}
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-mono text-[14px] text-foreground">
+                      {s.year}
+                    </td>
+                    <td className="py-2.5 pl-3 text-right font-mono text-[14px] font-semibold text-accent-bright">
+                      {s.allTime}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+            {statRows.length > 0 ? (
+              <tfoot>
+                <tr>
+                  <td className="py-2.5 pr-4 eyebrow eyebrow-muted">Total</td>
+                  <td className="py-2.5 px-3 text-right font-mono text-[14px] text-muted">
+                    {totals.month}
+                  </td>
+                  <td className="py-2.5 px-3 text-right font-mono text-[14px] text-muted">
+                    {totals.quarter}
+                  </td>
+                  <td className="py-2.5 px-3 text-right font-mono text-[14px] text-muted">
+                    {totals.year}
+                  </td>
+                  <td className="py-2.5 pl-3 text-right font-mono text-[14px] text-muted">
+                    {totals.allTime}
+                  </td>
+                </tr>
+              </tfoot>
+            ) : null}
+          </table>
+        </div>
+      </div>
 
       {/* Create */}
       <div className="panel rule-top mt-6 p-5">
