@@ -85,8 +85,9 @@ export default async function CourseOverview({
         })
       : null;
 
-  const totalUnits = units.length;
-  const doneCount = completed.size;
+  const requiredUnits = units.filter((u) => u.completionRule !== "OPTIONAL");
+  const totalUnits = requiredUnits.length;
+  const doneCount = requiredUnits.filter((u) => completed.has(u.id)).length;
 
   // Course forum — visible to enrolled learners and admins.
   const canForum = isAdmin || !!enrollment;
@@ -300,6 +301,11 @@ export default async function CourseOverview({
                           <span className="flex-1 text-[15px] text-foreground">
                             {u.title}
                           </span>
+                          {u.completionRule === "OPTIONAL" ? (
+                            <span className="tag-chip hidden sm:inline-flex">
+                              Optional
+                            </span>
+                          ) : null}
                           <span className="tag-chip tag-chip-cyan hidden sm:inline-flex">
                             {UNIT_LABEL[u.type]}
                           </span>

@@ -48,9 +48,13 @@ export async function progressMap(
 }
 
 export function percentComplete(course: LoadedCourse, completed: Set<string>): number {
-  const units = flattenUnits(course);
+  // OPTIONAL units (recommended-viewing bonus content) are excluded from the
+  // progress math, so a learner reaches 100% — and unlocks the certificate —
+  // without having to watch them.
+  const units = flattenUnits(course).filter((u) => u.completionRule !== "OPTIONAL");
   if (units.length === 0) return 0;
-  return Math.round((completed.size / units.length) * 100);
+  const doneRequired = units.filter((u) => completed.has(u.id)).length;
+  return Math.round((doneRequired / units.length) * 100);
 }
 
 /** Prev/next unit ids for player navigation. */

@@ -35,10 +35,15 @@ export async function isCourseComplete(
   userId: string,
   courseId: string
 ): Promise<boolean> {
-  const units = await prisma.unit.findMany({
+  const allUnits = await prisma.unit.findMany({
     where: { section: { courseId } },
-    select: { id: true, type: true },
+    select: { id: true, type: true, completionRule: true },
   });
+  if (allUnits.length === 0) return false;
+
+  // Units flagged completionRule="OPTIONAL" (e.g. recommended-viewing bonus
+  // videos) never count toward completion or block the certificate.
+  const units = allUnits.filter((u) => u.completionRule !== "OPTIONAL");
   if (units.length === 0) return false;
 
   const completeRows = await prisma.unitProgress.findMany({
