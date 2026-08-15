@@ -26,7 +26,9 @@ export async function GET(
   // private evidence: any signed-in user may read them. Everything else —
   // assignment submissions in particular — stays owner-or-admin.
   const isPublicAsset =
-    file.purpose === "course-cover" || file.purpose === "course-asset";
+    file.purpose === "course-cover" ||
+    file.purpose === "course-asset" ||
+    file.purpose === "partner-logo";
   if (!isOwner && !isAdmin && !isPublicAsset) {
     return new NextResponse("Forbidden", { status: 403 });
   }

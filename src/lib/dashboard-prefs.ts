@@ -24,7 +24,12 @@ export async function loadLayout(userId: string): Promise<SlotChoice[]> {
   const layout = [...DEFAULT_LAYOUT];
 
   const raw = pref && Array.isArray(pref.widgets) ? (pref.widgets as unknown[]) : null;
-  if (raw && raw.length === SLOTS.length) {
+  // Accept saved layouts up to the current slot count. Older layouts saved
+  // before a slot was appended (e.g. the Partner Spotlight) are shorter than
+  // SLOTS — we preserve their existing choices by index and let any new,
+  // unspecified slots fall back to DEFAULT_LAYOUT rather than resetting the
+  // whole dashboard.
+  if (raw && raw.length > 0 && raw.length <= SLOTS.length) {
     for (let i = 0; i < SLOTS.length; i++) {
       const v = raw[i];
       if (typeof v !== "string" || !isSlotChoice(v)) continue;

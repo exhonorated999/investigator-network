@@ -754,6 +754,41 @@ model Resource {
 }
 
 // ---------------------------------------------------------------------------
+// Partners — curated, admin-managed sponsor/vendor acknowledgements. Surfaced
+// as a rotating "Partner Spotlight" dashboard widget and a "/partners"
+// directory. Deliberately native and bounded (no popups/ad-creep): FEATURED
+// partners rotate in the spotlight and sort to the top of the directory;
+// STANDARD partners appear in the directory only. Audience-aware like Resource.
+// ---------------------------------------------------------------------------
+
+enum PartnerTier {
+  FEATURED
+  STANDARD
+}
+
+model Partner {
+  id         String      @id @default(cuid())
+  name       String
+  /// One-line value proposition shown under the partner name.
+  blurb      String      @default("")
+  /// Partner site / offer link.
+  url        String
+  tier       PartnerTier @default(STANDARD)
+  /// Hide a partner without deleting the row.
+  active     Boolean     @default(true)
+  /// FileUpload.id of an uploaded logo, served via /api/files/[id].
+  logoFileId String?
+  /// null = shown to both sides; otherwise limited to one audience.
+  audience   Audience?
+  /// Manual ordering within a tier (lower shows first).
+  sortOrder  Int         @default(0)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  @@index([tier])
+}
+
+// ---------------------------------------------------------------------------
 // Time-on-course tracking — accumulated learner engagement seconds, bucketed
 // per calendar day so the admin metrics view can total by week/month/quarter/
 // year. Rows are written by recordHeartbeat: each heartbeat adds the elapsed

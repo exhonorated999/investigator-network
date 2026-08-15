@@ -26,6 +26,8 @@ import { loadUpcomingConferences } from "@/lib/conferences";
 import { ConferencesCard } from "@/components/widgets/conferences-card";
 import { loadResourcesForViewer } from "@/lib/resources";
 import { ResourcesCard } from "@/components/widgets/resources-card";
+import { loadSpotlightPartners } from "@/lib/partners";
+import { PartnersCard } from "@/components/widgets/partners-card";
 import { loadLayout } from "@/lib/dashboard-prefs";
 import { SLOTS, SPAN_CLASS, type SlotChoice } from "@/lib/dashboard";
 
@@ -116,6 +118,7 @@ export default async function DashboardPage() {
 
   const conferences = await loadUpcomingConferences(viewer, 6);
   const resources = await loadResourcesForViewer(viewer);
+  const spotlightPartners = await loadSpotlightPartners(viewer);
 
   // ------------------------------------------------------------- album data
   const enrolledAlbums: AlbumCourse[] = enrollments.map((e) => {
@@ -241,6 +244,9 @@ export default async function DashboardPage() {
 
       case "conferences":
         return <ConferencesCard items={conferences} number="10" />;
+
+      case "partners":
+        return <PartnersCard items={spotlightPartners} number="11" />;
 
       case "network":
         return (
