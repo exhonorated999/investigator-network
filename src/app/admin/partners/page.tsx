@@ -89,7 +89,15 @@ export default async function PartnersAdminPage() {
             />
           </label>
           <label className="grid gap-1.5 sm:col-span-2">
-            <span className="eyebrow eyebrow-muted">Logo (PNG/SVG, transparent preferred)</span>
+            <span className="eyebrow eyebrow-muted">Logo URL (static asset or https)</span>
+            <input
+              name="logoUrl"
+              className="field"
+              placeholder="/partner-logos/acme.png  or  https://…"
+            />
+          </label>
+          <label className="grid gap-1.5 sm:col-span-2">
+            <span className="eyebrow eyebrow-muted">…or upload a logo (PNG/SVG, transparent preferred)</span>
             <input
               type="file"
               name="logo"
@@ -127,9 +135,12 @@ export default async function PartnersAdminPage() {
                   <div key={p.id} className="p-4">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex min-w-0 items-start gap-3">
-                        {p.logoFileId ? (
+                        {(p.logoUrl && p.logoUrl.trim()) || p.logoFileId ? (
                           <img
-                            src={`/api/files/${p.logoFileId}`}
+                            src={
+                              (p.logoUrl && p.logoUrl.trim()) ||
+                              `/api/files/${p.logoFileId}`
+                            }
                             alt={p.name}
                             width={44}
                             height={44}
@@ -250,8 +261,17 @@ export default async function PartnersAdminPage() {
                           />
                         </label>
                         <label className="grid gap-1.5 sm:col-span-2">
+                          <span className="eyebrow eyebrow-muted">Logo URL (static asset or https)</span>
+                          <input
+                            name="logoUrl"
+                            className="field"
+                            defaultValue={p.logoUrl ?? ""}
+                            placeholder="/partner-logos/acme.png  or  https://…"
+                          />
+                        </label>
+                        <label className="grid gap-1.5 sm:col-span-2">
                           <span className="eyebrow eyebrow-muted">
-                            Replace logo (leave empty to keep current)
+                            …or replace logo by upload (leave empty to keep current)
                           </span>
                           <input
                             type="file"

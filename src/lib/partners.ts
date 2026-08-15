@@ -37,7 +37,9 @@ function toView(p: Partner): PartnerView {
     blurb: p.blurb,
     url: p.url,
     tier: p.tier,
-    logoUrl: p.logoFileId ? `/api/files/${p.logoFileId}` : null,
+    logoUrl:
+      (p.logoUrl && p.logoUrl.trim()) ||
+      (p.logoFileId ? `/api/files/${p.logoFileId}` : null),
   };
 }
 

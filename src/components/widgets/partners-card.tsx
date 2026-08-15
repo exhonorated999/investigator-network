@@ -91,7 +91,7 @@ export function PartnersCard({
               <img
                 src={p.logoUrl}
                 alt={p.name}
-                className="h-12 w-12 shrink-0 rounded border border-border bg-white object-contain p-1"
+                className="h-12 w-12 shrink-0 rounded border border-border bg-transparent object-contain"
               />
             ) : (
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded border border-border bg-surface font-display text-xl text-muted">

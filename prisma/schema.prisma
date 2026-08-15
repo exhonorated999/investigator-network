@@ -778,6 +778,9 @@ model Partner {
   active     Boolean     @default(true)
   /// FileUpload.id of an uploaded logo, served via /api/files/[id].
   logoFileId String?
+  /// Direct logo URL (static asset like /partner-logos/x.png or an external
+  /// https URL). Takes precedence over logoFileId when set.
+  logoUrl    String?
   /// null = shown to both sides; otherwise limited to one audience.
   audience   Audience?
   /// Manual ordering within a tier (lower shows first).

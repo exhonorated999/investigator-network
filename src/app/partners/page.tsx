@@ -28,7 +28,7 @@ function PartnerCard({ p }: { p: PartnerView }) {
           <img
             src={p.logoUrl}
             alt={p.name}
-            className="h-14 w-14 shrink-0 rounded border border-border bg-white object-contain p-1.5"
+            className="h-14 w-14 shrink-0 rounded border border-border bg-transparent object-contain"
           />
         ) : (
           <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded border border-border bg-surface font-display text-2xl text-muted">

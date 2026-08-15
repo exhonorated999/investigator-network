@@ -30,6 +30,15 @@ function normalizeUrl(raw: FormDataEntryValue | null): string {
   return s;
 }
 
+/** Logo URL may be a site-relative static asset (/partner-logos/x.png) or an
+ * absolute https URL; leave relative paths alone, https-prefix bare hosts. */
+function normalizeLogoUrl(raw: FormDataEntryValue | null): string | null {
+  const s = String(raw || "").trim();
+  if (!s) return null;
+  if (s.startsWith("/") || /^https?:\/\//i.test(s)) return s;
+  return `https://${s}`;
+}
+
 /** Persist an uploaded logo (if any) and return its FileUpload id, else null. */
 async function saveLogo(
   file: FormDataEntryValue | null,
@@ -68,6 +77,7 @@ export async function createPartner(formData: FormData) {
       active: formData.get("active") != null,
       sortOrder: Number(formData.get("sortOrder") || 0) || 0,
       logoFileId,
+      logoUrl: normalizeLogoUrl(formData.get("logoUrl")),
     },
   });
   refresh();
@@ -94,6 +104,7 @@ export async function updatePartner(formData: FormData) {
       audience: parseAudience(formData.get("audience")),
       active: formData.get("active") != null,
       sortOrder: Number(formData.get("sortOrder") || 0) || 0,
+      logoUrl: normalizeLogoUrl(formData.get("logoUrl")),
       ...(newLogoId ? { logoFileId: newLogoId } : {}),
     },
   });
