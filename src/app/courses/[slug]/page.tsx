@@ -48,10 +48,13 @@ export const dynamic = "force-dynamic";
 
 export default async function CourseOverview({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ error?: string }>;
 }) {
   const { slug } = await params;
+  const { error } = await searchParams;
   const user = await requireViewer();
 
   const course = await loadCourseBySlug(slug);
@@ -195,13 +198,22 @@ export default async function CourseOverview({
           isPaid ? (
             /* Paid: no self-enroll. Purchase off-site, then an admin enrolls. */
             <div className="panel rule-top reveal reveal-2 mt-8 p-6">
+              {error === "payment_required" ? (
+                <div className="mb-4 rounded-lg border border-gold/40 bg-[rgba(244,162,97,0.08)] p-3 text-[13px] text-gold">
+                  This is a paid course — enrollment is granted by an
+                  administrator after payment. Please complete your purchase or
+                  request an invoice below.
+                </div>
+              ) : null}
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
                   <p className="eyebrow eyebrow-gold">Enrollment by purchase</p>
                   <p className="mt-2 max-w-xl text-muted">
-                    Seats are reserved on payment. Once your payment or agency
-                    invoice clears, your account is granted access and you will
-                    receive your course materials.
+                    This is a paid course{checkout?.priceLabel ? ` — ${checkout.priceLabel}` : ""}.
+                    There is no free self-enrollment. Seats are reserved on
+                    payment: once your payment or agency invoice clears, an
+                    administrator grants your account access and you will receive
+                    your course materials.
                   </p>
                 </div>
                 {checkout?.priceLabel ? (

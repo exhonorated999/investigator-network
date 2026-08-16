@@ -60,6 +60,14 @@ export async function enroll(formData: FormData) {
   });
   if (!course || course.status !== "PUBLISHED") redirect("/dashboard");
 
+  // PAID courses have no in-app checkout: payment happens off-site and an admin
+  // enrolls the attendee afterwards. Never let a learner self-enroll for free —
+  // even by POSTing this action directly (the button is hidden, but the server
+  // is the real gate). Admins may still enroll themselves to preview.
+  if (course.pricing === "PAID" && session.user.role !== "ADMIN") {
+    redirect(`/courses/${slug}?error=payment_required`);
+  }
+
   await prisma.enrollment.upsert({
     where: { userId_courseId: { userId, courseId: course.id } },
     update: {},

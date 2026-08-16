@@ -27,6 +27,7 @@ const CHECKOUTS: Record<string, CourseCheckout> = {
   "cybertips-a-to-z": {
     checkoutUrl: "https://buy.stripe.com/3cI8wOb886Tufsi2IY33W0a",
     invoiceEmail: "justin@intellect-le.com",
+    priceLabel: "$600 per attendee",
     note:
       "Includes a lifetime Project V.I.P.E.R. license ($600 value), a 500 GB drive " +
       "with V.I.P.E.R. pre-installed and pre-registered, and access to the " +
