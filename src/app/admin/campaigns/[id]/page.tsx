@@ -97,6 +97,31 @@ export default async function CampaignDetailPage({
       </div>
       <h1 className="display-lg mt-2 text-foreground">{campaign.subject}</h1>
 
+      {/* Rendered preview */}
+      <div className="panel rule-top mt-6 p-5">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="eyebrow eyebrow-gold">Preview</p>
+            <h2 className="display-sm mt-1 text-foreground">As recipients see it</h2>
+          </div>
+          <a
+            href={`/api/admin/campaigns/${campaign.id}/preview`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-ghost btn-sm"
+          >
+            Open in new tab ↗
+          </a>
+        </div>
+        <div className="mt-4 overflow-hidden rounded-lg border border-border bg-white">
+          <iframe
+            src={`/api/admin/campaigns/${campaign.id}/preview`}
+            title="Email preview"
+            className="h-[640px] w-full"
+          />
+        </div>
+      </div>
+
       {/* Metrics — always visible; meaningful after send */}
       <MetricsPanel stat={stat} />
 
