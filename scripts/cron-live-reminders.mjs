@@ -2,10 +2,12 @@
  * Scheduled cron trigger (Railway Cron service, e.g. every 5 minutes:
  * cron expression `*​/5 * * * *`).
  *
- * Fires TWO protected jobs in sequence, each POSTing to the app with the shared
+ * Fires protected jobs in sequence, each POSTing to the app with the shared
  * secret (all logic lives server-side):
  *   1. /api/cron/live-reminders  — live-training reminder emails
  *   2. /api/cron/admin-alerts    — admin "waiting >4h" message/question alerts
+ *   3. /api/cron/send-scheduled  — dispatch bulk campaigns whose scheduled time
+ *                                  has arrived (5-min granularity)
  *
  * Both jobs are idempotent server-side (EmailLog dedupe), so running them on
  * the same short interval is safe. The admin-alerts 4h threshold means a 5-min
@@ -51,8 +53,9 @@ async function trigger(path) {
   }
 }
 
-// Run both jobs; don't let one short-circuit the other.
+// Run all jobs; don't let one short-circuit the others.
 const okReminders = await trigger("/api/cron/live-reminders");
 const okAlerts = await trigger("/api/cron/admin-alerts");
+const okScheduled = await trigger("/api/cron/send-scheduled");
 
-if (!okReminders || !okAlerts) process.exit(1);
+if (!okReminders || !okAlerts || !okScheduled) process.exit(1);

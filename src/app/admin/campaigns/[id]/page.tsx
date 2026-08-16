@@ -11,12 +11,16 @@ import {
   deleteCampaign,
   sendTestAction,
   sendCampaignAction,
+  scheduleCampaign,
+  unscheduleCampaign,
 } from "../actions";
+import { ScheduleForm } from "./schedule-form";
 
 export const dynamic = "force-dynamic";
 
 const STATUS_CHIP: Record<string, string> = {
   DRAFT: "border-border text-muted",
+  SCHEDULED: "border-gold/40 text-gold bg-[rgba(244,162,97,0.08)]",
   SENDING: "border-accent-bright/40 text-accent-bright bg-[rgba(0,180,216,0.06)]",
   SENT: "border-success/40 text-success bg-[rgba(74,222,128,0.08)]",
   FAILED: "border-danger/40 text-danger bg-[rgba(239,68,68,0.08)]",
@@ -92,6 +96,11 @@ export default async function CampaignDetailPage({
         {campaign.sentAt ? (
           <span className="font-mono text-[11px] text-muted">
             Sent {new Date(campaign.sentAt).toLocaleString()}
+          </span>
+        ) : null}
+        {campaign.status === "SCHEDULED" && campaign.scheduledAt ? (
+          <span className="font-mono text-[11px] text-gold">
+            Scheduled for {new Date(campaign.scheduledAt).toLocaleString()}
           </span>
         ) : null}
       </div>
@@ -171,6 +180,19 @@ export default async function CampaignDetailPage({
                 Send to {preview.total} recipients
               </button>
             </form>
+
+            <div className="mt-6 rule-top pt-5">
+              <p className="eyebrow eyebrow-muted">Or schedule for later</p>
+              <p className="mt-2 max-w-2xl text-[13px] text-muted">
+                Pick a future date/time (up to 30 days out). The campaign stays a
+                draft until then; you can cancel any time before it fires.
+              </p>
+              <ScheduleForm
+                action={scheduleCampaign}
+                campaignId={campaign.id}
+                total={preview.total}
+              />
+            </div>
           </div>
 
           {/* Edit */}
@@ -230,6 +252,33 @@ export default async function CampaignDetailPage({
             </button>
           </form>
         </>
+      ) : campaign.status === "SCHEDULED" ? (
+        <div className="panel rule-top mt-6 border-gold/30 bg-[rgba(244,162,97,0.05)] p-5">
+          <p className="eyebrow eyebrow-gold">Scheduled</p>
+          <p className="mt-2 text-[15px] text-foreground">
+            Sending to{" "}
+            <span className="font-display text-xl font-black text-accent-bright">
+              {preview.total}
+            </span>{" "}
+            recipients on{" "}
+            <strong className="text-gold">
+              {campaign.scheduledAt
+                ? new Date(campaign.scheduledAt).toLocaleString()
+                : "—"}
+            </strong>
+            .
+          </p>
+          <p className="mt-2 max-w-2xl text-[12px] text-muted">
+            The cron worker dispatches due campaigns. Cancel to return this to an
+            editable draft.
+          </p>
+          <form action={unscheduleCampaign} className="mt-4">
+            <input type="hidden" name="id" value={campaign.id} />
+            <button type="submit" className="btn btn-ghost btn-sm">
+              Cancel schedule → back to draft
+            </button>
+          </form>
+        </div>
       ) : (
         <div className="panel rule-top mt-6 p-5">
           <p className="eyebrow eyebrow-muted">Body HTML (as sent)</p>

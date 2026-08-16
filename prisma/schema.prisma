@@ -925,6 +925,7 @@ model Contact {
 
 enum CampaignStatus {
   DRAFT
+  SCHEDULED
   SENDING
   SENT
   FAILED
@@ -951,6 +952,8 @@ model Campaign {
   createdById     String?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
+  /// When set (and status SCHEDULED), the cron worker sends at/after this time.
+  scheduledAt     DateTime?
   sentAt          DateTime?
 
   recipients CampaignRecipient[]

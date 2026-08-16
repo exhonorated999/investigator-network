@@ -159,14 +159,15 @@ export interface SendOutcome {
 }
 
 /**
- * Send a DRAFT campaign. Idempotency: refuses to send unless status is DRAFT.
- * Creates CampaignRecipient rows first (so a mid-send crash leaves an auditable
- * trail), then dispatches in batches of 100, mapping Resend ids back per row.
+ * Send a DRAFT (immediate) or SCHEDULED (due) campaign. Idempotency: refuses to
+ * send unless status is DRAFT or SCHEDULED. Creates CampaignRecipient rows first
+ * (so a mid-send crash leaves an auditable trail), then dispatches in batches of
+ * 100, mapping Resend ids back per row.
  */
 export async function sendCampaign(campaignId: string): Promise<SendOutcome> {
   const campaign = await prisma.campaign.findUnique({ where: { id: campaignId } });
   if (!campaign) return { ok: false, total: 0, sent: 0, failed: 0, error: "not_found" };
-  if (campaign.status !== "DRAFT") {
+  if (campaign.status !== "DRAFT" && campaign.status !== "SCHEDULED") {
     return { ok: false, total: 0, sent: 0, failed: 0, error: "already_sent" };
   }
 
@@ -264,6 +265,28 @@ export async function sendCampaign(campaignId: string): Promise<SendOutcome> {
   });
 
   return { ok: sent > 0, total: rows.length, sent, failed };
+}
+
+/**
+ * Cron entrypoint: find every SCHEDULED campaign whose scheduledAt is now due
+ * and send it. Safe to call repeatedly — sendCampaign flips status to SENDING
+ * up front, so a second overlapping run skips already-claimed campaigns.
+ */
+export async function runDueScheduledCampaigns(): Promise<{
+  processed: number;
+  results: { id: string; outcome: SendOutcome }[];
+}> {
+  const due = await prisma.campaign.findMany({
+    where: { status: "SCHEDULED", scheduledAt: { lte: new Date() } },
+    select: { id: true },
+    orderBy: { scheduledAt: "asc" },
+  });
+  const results: { id: string; outcome: SendOutcome }[] = [];
+  for (const c of due) {
+    const outcome = await sendCampaign(c.id);
+    results.push({ id: c.id, outcome });
+  }
+  return { processed: due.length, results };
 }
 
 export interface CampaignStat {

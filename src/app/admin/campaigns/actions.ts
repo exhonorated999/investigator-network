@@ -93,3 +93,54 @@ export async function sendCampaignAction(formData: FormData): Promise<void> {
   await sendCampaign(id);
   refresh(id);
 }
+
+/**
+ * Schedule a DRAFT campaign to send at a future time. `scheduledAt` arrives as
+ * an ISO-8601 UTC string (the client converts the datetime-local using the
+ * browser timezone). Requires the same typed SEND confirmation as an immediate
+ * blast. Window: must be in the future and within Resend's 30-day horizon.
+ */
+export async function scheduleCampaign(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const id = String(formData.get("id") || "");
+  const confirm = String(formData.get("confirm") || "").trim().toUpperCase();
+  const iso = String(formData.get("scheduledAt") || "").trim();
+  if (!id || confirm !== "SEND" || !iso) return;
+
+  const when = new Date(iso);
+  if (Number.isNaN(when.getTime())) return;
+  const now = Date.now();
+  // Reject past times (allow a 1-minute grace) and anything > 30 days out.
+  if (when.getTime() < now - 60_000) return;
+  if (when.getTime() > now + 30 * 24 * 60 * 60 * 1000) return;
+
+  const existing = await prisma.campaign.findUnique({
+    where: { id },
+    select: { status: true },
+  });
+  if (!existing || existing.status !== "DRAFT") return; // only drafts can be scheduled
+
+  await prisma.campaign.update({
+    where: { id },
+    data: { status: "SCHEDULED", scheduledAt: when },
+  });
+  refresh(id);
+}
+
+/** Cancel a pending schedule, returning the campaign to editable DRAFT. */
+export async function unscheduleCampaign(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const id = String(formData.get("id") || "");
+  if (!id) return;
+  const existing = await prisma.campaign.findUnique({
+    where: { id },
+    select: { status: true },
+  });
+  if (!existing || existing.status !== "SCHEDULED") return;
+
+  await prisma.campaign.update({
+    where: { id },
+    data: { status: "DRAFT", scheduledAt: null },
+  });
+  refresh(id);
+}

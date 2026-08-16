@@ -6,6 +6,7 @@ export const dynamic = "force-dynamic";
 
 const STATUS_CHIP: Record<string, string> = {
   DRAFT: "border-border text-muted",
+  SCHEDULED: "border-gold/40 text-gold bg-[rgba(244,162,97,0.08)]",
   SENDING: "border-accent-bright/40 text-accent-bright bg-[rgba(0,180,216,0.06)]",
   SENT: "border-success/40 text-success bg-[rgba(74,222,128,0.08)]",
   FAILED: "border-danger/40 text-danger bg-[rgba(239,68,68,0.08)]",
