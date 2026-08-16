@@ -15,6 +15,8 @@ const links = [
   { href: "/admin/resources", label: "Resources" },
   { href: "/admin/partners", label: "Partners" },
   { href: "/admin/podcasts", label: "Podcasts" },
+  { href: "/admin/campaigns", label: "Campaigns" },
+  { href: "/admin/contacts", label: "Contacts" },
   { href: "/admin/reminders", label: "Reminders" },
   { href: "/admin/grading", label: "Grading" },
   { href: "/admin/moderation", label: "Moderation" },

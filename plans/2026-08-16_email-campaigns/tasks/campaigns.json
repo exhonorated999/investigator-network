@@ -1,0 +1,32 @@
+[
+  {
+    "content": "Schema: Contact, Campaign, CampaignRecipient, Suppression models + enums; migration",
+    "id": "1",
+    "status": "completed"
+  },
+  {
+    "content": "Branded email HTML shell (header/logo/colors + compliant footer: unsubscribe + physical address)",
+    "id": "2",
+    "status": "completed"
+  },
+  {
+    "content": "Contacts: CSV import action + admin contacts page (dedupe vs members, unsub status)",
+    "id": "3",
+    "status": "completed"
+  },
+  {
+    "content": "Campaigns lib: recipient assembly (members+contacts, deduped, minus suppressed) + Resend batch send",
+    "id": "4",
+    "status": "completed"
+  },
+  {
+    "content": "Resend webhook endpoint (signed): delivered/bounced/opened/clicked/complained → recipient + suppression",
+    "id": "5",
+    "status": "completed"
+  },
+  {
+    "content": "Unsubscribe route + suppression; admin campaigns CRUD + metrics dashboard",
+    "id": "6",
+    "status": "completed"
+  }
+]
