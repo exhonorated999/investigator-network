@@ -15,6 +15,7 @@ import {
   unscheduleCampaign,
 } from "../actions";
 import { ScheduleForm } from "./schedule-form";
+import { LocalTime } from "./local-time";
 
 export const dynamic = "force-dynamic";
 
@@ -95,12 +96,12 @@ export default async function CampaignDetailPage({
         </span>
         {campaign.sentAt ? (
           <span className="font-mono text-[11px] text-muted">
-            Sent {new Date(campaign.sentAt).toLocaleString()}
+            Sent <LocalTime iso={campaign.sentAt.toISOString()} />
           </span>
         ) : null}
         {campaign.status === "SCHEDULED" && campaign.scheduledAt ? (
           <span className="font-mono text-[11px] text-gold">
-            Scheduled for {new Date(campaign.scheduledAt).toLocaleString()}
+            Scheduled for <LocalTime iso={campaign.scheduledAt.toISOString()} />
           </span>
         ) : null}
       </div>
@@ -262,9 +263,11 @@ export default async function CampaignDetailPage({
             </span>{" "}
             recipients on{" "}
             <strong className="text-gold">
-              {campaign.scheduledAt
-                ? new Date(campaign.scheduledAt).toLocaleString()
-                : "—"}
+              {campaign.scheduledAt ? (
+                <LocalTime iso={campaign.scheduledAt.toISOString()} />
+              ) : (
+                "—"
+              )}
             </strong>
             .
           </p>

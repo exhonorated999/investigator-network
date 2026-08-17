@@ -24,6 +24,19 @@ export function ScheduleForm({
       ? Intl.DateTimeFormat().resolvedOptions().timeZone
       : "local time";
 
+  // Human-readable confirmation of the selected instant, in the admin's tz.
+  const willSend = local
+    ? new Date(local).toLocaleString(undefined, {
+        weekday: "short",
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        timeZoneName: "short",
+      })
+    : "";
+
   // Default the picker no earlier than ~5 minutes from now.
   const min = (() => {
     const d = new Date(Date.now() + 5 * 60_000);
@@ -47,6 +60,11 @@ export function ScheduleForm({
           className="field"
         />
       </label>
+      {willSend ? (
+        <p className="text-[12px] text-accent-bright">
+          Will send: <strong>{willSend}</strong>
+        </p>
+      ) : null}
       <label className="grid gap-1.5">
         <span className="eyebrow eyebrow-muted">Type SEND to confirm</span>
         <input
