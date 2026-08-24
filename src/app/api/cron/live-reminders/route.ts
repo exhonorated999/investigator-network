@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { sendLiveSessionReminder } from "@/lib/email";
-import { parseSessionInstant, pacificTimeOnDay } from "@/lib/session-time";
+import { sendLiveSessionReminder, sendAdvancedTrainingReminder } from "@/lib/email";
+import {
+  parseSessionInstant,
+  pacificTimeOnDay,
+  previousFridayGate,
+  pacificDayKey,
+  formatPacificDate,
+  formatPacificTimeOnly,
+} from "@/lib/session-time";
 
 /**
  * Automatic live-training reminder job.
@@ -37,6 +44,12 @@ const COURSE_SLUGS = [
   "datapilot-desktop-essentials",
   "advanced-datapilot",
 ];
+
+// The Advanced course runs Monday sessions (a morning + afternoon block on the
+// same day). Its reminder is special: it goes out the FRIDAY before, is
+// collapsed to a single prep email per training day (attached to the morning
+// session), and focuses on installing the required software ahead of class.
+const ADVANCED_SLUG = "advanced-datapilot";
 
 // How early, before the session start, the "day before at 9am Pacific" gate
 // opens. Once `now` is past the gate (and before the session), eligible new
@@ -112,6 +125,20 @@ export async function POST(request: Request) {
   }
   for (const arr of courseSessions.values()) arr.sort((a, b) => a.getTime() - b.getTime());
 
+  // For the Advanced course, collapse the morning + afternoon sessions of each
+  // training day into ONE prep email, attached to the earliest (morning) unit.
+  // advancedDayRep maps "<courseId>|<pacificDay>" -> the representative (morning)
+  // unit id for that day; any other advanced unit that day is skipped for email.
+  const advancedDayRep = new Map<string, { unitId: string; instant: Date }>();
+  for (const u of units) {
+    if (u.section.course.slug !== ADVANCED_SLUG) continue;
+    const inst = parseSessionInstant((u.data as { startsAt?: unknown })?.startsAt);
+    if (!inst) continue;
+    const key = `${u.section.courseId}|${pacificDayKey(inst)}`;
+    const cur = advancedDayRep.get(key);
+    if (!cur || inst < cur.instant) advancedDayRep.set(key, { unitId: u.id, instant: inst });
+  }
+
   const results: UnitResult[] = [];
   let totalSent = 0;
 
@@ -135,8 +162,23 @@ export async function POST(request: Request) {
       continue;
     }
 
-    // Only future sessions, and only once the day-before-9am gate has opened.
-    const gate = sendGateFor(sessionInstant);
+    const isAdvanced = courseSlug === ADVANCED_SLUG;
+
+    // For the Advanced course, only the morning (representative) unit of each
+    // training day sends; the afternoon unit is folded into that one email.
+    if (isAdvanced) {
+      const key = `${u.section.courseId}|${pacificDayKey(sessionInstant)}`;
+      if (advancedDayRep.get(key)?.unitId !== u.id) {
+        results.push(base);
+        continue;
+      }
+    }
+
+    // Gate: Advanced sends the FRIDAY before its Monday session; all other
+    // courses send the day before at 9am Pacific.
+    const gate = isAdvanced
+      ? previousFridayGate(sessionInstant)
+      : sendGateFor(sessionInstant);
     const gateOpen = now >= gate && now < sessionInstant;
     base.gateOpen = gateOpen;
     if (!gateOpen) {
@@ -184,12 +226,20 @@ export async function POST(request: Request) {
 
     const data = (u.data as Record<string, unknown>) ?? {};
     for (const usr of targets) {
-      const res = await sendLiveSessionReminder(usr.email, usr.name, {
-        courseTitle: u.section.course.title,
-        unitTitle: u.title,
-        startsAt: typeof rawStarts === "string" ? rawStarts : undefined,
-        joinUrl: data.teamsJoinUrl ? String(data.teamsJoinUrl) : undefined,
-      });
+      const res = isAdvanced
+        ? await sendAdvancedTrainingReminder(usr.email, usr.name, {
+            courseTitle: u.section.course.title,
+            courseSlug,
+            sessionDateLabel: formatPacificDate(sessionInstant),
+            morningTimeLabel: formatPacificTimeOnly(sessionInstant),
+            joinUrl: data.teamsJoinUrl ? String(data.teamsJoinUrl) : undefined,
+          })
+        : await sendLiveSessionReminder(usr.email, usr.name, {
+            courseTitle: u.section.course.title,
+            unitTitle: u.title,
+            startsAt: typeof rawStarts === "string" ? rawStarts : undefined,
+            joinUrl: data.teamsJoinUrl ? String(data.teamsJoinUrl) : undefined,
+          });
       if (res.ok) {
         // Record even for the dev/no-key "skipped" case so behavior is
         // consistent — a successful no-op still means "handled". Tolerate a

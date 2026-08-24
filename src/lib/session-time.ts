@@ -92,6 +92,72 @@ export function pacificTimeOnDay(dayInPacific: Date, hour: number, minute = 0): 
   return new Date(instant);
 }
 
+/** Pacific calendar-day key ("YYYY-MM-DD") for grouping same-day sessions. */
+export function pacificDayKey(d: Date): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    timeZone: PACIFIC,
+  }).format(d);
+}
+
+/** Pacific weekday index (0=Sun .. 6=Sat) for an instant. */
+export function pacificWeekday(d: Date): number {
+  const wd = new Intl.DateTimeFormat("en-US", {
+    weekday: "short",
+    timeZone: PACIFIC,
+  }).format(d);
+  const map: Record<string, number> = {
+    Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6,
+  };
+  return map[wd] ?? 0;
+}
+
+/**
+ * 9am Pacific on the most recent Friday strictly BEFORE the session's Pacific
+ * day. Used for the Advanced Datapilot course, whose sessions run on Mondays
+ * and whose prep reminder must go out the Friday before (never the weekend).
+ * If a session ever falls on a Friday, this returns the prior Friday.
+ */
+export function previousFridayGate(sessionInstant: Date): Date {
+  const wd = pacificWeekday(sessionInstant); // Fri = 5
+  let daysBack = (wd - 5 + 7) % 7; // days since the most recent Friday
+  if (daysBack === 0) daysBack = 7; // session on a Friday -> previous Friday
+  const fridayRef = new Date(sessionInstant.getTime() - daysBack * 24 * 60 * 60 * 1000);
+  return pacificTimeOnDay(fridayRef, 9, 0);
+}
+
+/** Format just the calendar date in Pacific, e.g. "Monday, August 31, 2026". */
+export function formatPacificDate(d: Date): string {
+  try {
+    return new Intl.DateTimeFormat("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      timeZone: PACIFIC,
+    }).format(d);
+  } catch {
+    return d.toLocaleDateString();
+  }
+}
+
+/** Format just the clock time in Pacific, e.g. "8:30 AM Pacific". */
+export function formatPacificTimeOnly(d: Date): string {
+  try {
+    return (
+      new Intl.DateTimeFormat("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        timeZone: PACIFIC,
+      }).format(d) + " Pacific"
+    );
+  } catch {
+    return d.toLocaleTimeString();
+  }
+}
+
 /** Format an instant for display in Pacific time. */
 export function formatPacific(d: Date): string {
   try {

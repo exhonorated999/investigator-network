@@ -114,6 +114,50 @@ export function sendLiveSessionReminder(
 }
 
 /**
+ * Friday-before prep reminder for the Advanced Datapilot course (Monday
+ * sessions). Unlike the generic day-before reminder, this focuses learners on
+ * the pre-work: installing the required software and downloading sample data
+ * from the "Introduction & Course Notes" section, well ahead of class.
+ */
+export function sendAdvancedTrainingReminder(
+  to: string,
+  name: string,
+  opts: {
+    courseTitle: string;
+    courseSlug: string;
+    sessionDateLabel: string; // e.g. "Monday, August 31, 2026"
+    morningTimeLabel: string; // e.g. "8:30 AM Pacific"
+    joinUrl?: string;
+  }
+) {
+  const courseUrl = `${appUrl()}/courses/${opts.courseSlug}`;
+  const join = opts.joinUrl
+    ? `\n\nMorning session Microsoft Teams link:\n${opts.joinUrl}`
+    : "";
+  return send({
+    to,
+    subject: `Before your Advanced Datapilot training — install the software first`,
+    text:
+      `Hi ${name},\n\n` +
+      `Your live ${opts.courseTitle} training is coming up on ${opts.sessionDateLabel}, ` +
+      `starting at ${opts.morningTimeLabel}. All live training times are in Pacific time.\n\n` +
+      `Please log in a couple of days early and get set up BEFORE class so you can jump ` +
+      `straight into the hands-on exercises. In the course's "Introduction & Course Notes" ` +
+      `section you'll find everything you need:\n\n` +
+      `  • Download and install the required software:\n` +
+      `      - Datapilot Scout\n` +
+      `      - Project VIPER\n` +
+      `      - Datapilot Desktop\n` +
+      `  • Download the sample data set\n\n` +
+      `Open the course here and go to "Introduction & Course Notes":\n${courseUrl}` +
+      `${join}\n\n` +
+      `Having the software installed and the sample data downloaded ahead of time is ` +
+      `essential — we won't have time to troubleshoot installs during the live session.\n\n` +
+      `— Investigator Network`,
+  });
+}
+
+/**
  * Alert an admin that a direct message has been sitting unread for a while
  * (the cron only fires this once it has been waiting past the threshold).
  */
