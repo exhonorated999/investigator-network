@@ -37,6 +37,11 @@ export const dynamic = "force-dynamic";
 
 const REMINDER_KIND = "live_reminder";
 
+// Safety cap for the "no previous session on record" case: never email the whole
+// course roster — only learners who enrolled within this many days. Keeps the
+// high-volume essentials courses from blasting thousands of addresses at once.
+const FALLBACK_WINDOW_DAYS = 45;
+
 // Courses that participate in automatic reminders. Other Datapilot courses
 // (Scout, Meta Quest, etc.) are intentionally excluded.
 const COURSE_SLUGS = [
@@ -193,12 +198,21 @@ export async function POST(request: Request) {
       if (s.getTime() < sessionInstant.getTime() && (!prev || s > prev)) prev = s;
     }
 
-    // New enrollees = APPROVED learners who enrolled after the previous session
-    // (or everyone, if there is no previous session).
+    // Recipient window: normally "enrolled since the previous session". If there
+    // is NO previous session on record (e.g. older sessions were removed, so the
+    // upcoming one is the earliest in the DB), we must NOT fall back to emailing
+    // the entire course roster — for the essentials courses that's thousands of
+    // people. Instead bound it to learners who enrolled within the last
+    // FALLBACK_WINDOW_DAYS, i.e. recent sign-ups who haven't attended yet.
+    const windowStart =
+      prev ??
+      new Date(now.getTime() - FALLBACK_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+
+    // New enrollees = APPROVED learners who enrolled after windowStart.
     const enrollments = await prisma.enrollment.findMany({
       where: {
         courseId: u.section.courseId,
-        ...(prev ? { enrolledAt: { gt: prev } } : {}),
+        enrolledAt: { gt: windowStart },
         user: { status: "APPROVED" },
       },
       select: { user: { select: { id: true, name: true, email: true } } },
