@@ -3,7 +3,6 @@ import Image from "next/image";
 import { SignOutButton } from "@/components/sign-out";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { getViewerUser } from "@/lib/viewer";
-import { loadUnreadCount } from "@/lib/messages";
 
 export async function SiteHeader({
   name,
@@ -12,10 +11,7 @@ export async function SiteHeader({
   name?: string | null;
   isAdmin?: boolean;
 }) {
-  // Self-contained unread badge so every page's header stays in sync without
-  // each caller having to thread the count through.
   const viewer = await getViewerUser();
-  const unread = viewer ? await loadUnreadCount(viewer.id) : 0;
 
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-[var(--header-bg)] backdrop-blur-md">
@@ -50,41 +46,6 @@ export async function SiteHeader({
             className="eyebrow eyebrow-muted hidden transition hover:text-accent-bright sm:block"
           >
             My Training
-          </Link>
-          <Link
-            href="/news"
-            className="eyebrow eyebrow-muted hidden transition hover:text-accent-bright sm:block"
-          >
-            Feed
-          </Link>
-          <Link
-            href="/community"
-            className="eyebrow eyebrow-muted hidden transition hover:text-accent-bright sm:block"
-          >
-            Community
-          </Link>
-          <Link
-            href="/partners"
-            className="eyebrow eyebrow-muted hidden transition hover:text-accent-bright sm:block"
-          >
-            Partners
-          </Link>
-          <Link
-            href="/podcasts"
-            className="eyebrow eyebrow-muted hidden transition hover:text-accent-bright sm:block"
-          >
-            Podcasts
-          </Link>
-          <Link
-            href="/messages"
-            className="eyebrow eyebrow-muted relative hidden transition hover:text-accent-bright sm:block"
-          >
-            Messages
-            {unread > 0 ? (
-              <span className="absolute -right-3 -top-2 grid h-4 min-w-4 place-items-center rounded-full bg-accent-bright px-1 font-mono text-[10px] font-bold leading-none text-void">
-                {unread}
-              </span>
-            ) : null}
           </Link>
           {isAdmin ? (
             <Link
