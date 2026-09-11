@@ -4,37 +4,70 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/rbac";
 import { requireViewer } from "@/lib/viewer";
-import { DEFAULT_LAYOUT, SLOTS, isSlotChoice } from "@/lib/dashboard";
-import { loadLayout } from "@/lib/dashboard-prefs";
+import {
+  DEFAULT_LAYOUT,
+  MAX_CARDS,
+  defaultSpanFor,
+  isSlotChoice,
+  normalizeSpan,
+} from "@/lib/dashboard";
+import { loadCards, saveCards } from "@/lib/dashboard-prefs";
 
 /**
- * Sets a single dashboard slot to a chosen widget (or "empty"). The picker in
- * each card posts `index` + `choice`; we load the current layout, patch the one
- * slot, and persist the whole array.
- *
- * Uses the *effective viewer* (not the raw signed-in user) so the write matches
- * what the dashboard renders. Otherwise, when an admin is previewing as a
- * learner, the change would save to the admin's own prefs and the previewed
- * dashboard would appear to do nothing.
+ * Card actions operate on the *effective viewer* (not the raw signed-in user)
+ * so edits match what the dashboard renders — important when an admin previews
+ * as a learner. Each action loads the current card list, mutates it, and saves.
  */
-export async function setSlot(formData: FormData) {
-  const viewer = await requireViewer();
-  const userId = viewer.id;
 
+/** Append a new empty card (the learner then picks a widget for it). */
+export async function addCard() {
+  const viewer = await requireViewer();
+  const cards = await loadCards(viewer.id);
+  if (cards.length >= MAX_CARDS) return;
+  cards.push({ choice: "empty", span: 2 });
+  await saveCards(viewer.id, cards);
+  revalidatePath("/dashboard");
+}
+
+/** Remove the card at `index`. */
+export async function removeCard(formData: FormData) {
+  const viewer = await requireViewer();
+  const index = Number(formData.get("index"));
+  const cards = await loadCards(viewer.id);
+  if (!Number.isInteger(index) || index < 0 || index >= cards.length) return;
+  cards.splice(index, 1);
+  await saveCards(viewer.id, cards);
+  revalidatePath("/dashboard");
+}
+
+/** Change which widget the card at `index` shows. */
+export async function setCardWidget(formData: FormData) {
+  const viewer = await requireViewer();
   const index = Number(formData.get("index"));
   const choice = String(formData.get("choice") ?? "empty");
-  if (!Number.isInteger(index) || index < 0 || index >= SLOTS.length) return;
   if (!isSlotChoice(choice)) return;
 
-  const layout = await loadLayout(userId);
-  layout[index] = choice;
+  const cards = await loadCards(viewer.id);
+  if (!Number.isInteger(index) || index < 0 || index >= cards.length) return;
+  // Adopt the widget's natural width the first time it's picked into an empty
+  // card, so a fresh card lands at a sensible size; keep the size otherwise.
+  const wasEmpty = cards[index].choice === "empty";
+  cards[index].choice = choice;
+  if (wasEmpty && choice !== "empty") cards[index].span = defaultSpanFor(choice);
+  await saveCards(viewer.id, cards);
+  revalidatePath("/dashboard");
+}
 
-  await prisma.dashboardPref.upsert({
-    where: { userId },
-    create: { userId, widgets: layout },
-    update: { widgets: layout },
-  });
+/** Resize the card at `index` (Full / Half / Third). */
+export async function setCardSpan(formData: FormData) {
+  const viewer = await requireViewer();
+  const index = Number(formData.get("index"));
+  const span = normalizeSpan(formData.get("span"));
 
+  const cards = await loadCards(viewer.id);
+  if (!Number.isInteger(index) || index < 0 || index >= cards.length) return;
+  cards[index].span = span;
+  await saveCards(viewer.id, cards);
   revalidatePath("/dashboard");
 }
 

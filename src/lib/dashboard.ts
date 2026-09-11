@@ -198,3 +198,48 @@ export function isSlotChoice(value: string): value is SlotChoice {
 export function slotLabel(choice: SlotChoice): string {
   return SLOT_CHOICES.find((c) => c.id === choice)?.label ?? "Empty";
 }
+
+/* ---------------------------------------------------------- dynamic cards --
+ * The learner's canvas is a free-form list of cards. Each card holds a widget
+ * choice + a size. They can add, remove, resize, and re-pick any card. Only
+ * "My training" (courses) and "Dispatch" (notifications) stay pinned above and
+ * are never part of this list.
+ */
+
+/** Allowed card widths on the 6-column grid — Full / Half / Third. */
+export type CardSpan = 2 | 3 | 6;
+
+export const CARD_SIZES: { span: CardSpan; label: string }[] = [
+  { span: 6, label: "Full" },
+  { span: 3, label: "1/2" },
+  { span: 2, label: "1/3" },
+];
+
+export interface DashCard {
+  choice: SlotChoice;
+  span: CardSpan;
+}
+
+/** Safety cap so a runaway client can't persist an enormous layout. */
+export const MAX_CARDS = 30;
+
+/** Clamp any stored/legacy span to an allowed card size. */
+export function normalizeSpan(value: unknown): CardSpan {
+  const n = typeof value === "number" ? value : Number(value);
+  if (n <= 2) return 2;
+  if (n === 3) return 3;
+  return 6; // 4, 5, 6, or anything larger → Full
+}
+
+/** Registry span for a widget, normalized to an allowed card size. */
+export function defaultSpanFor(choice: SlotChoice): CardSpan {
+  if (choice === "empty") return 2;
+  const meta = WIDGETS.find((w) => w.id === choice);
+  return normalizeSpan(meta?.span ?? 2);
+}
+
+/** Seeded card list for a learner who has never customised — derived from the
+ * legacy default layout, dropping empties and normalizing each width. */
+export const DEFAULT_CARDS: DashCard[] = DEFAULT_LAYOUT.filter(
+  (c) => c !== "empty"
+).map((choice) => ({ choice, span: defaultSpanFor(choice) }));

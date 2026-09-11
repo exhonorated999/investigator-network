@@ -1,17 +1,74 @@
 import { prisma } from "@/lib/prisma";
 import {
+  DEFAULT_CARDS,
   DEFAULT_LAYOUT,
   DEFAULT_WIDGETS,
+  MAX_CARDS,
   PERMANENT_WIDGETS,
   SLOTS,
   WIDGETS,
   WIDGET_ALIASES,
+  defaultSpanFor,
   isSlotChoice,
+  normalizeSpan,
+  type DashCard,
   type SlotChoice,
   type WidgetId,
 } from "@/lib/dashboard";
 
 const VALID = new Set<string>(WIDGETS.map((w) => w.id));
+
+/**
+ * The learner's card canvas — a free-form list of `{ choice, span }`. Two
+ * on-disk shapes are supported so old data keeps working:
+ *   • new: `[{ c, s }, …]` — the current format written by the card actions.
+ *   • legacy: `["stats", "news", …]` — the fixed-slot layout; each non-empty
+ *     entry becomes a card at the widget's natural (normalized) width.
+ * Unknown/removed widget ids and pinned widgets (courses/notifications) are
+ * dropped rather than throwing.
+ */
+export async function loadCards(userId: string): Promise<DashCard[]> {
+  const pref = await prisma.dashboardPref.findUnique({ where: { userId } });
+  const raw = pref && Array.isArray(pref.widgets) ? (pref.widgets as unknown[]) : null;
+  if (!raw || raw.length === 0) return [...DEFAULT_CARDS];
+
+  const cards: DashCard[] = [];
+  for (const entry of raw) {
+    // New object shape: { c: choice, s: span }.
+    if (entry && typeof entry === "object" && !Array.isArray(entry)) {
+      const rec = entry as Record<string, unknown>;
+      const rawChoice = typeof rec.c === "string" ? rec.c : "";
+      const choice = (WIDGET_ALIASES[rawChoice] ?? rawChoice) as string;
+      if (choice === "empty") {
+        cards.push({ choice: "empty", span: normalizeSpan(rec.s) });
+      } else if (isSlotChoice(choice) && choice !== "courses" && choice !== "notifications") {
+        cards.push({ choice: choice as SlotChoice, span: normalizeSpan(rec.s) });
+      }
+      continue;
+    }
+    // Legacy string shape: a bare SlotChoice per fixed slot.
+    if (typeof entry === "string") {
+      const choice = (WIDGET_ALIASES[entry] ?? entry) as string;
+      if (choice === "empty" || choice === "courses" || choice === "notifications") continue;
+      if (isSlotChoice(choice)) {
+        cards.push({ choice: choice as SlotChoice, span: defaultSpanFor(choice as SlotChoice) });
+      }
+    }
+  }
+
+  if (cards.length === 0) return [...DEFAULT_CARDS];
+  return cards.slice(0, MAX_CARDS);
+}
+
+/** Persist a card list (already validated by the caller). */
+export async function saveCards(userId: string, cards: DashCard[]): Promise<void> {
+  const widgets = cards.slice(0, MAX_CARDS).map((c) => ({ c: c.choice, s: c.span }));
+  await prisma.dashboardPref.upsert({
+    where: { userId },
+    create: { userId, widgets },
+    update: { widgets },
+  });
+}
 
 /**
  * The learner's slot layout: one choice per fixed slot, in slot order. Stored

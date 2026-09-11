@@ -1,37 +1,55 @@
 "use client";
 
 import { useState, useTransition, type ReactNode } from "react";
-import { setSlot } from "@/app/dashboard/actions";
-import { SLOT_CHOICES, slotLabel, type SlotChoice } from "@/lib/dashboard";
+import { removeCard, setCardSpan, setCardWidget } from "@/app/dashboard/actions";
+import {
+  CARD_SIZES,
+  SLOT_CHOICES,
+  slotLabel,
+  type CardSpan,
+  type SlotChoice,
+} from "@/lib/dashboard";
 
 /**
- * A positioned dashboard slot. We own the geometry; the learner picks what
- * fills it via the gear in the corner. `children` is the server-rendered widget
- * for the current choice (null when empty).
+ * One card on the free-form dashboard canvas. The learner owns it: the gear
+ * lets them re-pick the widget, resize it (Full / Half / Third), or remove it
+ * entirely. `children` is the server-rendered widget for the current choice
+ * (null when empty).
  */
 export function SlotCard({
   index,
   choice,
+  span,
   children,
 }: {
   index: number;
   choice: SlotChoice;
+  span: CardSpan;
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const isEmpty = choice === "empty";
 
-  function pick(choiceId: string) {
-    // Call the server action directly instead of relying on native form
-    // submission — closing the menu unmounts the <form> synchronously, which
-    // would otherwise cancel the submit ("form is not connected").
+  function run(action: (fd: FormData) => Promise<void>, fields: Record<string, string>) {
     const fd = new FormData();
-    fd.set("index", String(index));
-    fd.set("choice", choiceId);
+    for (const [k, v] of Object.entries(fields)) fd.set(k, v);
     startTransition(async () => {
-      await setSlot(fd);
+      await action(fd);
     });
+  }
+
+  function pickWidget(choiceId: string) {
+    run(setCardWidget, { index: String(index), choice: choiceId });
+    setOpen(false);
+  }
+
+  function pickSize(nextSpan: CardSpan) {
+    run(setCardSpan, { index: String(index), span: String(nextSpan) });
+  }
+
+  function remove() {
+    run(removeCard, { index: String(index) });
     setOpen(false);
   }
 
@@ -51,7 +69,7 @@ export function SlotCard({
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          aria-label="Choose card"
+          aria-label="Card options"
           aria-expanded={open}
           className="grid h-7 w-7 place-items-center border border-border-strong bg-surface text-muted shadow-[0_4px_14px_-4px_rgba(0,0,0,0.6)] transition hover:border-accent-bright hover:text-accent-bright"
         >
@@ -73,21 +91,49 @@ export function SlotCard({
 
         {open ? (
           <div
-            className="panel absolute right-0 z-50 mt-2 w-56 p-1.5"
+            className="panel absolute right-0 z-50 mt-2 w-60 p-1.5"
             style={{ boxShadow: "0 24px 60px -20px rgba(0,0,0,0.85)" }}
           >
-            <p className="eyebrow eyebrow-muted px-2 py-1.5 text-[9px]">
+            {/* size */}
+            <p className="eyebrow eyebrow-muted px-2 pb-1 pt-1.5 text-[9px]">
+              Card size
+            </p>
+            <div className="flex gap-1 px-1 pb-2">
+              {CARD_SIZES.map((s) => {
+                const active = s.span === span;
+                return (
+                  <button
+                    key={s.span}
+                    type="button"
+                    disabled={pending}
+                    onClick={() => pickSize(s.span)}
+                    className={`flex-1 border px-2 py-1.5 font-display text-[10px] font-bold uppercase tracking-[0.1em] transition disabled:opacity-50 ${
+                      active
+                        ? "border-accent-bright bg-[rgba(0,180,216,0.16)] text-accent-bright"
+                        : "border-border text-muted hover:border-accent-bright/60 hover:text-foreground"
+                    }`}
+                  >
+                    {s.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="my-1 h-px bg-border" />
+
+            {/* widget choice */}
+            <p className="eyebrow eyebrow-muted px-2 py-1 text-[9px]">
               Show in this card
             </p>
-            <div className="max-h-72 overflow-y-auto">
-              {SLOT_CHOICES.map((c) => {
+            <div className="max-h-56 overflow-y-auto">
+              {SLOT_CHOICES.filter((c) => c.id !== "empty").map((c) => {
                 const active = c.id === choice;
                 return (
                   <button
                     key={c.id}
                     type="button"
                     disabled={pending}
-                    onClick={() => pick(c.id)}
+                    onClick={() => pickWidget(c.id)}
                     className={`flex w-full items-center justify-between gap-2 px-2 py-2 text-left font-display text-[11px] font-bold uppercase tracking-[0.12em] transition disabled:opacity-50 ${
                       active
                         ? "bg-[rgba(0,180,216,0.16)] text-accent-bright"
@@ -100,6 +146,18 @@ export function SlotCard({
                 );
               })}
             </div>
+
+            <div className="my-1 h-px bg-border" />
+
+            {/* remove */}
+            <button
+              type="button"
+              disabled={pending}
+              onClick={remove}
+              className="flex w-full items-center gap-2 px-2 py-2 text-left font-display text-[11px] font-bold uppercase tracking-[0.12em] text-danger transition hover:bg-[rgba(239,68,68,0.08)] disabled:opacity-50"
+            >
+              <span aria-hidden>✕</span> Remove card
+            </button>
           </div>
         ) : null}
       </div>
@@ -114,7 +172,7 @@ export function SlotCard({
           <span className="grid h-9 w-9 place-items-center rounded-full border border-border-strong text-lg leading-none">
             +
           </span>
-          <span className="eyebrow eyebrow-muted text-[10px]">Add a card</span>
+          <span className="eyebrow eyebrow-muted text-[10px]">Pick a card</span>
         </button>
       ) : (
         <div className="h-full" title={slotLabel(choice)}>

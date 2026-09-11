@@ -32,9 +32,10 @@ import { loadRecentPodcasts } from "@/lib/podcasts";
 import { PodcastsCard } from "@/components/widgets/podcasts-card";
 import { loadIspProviders } from "@/lib/isp";
 import { IspCard } from "@/components/widgets/isp-card";
-import { loadLayout } from "@/lib/dashboard-prefs";
+import { AddCardButton } from "@/components/widgets/add-card-button";
+import { loadCards } from "@/lib/dashboard-prefs";
 import { liveSessionEnded } from "@/lib/course";
-import { SLOTS, SPAN_CLASS, type SlotChoice } from "@/lib/dashboard";
+import { SPAN_CLASS, type SlotChoice } from "@/lib/dashboard";
 
 export const dynamic = "force-dynamic";
 
@@ -43,7 +44,7 @@ export default async function DashboardPage() {
   const user = viewer;
   const isAdmin = viewer.role === "ADMIN";
 
-  const [enrollments, favorites, certificates, layout, notifications, news, topics, newsTopics] =
+  const [enrollments, favorites, certificates, cards, notifications, news, topics, newsTopics] =
     await Promise.all([
       prisma.enrollment.findMany({
         where: { userId: user.id },
@@ -66,7 +67,7 @@ export default async function DashboardPage() {
         orderBy: { issuedAt: "desc" },
         include: { course: { select: { title: true, slug: true } } },
       }),
-      loadLayout(user.id),
+      loadCards(user.id),
       loadNotifications(user.id, viewer),
       loadNewsFeed(user.id, 5, viewer),
       loadTopics(viewer),
@@ -386,17 +387,21 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* ---------------------------------------------------- slot canvas --
-            We own the grid geometry; each slot's gear picker lets the learner
-            choose which widget fills it (duplicates + Empty allowed). */}
+        {/* ---------------------------------------------------- card canvas --
+            A free-form list of cards the learner fully controls: each gear
+            re-picks the widget, resizes it (Full / Half / Third) or removes it.
+            "Add a card" appends a new one. Library + Dispatch stay pinned. */}
         <div className="reveal reveal-3 mt-5 grid gap-5 lg:grid-cols-6">
-          {layout.map((choice, i) => (
-            <div key={i} className={SPAN_CLASS[SLOTS[i].span]}>
-              <SlotCard index={i} choice={choice}>
-                {renderWidget(choice)}
+          {cards.map((card, i) => (
+            <div key={i} className={SPAN_CLASS[card.span]}>
+              <SlotCard index={i} choice={card.choice} span={card.span}>
+                {renderWidget(card.choice)}
               </SlotCard>
             </div>
           ))}
+          <div className="lg:col-span-2">
+            <AddCardButton />
+          </div>
         </div>
       </main>
     </div>
