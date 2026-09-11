@@ -196,22 +196,52 @@ export default async function DashboardPage() {
               {[
                 { v: inProgress.length, l: "Active courses", c: "text-accent-bright" },
                 { v: totalUnitsDone, l: "Units completed", c: "text-foreground" },
-                { v: certificates.length, l: "Certificates", c: "text-gold" },
+                {
+                  v: certificates.length,
+                  l: "Certificates",
+                  c: "text-gold",
+                  href: certificates.length > 0 ? "/certificates" : undefined,
+                },
                 {
                   v: passRate == null ? "—" : `${passRate}%`,
                   l: "Test pass rate",
                   c: "text-accent-bright",
                 },
-              ].map((s) => (
-                <div key={s.l}>
+              ].map((s) => {
+                const num = (
                   <p
                     className={`font-display text-3xl font-black leading-none ${s.c}`}
                   >
                     {s.v}
                   </p>
-                  <p className="eyebrow eyebrow-muted mt-2">{s.l}</p>
-                </div>
-              ))}
+                );
+                return (
+                  <div key={s.l}>
+                    {s.href ? (
+                      <Link
+                        href={s.href}
+                        className="group inline-flex flex-col transition hover:opacity-80"
+                        title="View my certificates"
+                      >
+                        <span className="inline-flex items-center gap-1">
+                          {num}
+                          <span className="text-gold/60 transition group-hover:translate-x-0.5">
+                            ↗
+                          </span>
+                        </span>
+                        <span className="eyebrow eyebrow-muted mt-2 underline decoration-gold/30 underline-offset-4">
+                          {s.l}
+                        </span>
+                      </Link>
+                    ) : (
+                      <>
+                        {num}
+                        <p className="eyebrow eyebrow-muted mt-2">{s.l}</p>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </WidgetCard>
         );
