@@ -391,7 +391,19 @@ export default async function DashboardPage() {
             A free-form list of cards the learner fully controls: each gear
             re-picks the widget, resizes it (Full / Half / Third) or removes it.
             "Add a card" appends a new one. Library + Dispatch stay pinned. */}
-        <div className="reveal reveal-3 mt-5 grid gap-5 lg:grid-cols-6">
+        <div className="reveal reveal-3 mt-9 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="eyebrow eyebrow-gold">// Your dashboard</p>
+            <p className="mt-1 text-sm text-muted">
+              Add, remove, or resize cards. Use the{" "}
+              <span className="text-foreground">⚙</span> gear on any card to
+              change it, resize it, or remove it.
+            </p>
+          </div>
+          <AddCardButton variant="inline" />
+        </div>
+
+        <div className="mt-4 grid gap-5 lg:grid-cols-6">
           {cards.map((card, i) => (
             <div key={i} className={SPAN_CLASS[card.span]}>
               <SlotCard index={i} choice={card.choice} span={card.span}>
@@ -399,7 +411,7 @@ export default async function DashboardPage() {
               </SlotCard>
             </div>
           ))}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-6">
             <AddCardButton />
           </div>
         </div>

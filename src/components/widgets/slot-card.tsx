@@ -65,7 +65,29 @@ export function SlotCard({
       ) : null}
 
       {/* picker */}
-      <div className="absolute -top-3 right-3 z-50">
+      <div className="absolute -top-3 right-3 z-50 flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={remove}
+          disabled={pending}
+          aria-label="Remove card"
+          title="Remove card"
+          className="grid h-7 w-7 place-items-center border border-border-strong bg-surface text-muted shadow-[0_4px_14px_-4px_rgba(0,0,0,0.6)] transition hover:border-danger hover:text-danger disabled:opacity-50"
+        >
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden
+          >
+            <path d="M18 6 6 18M6 6l12 12" />
+          </svg>
+        </button>
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
