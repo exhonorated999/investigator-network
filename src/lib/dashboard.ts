@@ -13,7 +13,8 @@ export type WidgetId =
   | "network"
   | "partners"
   | "podcasts"
-  | "conferences";
+  | "conferences"
+  | "isp";
 
 export interface WidgetMeta {
   id: WidgetId;
@@ -56,6 +57,12 @@ export const WIDGETS: WidgetMeta[] = [
     id: "conferences",
     label: "Conferences & trainings",
     description: "Upcoming in-person and live events.",
+    span: 2,
+  },
+  {
+    id: "isp",
+    label: "ISP directory",
+    description: "Where to serve legal process to ISPs & platforms — alphabetized.",
     span: 2,
   },
   {
@@ -172,6 +179,7 @@ export const SLOT_CHOICES: { id: SlotChoice; label: string }[] = [
   { id: "stats", label: "Progress snapshot" },
   { id: "resources", label: "Tools & resources" },
   { id: "conferences", label: "Conferences & trainings" },
+  { id: "isp", label: "ISP directory" },
   { id: "partners", label: "Partner Spotlight" },
   { id: "podcasts", label: "Case-law Podcasts" },
   { id: "news", label: "News feed" },

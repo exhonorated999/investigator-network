@@ -47,11 +47,42 @@ export async function progressMap(
   return new Set(rows.map((r) => r.unitId));
 }
 
-export function percentComplete(course: LoadedCourse, completed: Set<string>): number {
+/**
+ * True when a LIVE_SESSION unit's scheduled end time is in the past (plus a
+ * small grace). Passed sessions are "archived": hidden from the learner-facing
+ * curriculum and excluded from required-progress math, but the Unit and its
+ * `startsAt` stay in the database so time-on-course metrics and the
+ * "new enrollees since last live session" anchor keep working.
+ */
+export function liveSessionEnded(
+  unit: { type: UnitType; data: unknown },
+  now: Date = new Date(),
+  graceHours = 3
+): boolean {
+  if (unit.type !== "LIVE_SESSION") return false;
+  const d = unitData(unit);
+  const raw = typeof d.startsAt === "string" ? d.startsAt : "";
+  if (!raw) return false;
+  const start = new Date(raw);
+  if (Number.isNaN(start.getTime())) return false;
+  const durMin = typeof d.durationMin === "number" ? d.durationMin : 60;
+  const end = start.getTime() + durMin * 60_000 + graceHours * 3_600_000;
+  return now.getTime() > end;
+}
+
+export function percentComplete(
+  course: LoadedCourse,
+  completed: Set<string>,
+  now: Date = new Date()
+): number {
   // OPTIONAL units (recommended-viewing bonus content) are excluded from the
   // progress math, so a learner reaches 100% — and unlocks the certificate —
-  // without having to watch them.
-  const units = flattenUnits(course).filter((u) => u.completionRule !== "OPTIONAL");
+  // without having to watch them. Passed live sessions are likewise excluded:
+  // a learner who missed (or was enrolled after) a live class must never be
+  // blocked from completing the course by an event they can no longer attend.
+  const units = flattenUnits(course).filter(
+    (u) => u.completionRule !== "OPTIONAL" && !liveSessionEnded(u, now)
+  );
   if (units.length === 0) return 0;
   const doneRequired = units.filter((u) => completed.has(u.id)).length;
   return Math.round((doneRequired / units.length) * 100);

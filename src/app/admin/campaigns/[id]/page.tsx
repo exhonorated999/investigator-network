@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import {
   loadCampaignStats,
   previewAudience,
+  courseEnrolleeEmails,
   type CampaignStat,
 } from "@/lib/campaigns";
 import {
@@ -16,6 +17,7 @@ import {
 } from "../actions";
 import { ScheduleForm } from "./schedule-form";
 import { LocalTime } from "./local-time";
+import { CopyEmails } from "../../reminders/copy-emails";
 
 export const dynamic = "force-dynamic";
 
@@ -84,6 +86,16 @@ export default async function CampaignDetailPage({
     loadCampaignStats(id),
     previewAudience(campaign),
   ]);
+  const courses = await prisma.course.findMany({
+    orderBy: { title: "asc" },
+    select: { id: true, title: true },
+  });
+  const targetCourse = campaign.courseId
+    ? courses.find((c) => c.id === campaign.courseId) ?? null
+    : null;
+  const courseEnrollees = campaign.courseId
+    ? await courseEnrolleeEmails(campaign.courseId)
+    : [];
 
   return (
     <div className="reveal">
@@ -149,7 +161,29 @@ export default async function CampaignDetailPage({
           Targets: {campaign.includeMembers ? `members${campaign.memberAudience ? ` (${campaign.memberAudience})` : ""}` : "no members"}
           {" · "}
           {campaign.includeContacts ? "contacts" : "no contacts"}
+          {targetCourse ? ` · course: ${targetCourse.title}` : ""}
         </p>
+        {targetCourse ? (
+          <div className="mt-3 rule-top pt-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-[13px] text-foreground">
+                <span className="font-display text-lg font-black text-accent-bright">
+                  {courseEnrollees.length}
+                </span>{" "}
+                approved enrollees of{" "}
+                <strong>{targetCourse.title}</strong>
+              </p>
+              <CopyEmails emails={courseEnrollees.map((e) => e.email)} />
+            </div>
+            <div className="mt-2 max-h-40 overflow-auto rounded-lg border border-border bg-void p-2 font-mono text-[11px] text-muted">
+              {courseEnrollees.length === 0 ? (
+                <span>No approved enrollees.</span>
+              ) : (
+                courseEnrollees.map((e) => <div key={e.email}>{e.email}</div>)
+              )}
+            </div>
+          </div>
+        ) : null}
       </div>
 
       {isDraft ? (
@@ -231,6 +265,21 @@ export default async function CampaignDetailPage({
                   <input type="checkbox" name="includeContacts" defaultChecked={campaign.includeContacts} className="h-4 w-4" />
                   <span className="text-[14px] text-muted">Non-member contacts</span>
                 </label>
+                <label className="flex items-center gap-2">
+                  <span className="eyebrow eyebrow-muted">Only enrollees of course</span>
+                  <select name="courseId" className="field max-w-[280px]" defaultValue={campaign.courseId ?? ""}>
+                    <option value="">— No course filter —</option>
+                    {courses.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.title}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <p className="px-1 text-[12px] text-muted">
+                  Adds the course&rsquo;s approved enrollees. To send to <em>only</em> a
+                  course, uncheck Members and Contacts.
+                </p>
               </fieldset>
               <label className="grid gap-1.5 sm:col-span-2">
                 <span className="eyebrow eyebrow-muted">Body HTML</span>

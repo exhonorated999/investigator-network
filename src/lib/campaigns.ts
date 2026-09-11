@@ -48,7 +48,7 @@ export interface AssembledRecipient {
 export async function assembleRecipients(
   campaign: Pick<
     Campaign,
-    "includeMembers" | "memberAudience" | "includeContacts"
+    "includeMembers" | "memberAudience" | "includeContacts" | "courseId"
   >
 ): Promise<AssembledRecipient[]> {
   const byEmail = new Map<string, AssembledRecipient>();
@@ -68,6 +68,22 @@ export async function assembleRecipients(
       if (!key) continue;
       if (!byEmail.has(key)) {
         byEmail.set(key, { email: key, name: m.name ?? "", kind: "member" });
+      }
+    }
+  }
+
+  // Course targeting — enrolled, APPROVED learners of one specific course.
+  // These are members, so they dedupe against the member block above.
+  if (campaign.courseId) {
+    const enrollees = await prisma.enrollment.findMany({
+      where: { courseId: campaign.courseId, user: { status: "APPROVED" } },
+      select: { user: { select: { email: true, name: true } } },
+    });
+    for (const e of enrollees) {
+      const key = e.user.email.trim().toLowerCase();
+      if (!key) continue;
+      if (!byEmail.has(key)) {
+        byEmail.set(key, { email: key, name: e.user.name ?? "", kind: "member" });
       }
     }
   }
@@ -98,7 +114,7 @@ export async function assembleRecipients(
 
 /** Preview counts without creating rows or sending. */
 export async function previewAudience(
-  campaign: Pick<Campaign, "includeMembers" | "memberAudience" | "includeContacts">
+  campaign: Pick<Campaign, "includeMembers" | "memberAudience" | "includeContacts" | "courseId">
 ): Promise<{ total: number; members: number; contacts: number }> {
   const list = await assembleRecipients(campaign);
   return {
@@ -106,6 +122,29 @@ export async function previewAudience(
     members: list.filter((r) => r.kind === "member").length,
     contacts: list.filter((r) => r.kind === "contact").length,
   };
+}
+
+/**
+ * Deduped list of APPROVED enrollee emails for one course — powers the
+ * "see the enrollees you're targeting" list in the campaign editor.
+ */
+export async function courseEnrolleeEmails(
+  courseId: string
+): Promise<{ email: string; name: string }[]> {
+  const rows = await prisma.enrollment.findMany({
+    where: { courseId, user: { status: "APPROVED" } },
+    orderBy: { enrolledAt: "desc" },
+    select: { user: { select: { email: true, name: true } } },
+  });
+  const seen = new Set<string>();
+  const out: { email: string; name: string }[] = [];
+  for (const r of rows) {
+    const key = r.user.email.trim().toLowerCase();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push({ email: key, name: r.user.name ?? "" });
+  }
+  return out;
 }
 
 interface BatchItem {

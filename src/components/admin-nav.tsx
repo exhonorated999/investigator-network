@@ -13,6 +13,7 @@ const links = [
   { href: "/admin/news", label: "Newsroom" },
   { href: "/admin/conferences", label: "Conferences" },
   { href: "/admin/resources", label: "Resources" },
+  { href: "/admin/isp", label: "ISP directory" },
   { href: "/admin/partners", label: "Partners" },
   { href: "/admin/podcasts", label: "Podcasts" },
   { href: "/admin/campaigns", label: "Campaigns" },

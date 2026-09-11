@@ -30,7 +30,10 @@ import { loadSpotlightPartners } from "@/lib/partners";
 import { PartnersCard } from "@/components/widgets/partners-card";
 import { loadRecentPodcasts } from "@/lib/podcasts";
 import { PodcastsCard } from "@/components/widgets/podcasts-card";
+import { loadIspProviders } from "@/lib/isp";
+import { IspCard } from "@/components/widgets/isp-card";
 import { loadLayout } from "@/lib/dashboard-prefs";
+import { liveSessionEnded } from "@/lib/course";
 import { SLOTS, SPAN_CLASS, type SlotChoice } from "@/lib/dashboard";
 
 export const dynamic = "force-dynamic";
@@ -49,7 +52,7 @@ export default async function DashboardPage() {
           course: {
             include: {
               category: true,
-              sections: { include: { units: { select: { id: true } } } },
+              sections: { include: { units: { select: { id: true, type: true, data: true } } } },
             },
           },
         },
@@ -94,7 +97,7 @@ export default async function DashboardPage() {
     orderBy: { updatedAt: "desc" },
     include: {
       category: true,
-      sections: { include: { units: { select: { id: true } } } },
+      sections: { include: { units: { select: { id: true, type: true, data: true } } } },
     },
   });
 
@@ -122,10 +125,14 @@ export default async function DashboardPage() {
   const resources = await loadResourcesForViewer(viewer);
   const spotlightPartners = await loadSpotlightPartners(viewer);
   const recentPodcasts = await loadRecentPodcasts(viewer, 4);
+  const ispProviders = await loadIspProviders();
 
   // ------------------------------------------------------------- album data
+  const now = new Date();
   const enrolledAlbums: AlbumCourse[] = enrollments.map((e) => {
-    const units = e.course.sections.flatMap((s) => s.units);
+    const units = e.course.sections
+      .flatMap((s) => s.units)
+      .filter((u) => !liveSessionEnded(u, now));
     const done = units.filter((u) => completedSet.has(u.id)).length;
     const pct = units.length ? Math.round((done / units.length) * 100) : 0;
     return {
@@ -145,7 +152,9 @@ export default async function DashboardPage() {
   });
 
   const availableAlbums: AlbumCourse[] = available.map((c) => {
-    const units = c.sections.flatMap((s) => s.units);
+    const units = c.sections
+      .flatMap((s) => s.units)
+      .filter((u) => !liveSessionEnded(u, now));
     return {
       id: c.id,
       slug: c.slug,
@@ -247,6 +256,20 @@ export default async function DashboardPage() {
 
       case "conferences":
         return <ConferencesCard items={conferences} number="10" />;
+
+      case "isp":
+        return (
+          <IspCard
+            items={ispProviders.map((p) => ({
+              id: p.id,
+              name: p.name,
+              url: p.url,
+              email: p.email,
+              note: p.note,
+            }))}
+            number="13"
+          />
+        );
 
       case "partners":
         return <PartnersCard items={spotlightPartners} number="11" />;

@@ -219,6 +219,7 @@ model Course {
   questions    CourseQuestion[]
   activity     CourseActivity[]
   presentUsers User[]           @relation("PresenceCourse")
+  campaigns    Campaign[]
 }
 
 model Section {
@@ -947,6 +948,11 @@ model Campaign {
   /// null = both audiences; otherwise limit member recipients to one side.
   memberAudience  Audience?
   includeContacts Boolean        @default(true)
+  /// Optional course targeting — when set, enrolled (APPROVED) learners of this
+  /// course are added to the recipient list. Combine with/without members &
+  /// contacts. null = no course targeting.
+  courseId        String?
+  course          Course?        @relation(fields: [courseId], references: [id], onDelete: SetNull)
   /// Optional "From" display-name override; blank uses the platform default.
   fromName        String         @default("")
   createdById     String?
@@ -959,6 +965,7 @@ model Campaign {
   recipients CampaignRecipient[]
 
   @@index([status])
+  @@index([courseId])
 }
 
 enum RecipientStatus {
@@ -1019,4 +1026,27 @@ model Suppression {
   createdAt DateTime          @default(now())
 
   @@index([reason])
+}
+
+// ---------------------------------------------------------------------------
+// ISP / provider directory — admin-managed list of where to serve legal
+// process (search warrants, subpoenas) to internet service providers &
+// platforms. Surfaced as an alphabetized "Service of Process" dashboard
+// widget. Either a `url` (portal link) or an `email`/`instructions` (for
+// providers that only accept process by email) may be present.
+// ---------------------------------------------------------------------------
+model IspProvider {
+  id           String   @id @default(cuid())
+  /// Provider / company name (e.g. "AT&T"). Used for alphabetical sort.
+  name         String
+  /// Portal / legal-process link. Blank when the provider only takes email.
+  url          String   @default("")
+  /// Contact email when process is submitted by email (e.g. OfferUp).
+  email        String   @default("")
+  /// Freeform note shown under the provider (e.g. "submitted via email").
+  note         String   @default("")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([name])
 }

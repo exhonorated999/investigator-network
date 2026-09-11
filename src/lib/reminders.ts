@@ -23,6 +23,10 @@ export interface CourseReminder {
   slug: string;
   lastSessionAt: Date | null;
   nextSessionAt: Date | null;
+  /** True when no live session has occurred yet (no past-session anchor). */
+  noPastSession: boolean;
+  /** The enrolledAt lower bound actually used (past session, or fallback). */
+  windowStart: Date;
   enrollees: ReminderEnrollee[];
 }
 
@@ -33,6 +37,14 @@ function parseStartsAt(data: unknown): Date | null {
   const d = new Date(raw);
   return Number.isNaN(d.getTime()) ? null : d;
 }
+
+/**
+ * When a course has no *past* live session on record yet, "since the last
+ * session" is undefined — so instead of returning the entire historical roster
+ * (which for a big course means thousands of addresses), we bound the list to
+ * learners who enrolled within this many days. Matches the reminder-send path.
+ */
+const FALLBACK_WINDOW_DAYS = 45;
 
 export async function loadLiveTrainingReminders(): Promise<CourseReminder[]> {
   const now = new Date();
@@ -67,10 +79,13 @@ export async function loadLiveTrainingReminders(): Promise<CourseReminder[]> {
 
   const result: CourseReminder[] = [];
   for (const [courseId, info] of byCourse) {
+    const noPastSession = info.last == null;
+    const windowStart =
+      info.last ?? new Date(now.getTime() - FALLBACK_WINDOW_DAYS * 86_400_000);
     const enrollments = await prisma.enrollment.findMany({
       where: {
         courseId,
-        ...(info.last ? { enrolledAt: { gt: info.last } } : {}),
+        enrolledAt: { gt: windowStart },
       },
       orderBy: { enrolledAt: "desc" },
       select: {
@@ -85,6 +100,8 @@ export async function loadLiveTrainingReminders(): Promise<CourseReminder[]> {
       slug: info.slug,
       lastSessionAt: info.last,
       nextSessionAt: info.next,
+      noPastSession,
+      windowStart,
       enrollees: enrollments
         .filter((e) => e.user.status === "APPROVED")
         .map((e) => ({

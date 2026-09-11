@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/rbac";
 import { Sparkline, BarChart, HBar, Donut } from "@/components/charts";
+import { ActiveUsersChart } from "@/components/charts/active-users-chart";
 import {
   getSignupCounts,
   getActiveCounts,
@@ -9,12 +10,12 @@ import {
   getCompletionSeries,
   getCourseEngagement,
   getPassRate,
+  getDailyActiveUsers,
   PERIOD_LABEL,
   type PeriodKey,
 } from "@/lib/analytics";
 import {
   getOnlineUsers,
-  getCourseOccupancy,
   countOnline,
 } from "@/lib/presence";
 
@@ -34,8 +35,8 @@ export default async function AnalyticsPage() {
     engagement,
     passRate,
     online,
-    occupancy,
     onlineCount,
+    dailyActive,
   ] = await Promise.all([
     getSignupCounts(),
     getActiveCounts(),
@@ -45,12 +46,16 @@ export default async function AnalyticsPage() {
     getCourseEngagement(8),
     getPassRate(),
     getOnlineUsers(25),
-    getCourseOccupancy(),
     countOnline(),
+    getDailyActiveUsers(),
   ]);
 
-  const maxOccupancy = occupancy.reduce((m, o) => Math.max(m, o.count), 0);
   const maxEnroll = engagement.reduce((m, e) => Math.max(m, e.enrollments), 0);
+
+  const monthLabel = new Date().toLocaleDateString("en-US", {
+    month: "long",
+    year: "numeric",
+  });
 
   return (
     <div className="reveal">
@@ -129,23 +134,16 @@ export default async function AnalyticsPage() {
           </div>
 
           <div className="panel rule-top p-5">
-            <p className="eyebrow eyebrow-muted">In course right now</p>
-            <div className="mt-4 grid gap-3">
-              {occupancy.length === 0 ? (
-                <p className="py-3 text-sm text-muted">
-                  No one is inside a course at the moment.
-                </p>
-              ) : (
-                occupancy.map((o) => (
-                  <HBar
-                    key={o.courseId}
-                    label={`${o.title} — ${o.count}`}
-                    value={o.count}
-                    max={maxOccupancy}
-                  />
-                ))
-              )}
+            <p className="eyebrow eyebrow-muted">// Activity</p>
+            <p className="display-sm mt-2 text-foreground">
+              Active users this month
+            </p>
+            <div className="mt-4">
+              <ActiveUsersChart data={dailyActive} />
             </div>
+            <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
+              Distinct learners active per day · {monthLabel}
+            </p>
           </div>
         </div>
       </section>

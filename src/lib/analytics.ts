@@ -284,6 +284,69 @@ export async function getCourseEngagement(
     .slice(0, limit);
 }
 
+export interface DailyActiveUsersPoint {
+  date: Date;
+  day: number;
+  count: number;
+}
+
+/**
+ * Distinct active users per calendar day for the current month.
+ *
+ * "Active on a day" = has at least one `CourseActivity` row whose `day`
+ * falls on that calendar day. Returns an entry for EVERY day of the
+ * current month (days with no activity → count 0), in chronological order.
+ *
+ * Uses the same midnight-snapping approach as `periodStart` for consistency.
+ */
+export async function getDailyActiveUsers(
+  now = new Date()
+): Promise<DailyActiveUsersPoint[]> {
+  // Month boundaries — same snapping style as periodStart("month").
+  const monthStart = new Date(now);
+  monthStart.setDate(1);
+  monthStart.setHours(0, 0, 0, 0);
+
+  const nextMonthStart = new Date(monthStart);
+  nextMonthStart.setMonth(monthStart.getMonth() + 1);
+
+  // Days in the current month.
+  const daysInMonth = Math.round(
+    (nextMonthStart.getTime() - monthStart.getTime()) / 86_400_000
+  );
+
+  // Single query — fetch only what we need.
+  const rows = await prisma.courseActivity.findMany({
+    where: { day: { gte: monthStart, lt: nextMonthStart } },
+    select: { day: true, userId: true },
+  });
+
+  // Aggregate distinct users per day-key using a Set per day.
+  const setsByDay = new Map<number, Set<string>>();
+  for (let d = 1; d <= daysInMonth; d++) {
+    setsByDay.set(d, new Set());
+  }
+  for (const r of rows) {
+    // Derive day-of-month from the stored DateTime the same way dayKey does.
+    const d = new Date(r.day);
+    const dom = d.getDate();
+    const set = setsByDay.get(dom);
+    if (set) set.add(r.userId);
+  }
+
+  const result: DailyActiveUsersPoint[] = [];
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date = new Date(monthStart);
+    date.setDate(d);
+    result.push({
+      date,
+      day: d,
+      count: setsByDay.get(d)!.size,
+    });
+  }
+  return result;
+}
+
 /** Overall graded-attempt pass rate, or null when nothing is graded yet. */
 export async function getPassRate(): Promise<number | null> {
   const [graded, passed] = await Promise.all([

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import type { PeriodKey } from "@/lib/analytics";
 import { PERIOD_LABEL } from "@/lib/analytics";
-import { courseTimeTotals, courseTopLearners, formatTime } from "@/lib/metrics";
+import { courseTimeTotals, courseTopLearners, formatTime, certificateCounts, courseCertificates } from "@/lib/metrics";
 import { loadLiveTrainingReminders } from "@/lib/reminders";
 import { CopyEmails } from "../reminders/copy-emails";
 
@@ -29,19 +29,22 @@ function relTime(d: Date | null): string {
 export default async function MetricsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ period?: string; course?: string }>;
+  searchParams: Promise<{ period?: string; course?: string; certs?: string }>;
 }) {
   const sp = await searchParams;
   const period: PeriodKey = sp.period && isPeriod(sp.period) ? sp.period : "month";
 
   const totals = await courseTimeTotals(period);
+  const certCounts = await certificateCounts();
   // Default the drill-down to the busiest course, unless one is chosen.
   const selectedId = sp.course || totals[0]?.courseId || "";
-  const [selectedCourse, topLearners] = await Promise.all([
+  const showCerts = sp.certs === "1" && !!selectedId;
+  const [selectedCourse, topLearners, certificates] = await Promise.all([
     selectedId
       ? prisma.course.findUnique({ where: { id: selectedId }, select: { id: true, title: true } })
       : null,
     selectedId ? courseTopLearners(selectedId, period) : Promise.resolve([]),
+    showCerts ? courseCertificates(selectedId) : Promise.resolve([]),
   ]);
 
   // New-enrollee reminders (since the last live session) for the selected
@@ -64,6 +67,8 @@ export default async function MetricsPage({
 
   const href = (p: string, c: string) =>
     `/admin/metrics?period=${p}${c ? `&course=${c}` : ""}`;
+  const certHref = (p: string, c: string) =>
+    `/admin/metrics?period=${p}&course=${c}&certs=1#certificates`;
   const grandTotal = totals.reduce((s, t) => s + t.seconds, 0);
 
   return (
@@ -102,13 +107,14 @@ export default async function MetricsPage({
               <th className="eyebrow eyebrow-muted px-4 py-3">Course</th>
               <th className="eyebrow eyebrow-muted px-4 py-3">Learners</th>
               <th className="eyebrow eyebrow-muted px-4 py-3">Time on course</th>
+              <th className="eyebrow eyebrow-muted px-4 py-3">Certificates</th>
               <th className="eyebrow eyebrow-muted px-4 py-3 text-right">Drill down</th>
             </tr>
           </thead>
           <tbody>
             {totals.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-4 py-10 text-center text-muted">
+                <td colSpan={5} className="px-4 py-10 text-center text-muted">
                   No recorded activity in this period yet.
                 </td>
               </tr>
@@ -124,6 +130,18 @@ export default async function MetricsPage({
                   <td className="px-4 py-3 text-muted">{t.learners}</td>
                   <td className="px-4 py-3 font-mono text-accent-bright">
                     {formatTime(t.seconds)}
+                  </td>
+                  <td className="px-4 py-3">
+                    {certCounts.get(t.courseId) ? (
+                      <Link
+                        href={certHref(period, t.courseId)}
+                        className="font-mono text-gold underline decoration-dotted underline-offset-4 hover:text-gold/80"
+                      >
+                        {certCounts.get(t.courseId)} issued
+                      </Link>
+                    ) : (
+                      <span className="font-mono text-muted">0</span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <Link href={href(period, t.courseId)} className="btn btn-ghost btn-sm">
@@ -184,6 +202,66 @@ export default async function MetricsPage({
         </div>
       ) : null}
 
+      {/* Certificates issued for the selected course */}
+      {showCerts && selectedCourse ? (
+        <div id="certificates" className="mt-8">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="eyebrow eyebrow-gold">// CERTIFICATES</p>
+              <h2 className="display-sm mt-1 text-foreground">
+                Certificates issued · {selectedCourse.title}
+              </h2>
+              <p className="mt-1 font-mono text-[11px] text-muted">
+                {certificates.length} issued
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <CopyEmails emails={certificates.map((c) => c.email)} />
+              <Link href={href(period, selectedId)} className="btn btn-ghost btn-sm">
+                Hide
+              </Link>
+            </div>
+          </div>
+          <div className="panel rule-top mt-3 overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="border-b border-border text-left">
+                <tr>
+                  <th className="eyebrow eyebrow-muted px-4 py-3">Recipient</th>
+                  <th className="eyebrow eyebrow-muted px-4 py-3">Email</th>
+                  <th className="eyebrow eyebrow-muted px-4 py-3">Serial</th>
+                  <th className="eyebrow eyebrow-muted px-4 py-3 text-right">Issued</th>
+                </tr>
+              </thead>
+              <tbody>
+                {certificates.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="px-4 py-10 text-center text-muted">
+                      No certificates issued for this course yet.
+                    </td>
+                  </tr>
+                ) : (
+                  certificates.map((c) => (
+                    <tr key={c.serial} className="border-t border-border">
+                      <td className="px-4 py-3">
+                        <span className="text-foreground">{c.name}</span>
+                        {c.agency ? (
+                          <span className="ml-2 font-mono text-[11px] text-muted">{c.agency}</span>
+                        ) : null}
+                      </td>
+                      <td className="px-4 py-3 font-mono text-[12px] text-muted">{c.email}</td>
+                      <td className="px-4 py-3 font-mono text-[11px] text-muted">{c.serial}</td>
+                      <td className="px-4 py-3 text-right font-mono text-[11px] text-muted">
+                        {fmtSession(c.issuedAt)}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : null}
+
       {/* New enrollees since the last live session — for the selected course */}
       {reminder ? (
         <div className="mt-8">
@@ -197,6 +275,15 @@ export default async function MetricsPage({
                 Last session: {fmtSession(reminder.lastSessionAt)} · Next:{" "}
                 {fmtSession(reminder.nextSessionAt)}
               </p>
+              {reminder.noPastSession ? (
+                <p className="mt-1 max-w-xl text-[12px] text-warning">
+                  No live session has occurred yet for this course, so there is no
+                  &ldquo;last session&rdquo; anchor. Showing learners who enrolled in the
+                  last 45 days ({fmtSession(reminder.windowStart)}). Once the first
+                  session passes it is retained as the anchor and this list narrows
+                  automatically.
+                </p>
+              ) : null}
             </div>
             <div className="flex items-center gap-3">
               <span

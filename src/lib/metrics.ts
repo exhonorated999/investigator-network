@@ -107,3 +107,42 @@ export function formatTime(seconds: number): string {
   const m = Math.floor((seconds % 3600) / 60);
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
+
+/** All-time certificate counts per course (cumulative, not period-scoped). */
+export async function certificateCounts(): Promise<Map<string, number>> {
+  const rows = await prisma.certificate.groupBy({
+    by: ["courseId"],
+    _count: { _all: true },
+  });
+  return new Map(rows.map((r) => [r.courseId, r._count._all]));
+}
+
+export interface IssuedCertificate {
+  userId: string;
+  name: string;
+  email: string;
+  agency: string;
+  serial: string;
+  issuedAt: Date;
+}
+
+/** Everyone issued a certificate for one course, most recent first. */
+export async function courseCertificates(courseId: string): Promise<IssuedCertificate[]> {
+  const rows = await prisma.certificate.findMany({
+    where: { courseId },
+    orderBy: { issuedAt: "desc" },
+    select: {
+      serial: true,
+      issuedAt: true,
+      user: { select: { id: true, name: true, email: true, agency: true } },
+    },
+  });
+  return rows.map((r) => ({
+    userId: r.user.id,
+    name: r.user.name,
+    email: r.user.email,
+    agency: r.user.agency ?? "",
+    serial: r.serial,
+    issuedAt: r.issuedAt,
+  }));
+}

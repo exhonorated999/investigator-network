@@ -32,6 +32,7 @@ export async function createCampaign(formData: FormData): Promise<void> {
       includeMembers: formData.get("includeMembers") != null,
       includeContacts: formData.get("includeContacts") != null,
       memberAudience: parseAudience(formData.get("memberAudience")),
+      courseId: String(formData.get("courseId") || "").trim() || null,
       createdById: session.user.id,
     },
   });
@@ -59,6 +60,7 @@ export async function updateCampaign(formData: FormData): Promise<void> {
       includeMembers: formData.get("includeMembers") != null,
       includeContacts: formData.get("includeContacts") != null,
       memberAudience: parseAudience(formData.get("memberAudience")),
+      courseId: String(formData.get("courseId") || "").trim() || null,
     },
   });
   refresh(id);

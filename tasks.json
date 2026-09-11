@@ -1,31 +1,31 @@
 [
   {
-    "content": "Schema + migrate",
+    "content": "Live sessions: auto-hide passed sessions from learners (archive), keep record for metrics + reminders",
     "id": "1",
     "status": "completed"
   },
   {
-    "content": "lib/community.ts + lib/messages.ts",
+    "content": "Fix 'new enrollees since last live session' for Desktop Essentials (diagnose real cause + correct logic)",
     "id": "2",
     "status": "completed"
   },
   {
-    "content": "Server actions",
+    "content": "Campaigns: target enrollees of a specific course (select course, preview enrollee emails, send only to them)",
     "id": "3",
     "status": "completed"
   },
   {
-    "content": "CommunityCard widget",
+    "content": "Analytics: replace 'In course right now' card with active-users-by-day line graph for the calendar month (labeled dates)",
     "id": "4",
     "status": "completed"
   },
   {
-    "content": "MessagesCard widget",
+    "content": "Course metrics: show Certificates Issued count; click to list recipients + issue dates",
     "id": "5",
     "status": "completed"
   },
   {
-    "content": "Register widgets + wire dashboard; typecheck + commit",
+    "content": "ISP list: new admin-managed model + admin page + alphabetized dashboard widget (name+link, email-only case)",
     "id": "6",
     "status": "completed"
   }

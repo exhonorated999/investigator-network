@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { loadAllCampaigns } from "@/lib/campaigns";
+import { prisma } from "@/lib/prisma";
 import { createCampaign } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +23,10 @@ function fmtDate(d: Date): string {
 
 export default async function CampaignsAdminPage() {
   const campaigns = await loadAllCampaigns();
+  const courses = await prisma.course.findMany({
+    orderBy: { title: "asc" },
+    select: { id: true, title: true },
+  });
 
   return (
     <div className="reveal">
@@ -71,6 +76,21 @@ export default async function CampaignsAdminPage() {
               <input type="checkbox" name="includeContacts" defaultChecked className="h-4 w-4" />
               <span className="text-[14px] text-muted">Non-member contacts</span>
             </label>
+            <label className="flex items-center gap-2">
+              <span className="eyebrow eyebrow-muted">Only enrollees of course</span>
+              <select name="courseId" className="field max-w-[280px]" defaultValue="">
+                <option value="">— No course filter —</option>
+                {courses.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.title}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <p className="px-1 text-[12px] text-muted">
+              Pick a course to add its enrolled (approved) learners. To send to
+              <em> only</em> a course, uncheck Members and Contacts above.
+            </p>
           </fieldset>
           <label className="grid gap-1.5 sm:col-span-2">
             <span className="eyebrow eyebrow-muted">Body HTML</span>

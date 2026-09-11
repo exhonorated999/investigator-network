@@ -9,6 +9,7 @@ import {
   flattenUnits,
   progressMap,
   percentComplete,
+  liveSessionEnded,
   UNIT_ICON,
 } from "@/lib/course";
 import { UNIT_LABEL } from "@/lib/units";
@@ -77,8 +78,12 @@ export default async function CourseOverview({
   }
 
   const completed = enrollment ? await progressMap(user.id, course) : new Set<string>();
-  const pct = percentComplete(course, completed);
-  const units = flattenUnits(course);
+  const now = new Date();
+  const pct = percentComplete(course, completed, now);
+  // Passed live sessions are archived: hidden from the curriculum below, but
+  // their records stay in the DB (metrics + reminder anchors). `visibleUnits`
+  // drives display + navigation numbering so there are no gaps.
+  const units = flattenUnits(course).filter((u) => !liveSessionEnded(u, now));
   const firstUnit = units[0];
 
   const certificate =
@@ -299,7 +304,9 @@ export default async function CourseOverview({
                     {(sIdx + 1).toString().padStart(2, "0")} / {section.title}
                   </p>
                   <ul className="mt-3 divide-y divide-border overflow-hidden border border-border">
-                    {section.units.map((u, uIdx) => {
+                    {section.units
+                      .filter((u) => !liveSessionEnded(u, now))
+                      .map((u) => {
                       const done = completed.has(u.id);
                       const globalIdx = units.findIndex((x) => x.id === u.id);
                       const row = (
@@ -343,7 +350,7 @@ export default async function CourseOverview({
                         </li>
                       );
                     })}
-                    {section.units.length === 0 ? (
+                    {section.units.filter((u) => !liveSessionEnded(u, now)).length === 0 ? (
                       <li className="bg-surface/50 px-5 py-4 text-sm text-muted">
                         No units.
                       </li>
