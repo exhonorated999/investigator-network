@@ -56,9 +56,29 @@ export function renderCampaignEmail(parts: CampaignEmailParts): string {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="color-scheme" content="dark light" />
+  <meta name="supported-color-schemes" content="dark light" />
   <title>${escapeHtml(parts.subject)}</title>
+  <!--[if mso]>
+  <style>
+    table { border-collapse: collapse; }
+    td, a, span { font-family: Arial, Helvetica, sans-serif !important; }
+  </style>
+  <![endif]-->
+  <style>
+    /* Lock our dark palette against Outlook.com / mobile forced inversion so
+       the design stays legible in both light and dark reading modes. */
+    :root { color-scheme: dark light; supported-color-schemes: dark light; }
+    u + .body a { color: inherit; }
+    a { text-decoration: none; }
+    @media (max-width: 620px) {
+      .nl-container { width: 100% !important; }
+      .nl-pad { padding-left: 20px !important; padding-right: 20px !important; }
+      .nl-img { width: 100% !important; height: auto !important; }
+    }
+  </style>
 </head>
-<body style="margin:0;padding:0;background-color:${C.void};color:${C.foreground};-webkit-text-size-adjust:100%;">
+<body class="body" style="margin:0;padding:0;background-color:${C.void};color:${C.foreground};-webkit-text-size-adjust:100%;">
   ${
     preheader
       ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;height:0;width:0;">${escapeHtml(
@@ -69,7 +89,7 @@ export function renderCampaignEmail(parts: CampaignEmailParts): string {
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${C.void};">
     <tr>
       <td align="center" style="padding:24px 12px;">
-        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:600px;background-color:${C.surface};border:1px solid ${C.border};border-radius:12px;overflow:hidden;">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" class="nl-container" style="width:600px;max-width:600px;background-color:${C.surface};border:1px solid ${C.border};border-radius:12px;overflow:hidden;">
           <!-- top accent rule -->
           <tr><td style="height:4px;background-color:${C.accent};line-height:4px;font-size:4px;">&nbsp;</td></tr>
 
