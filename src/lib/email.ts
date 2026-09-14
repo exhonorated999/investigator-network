@@ -84,6 +84,32 @@ export function sendApprovalEmail(to: string, name: string) {
   });
 }
 
+/**
+ * Self-service password reset. The link points at the existing /activate/[token]
+ * page, which redeems a PASSWORD_RESET token and lets the user set a new
+ * password. `expiresLabel` is a human phrase like "2 days".
+ */
+export function sendPasswordResetEmail(
+  to: string,
+  name: string,
+  opts: { url: string; expiresLabel: string }
+) {
+  const first = name.trim().split(" ")[0] || "there";
+  return send({
+    to,
+    subject: "Reset your Investigator Network password",
+    text:
+      `Hi ${first},\n\n` +
+      `We received a request to reset the password for your Investigator Network ` +
+      `account (${to}). Click the link below to choose a new password:\n\n` +
+      `${opts.url}\n\n` +
+      `This link expires in ${opts.expiresLabel} and can only be used once.\n\n` +
+      `If you didn't request this, you can safely ignore this email — your ` +
+      `password will not change.\n\n` +
+      `— Investigator Network`,
+  });
+}
+
 export function sendDenialEmail(to: string, name: string) {
   return send({
     to,

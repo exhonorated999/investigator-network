@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { registerSchema, loginSchema } from "@/lib/validation";
 import { signIn, signOut } from "@/auth";
+import { issueInviteToken, RESET_TTL_DAYS } from "@/lib/invite";
+import { sendPasswordResetEmail } from "@/lib/email";
 
 export type FormState = {
   ok: boolean;
@@ -143,4 +145,61 @@ export async function loginAction(
 
 export async function signOutAction() {
   await signOut({ redirectTo: "/login" });
+}
+
+/**
+ * Self-service password reset request. Always reports success regardless of
+ * whether the email matches an account — never confirm or deny that an address
+ * is registered (prevents account enumeration). When the address does belong to
+ * an active account, mint a single-use PASSWORD_RESET token and email the link.
+ */
+export async function forgotPasswordAction(
+  _prev: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const email = String(formData.get("email") ?? "")
+    .trim()
+    .toLowerCase();
+
+  const generic: FormState = {
+    ok: true,
+    message:
+      "If an account exists for that email, we've sent a password reset link. " +
+      "Check your inbox (and spam folder) — the link expires in 48 hours.",
+  };
+
+  // Basic shape check; on anything invalid, still return the generic message so
+  // the response is indistinguishable from the "no such user" case.
+  if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return generic;
+
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: { id: true, name: true, email: true, status: true },
+  });
+
+  // Don't hand a reset door to accounts that must not sign in. The redeem step
+  // enforces this too, but skipping the email avoids tipping off that the
+  // address exists at all.
+  const blocked =
+    user?.status === "SUSPENDED" ||
+    user?.status === "DENIED" ||
+    user?.status === "REMOVED";
+
+  if (user && !blocked) {
+    try {
+      const invite = await issueInviteToken(user.id, {
+        purpose: "PASSWORD_RESET",
+        issuedBy: "self-service-reset",
+      });
+      await sendPasswordResetEmail(user.email, user.name, {
+        url: invite.url,
+        expiresLabel: `${RESET_TTL_DAYS} days`,
+      });
+    } catch (err) {
+      // Never leak failure to the client — log for ops and still show generic.
+      console.error("[forgot-password] failed to issue/send reset:", err);
+    }
+  }
+
+  return generic;
 }
