@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { QuizForm, type QuizFormQuestion } from "@/components/quiz-form";
+import { AttemptReview } from "@/components/attempt-review";
 
 export async function QuizTaker({
   unitId,
@@ -38,9 +39,12 @@ export async function QuizTaker({
   }
   if (latest && latest.status === "GRADED" && latest.passed) {
     return (
-      <Banner tone="success">
-        ✓ Passed — score {latest.score}% (pass mark {quiz.passScore}%).
-      </Banner>
+      <>
+        <Banner tone="success">
+          ✓ Passed — score {latest.score}% (pass mark {quiz.passScore}%).
+        </Banner>
+        <AttemptReview attemptId={latest.id} />
+      </>
     );
   }
 
@@ -78,6 +82,12 @@ export async function QuizTaker({
             // {quiz.questions.length} question{quiz.questions.length === 1 ? "" : "s"}
           </span>
           <span className="tag-chip">Pass mark {quiz.passScore}%</span>
+        </div>
+      )}
+
+      {failed && (
+        <div className="mb-6">
+          <AttemptReview attemptId={latest!.id} />
         </div>
       )}
 
