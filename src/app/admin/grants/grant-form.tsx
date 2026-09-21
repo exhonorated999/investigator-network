@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useFormStatus } from "react-dom";
 import { previewGrant } from "./actions";
-import { GRANT_CATEGORIES, GRANT_CATEGORY_LABEL } from "@/lib/grants";
+import { GRANT_CATEGORIES, GRANT_CATEGORY_LABEL } from "@/lib/grant-categories";
 import type { GrantCategory } from "@/generated/prisma";
 
 export interface GrantFormValues {

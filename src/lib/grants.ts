@@ -7,18 +7,10 @@ import type { GrantCategory } from "@/generated/prisma";
  * "Grants" dashboard card. Civilians never see this data.
  */
 
-export const GRANT_CATEGORY_LABEL: Record<GrantCategory, string> = {
-  INVESTIGATIONS: "Investigations software",
-  DFIR: "DFIR (Datapilot)",
-  SO_SYMPOSIUM: "SO-management symposium",
-};
-
-/** Order the chips are offered/rendered in. */
-export const GRANT_CATEGORIES: GrantCategory[] = [
-  "INVESTIGATIONS",
-  "DFIR",
-  "SO_SYMPOSIUM",
-];
+// Category labels/order live in a prisma-free module so client components can
+// import them without bundling the Prisma client. Re-exported here for the
+// server-side callers that already import from `@/lib/grants`.
+export { GRANT_CATEGORY_LABEL, GRANT_CATEGORIES } from "@/lib/grant-categories";
 
 export interface GrantItem {
   id: string;
