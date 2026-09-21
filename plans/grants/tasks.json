@@ -1,0 +1,32 @@
+[
+  {
+    "content": "Schema: add GrantCategory enum + Grant model",
+    "id": "1",
+    "status": "completed"
+  },
+  {
+    "content": "Generate + apply additive migration (create-only -> deploy)",
+    "id": "2",
+    "status": "completed"
+  },
+  {
+    "content": "lib/grants.ts + lib/grant-preview.ts (fetch/prefill like news)",
+    "id": "3",
+    "status": "completed"
+  },
+  {
+    "content": "Admin /admin/grants: page, actions, grant-form with paste-prefill",
+    "id": "4",
+    "status": "completed"
+  },
+  {
+    "content": "Widget: grants-card + register LE-only 'grants' widget + dashboard wiring",
+    "id": "5",
+    "status": "completed"
+  },
+  {
+    "content": "Admin nav link, typecheck, smoke test",
+    "id": "6",
+    "status": "in_progress"
+  }
+]

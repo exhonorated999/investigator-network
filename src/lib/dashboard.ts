@@ -14,7 +14,8 @@ export type WidgetId =
   | "partners"
   | "podcasts"
   | "conferences"
-  | "isp";
+  | "isp"
+  | "grants";
 
 export interface WidgetMeta {
   id: WidgetId;
@@ -24,6 +25,8 @@ export interface WidgetMeta {
   span: 2 | 3 | 4 | 6;
   permanent?: boolean;
   comingSoon?: boolean;
+  /** When set, only offered to members on this side (admins see all). */
+  audience?: "LE" | "CIVILIAN";
 }
 
 export const WIDGETS: WidgetMeta[] = [
@@ -64,6 +67,13 @@ export const WIDGETS: WidgetMeta[] = [
     label: "ISP directory",
     description: "Where to serve legal process to ISPs & platforms — alphabetized.",
     span: 2,
+  },
+  {
+    id: "grants",
+    label: "LE Grants",
+    description: "Law-enforcement funding opportunities for our software & symposium.",
+    span: 3,
+    audience: "LE",
   },
   {
     id: "partners",
@@ -175,11 +185,12 @@ export const DEFAULT_LAYOUT: SlotChoice[] = [
 
 /** The choices offered in each slot's picker dropdown. `courses` and
  * `notifications` are intentionally excluded — they are pinned at the top. */
-export const SLOT_CHOICES: { id: SlotChoice; label: string }[] = [
+export const SLOT_CHOICES: { id: SlotChoice; label: string; audience?: "LE" | "CIVILIAN" }[] = [
   { id: "stats", label: "Progress snapshot" },
   { id: "resources", label: "Tools & resources" },
   { id: "conferences", label: "Conferences & trainings" },
   { id: "isp", label: "ISP directory" },
+  { id: "grants", label: "LE Grants", audience: "LE" },
   { id: "partners", label: "Partner Spotlight" },
   { id: "podcasts", label: "Case-law Podcasts" },
   { id: "news", label: "News feed" },
@@ -197,6 +208,29 @@ export function isSlotChoice(value: string): value is SlotChoice {
 
 export function slotLabel(choice: SlotChoice): string {
   return SLOT_CHOICES.find((c) => c.id === choice)?.label ?? "Empty";
+}
+
+/**
+ * Picker choices a given viewer may add. Audience-restricted widgets (e.g. the
+ * LE-only "grants" card) are hidden from the other side; admins see everything.
+ */
+export function slotChoicesFor(opts: {
+  audience: "LE" | "CIVILIAN";
+  isAdmin: boolean;
+}): { id: SlotChoice; label: string }[] {
+  return SLOT_CHOICES.filter(
+    (c) => !c.audience || opts.isAdmin || c.audience === opts.audience
+  ).map((c) => ({ id: c.id, label: c.label }));
+}
+
+/** Whether a viewer is allowed to see a given widget's content at all. */
+export function canViewWidget(
+  choice: SlotChoice,
+  opts: { audience: "LE" | "CIVILIAN"; isAdmin: boolean }
+): boolean {
+  const meta = WIDGETS.find((w) => w.id === choice);
+  if (!meta?.audience) return true;
+  return opts.isAdmin || meta.audience === opts.audience;
 }
 
 /* ---------------------------------------------------------- dynamic cards --

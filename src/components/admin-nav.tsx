@@ -14,6 +14,7 @@ const links = [
   { href: "/admin/conferences", label: "Conferences" },
   { href: "/admin/resources", label: "Resources" },
   { href: "/admin/isp", label: "ISP directory" },
+  { href: "/admin/grants", label: "LE Grants" },
   { href: "/admin/partners", label: "Partners" },
   { href: "/admin/podcasts", label: "Podcasts" },
   { href: "/admin/campaigns", label: "Campaigns" },

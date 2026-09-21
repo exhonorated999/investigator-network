@@ -14,19 +14,23 @@ import {
  * One card on the free-form dashboard canvas. The learner owns it: the gear
  * lets them re-pick the widget, resize it (Full / Half / Third), or remove it
  * entirely. `children` is the server-rendered widget for the current choice
- * (null when empty).
+ * (null when empty). `choices` is the audience-filtered picker list, computed
+ * server-side so LE-only widgets never reach the wrong side.
  */
 export function SlotCard({
   index,
   choice,
   span,
+  choices,
   children,
 }: {
   index: number;
   choice: SlotChoice;
   span: CardSpan;
+  choices?: { id: SlotChoice; label: string }[];
   children: ReactNode;
 }) {
+  const pickable = (choices ?? SLOT_CHOICES).filter((c) => c.id !== "empty");
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const isEmpty = choice === "empty";
@@ -148,7 +152,7 @@ export function SlotCard({
               Show in this card
             </p>
             <div className="max-h-56 overflow-y-auto">
-              {SLOT_CHOICES.filter((c) => c.id !== "empty").map((c) => {
+              {pickable.map((c) => {
                 const active = c.id === choice;
                 return (
                   <button

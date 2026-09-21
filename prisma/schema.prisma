@@ -1035,6 +1035,42 @@ model Suppression {
 // widget. Either a `url` (portal link) or an `email`/`instructions` (for
 // providers that only accept process by email) may be present.
 // ---------------------------------------------------------------------------
+/// Which of our offerings a grant could fund. Shown as relevance chips on the
+/// LE-only "Grants" dashboard card. A grant may match several.
+enum GrantCategory {
+  INVESTIGATIONS
+  DFIR
+  SO_SYMPOSIUM
+}
+
+/// A law-enforcement funding opportunity posted by an admin. The admin pastes
+/// the grant URL and the fields pre-fill from the page (see lib/grant-preview),
+/// then the admin reviews/edits before publishing — mirrors the newsroom flow.
+/// Surfaced only on the Law Enforcement side via the "Grants" widget.
+model Grant {
+  id               String          @id @default(cuid())
+  /// Grant / solicitation title.
+  title            String
+  /// Short plain-text summary of what the grant funds.
+  summary          String          @default("")
+  /// Public grant page the "View grant" button links to.
+  url              String
+  /// Agency providing the grant (e.g. "Bureau of Justice Assistance").
+  grantingAgency   String          @default("")
+  /// Who qualifies / eligible applicants (e.g. "State & local law enforcement").
+  qualifyingAgency String          @default("")
+  /// Application due / closing date, when known.
+  dueDate          DateTime?
+  /// Relevance tags shown as chips.
+  categories       GrantCategory[]
+  /// Draft until an admin publishes it to the dashboard card.
+  published        Boolean         @default(false)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([published])
+}
+
 model IspProvider {
   id           String   @id @default(cuid())
   /// Provider / company name (e.g. "AT&T"). Used for alphabetical sort.

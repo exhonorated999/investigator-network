@@ -32,10 +32,12 @@ import { loadRecentPodcasts } from "@/lib/podcasts";
 import { PodcastsCard } from "@/components/widgets/podcasts-card";
 import { loadIspProviders } from "@/lib/isp";
 import { IspCard } from "@/components/widgets/isp-card";
+import { GrantsCard } from "@/components/widgets/grants-card";
+import { loadPublishedGrants } from "@/lib/grants";
 import { AddCardButton } from "@/components/widgets/add-card-button";
 import { loadCards } from "@/lib/dashboard-prefs";
 import { liveSessionEnded } from "@/lib/course";
-import { SPAN_CLASS, type SlotChoice } from "@/lib/dashboard";
+import { SPAN_CLASS, slotChoicesFor, canViewWidget, type SlotChoice } from "@/lib/dashboard";
 
 export const dynamic = "force-dynamic";
 
@@ -127,6 +129,11 @@ export default async function DashboardPage() {
   const spotlightPartners = await loadSpotlightPartners(viewer);
   const recentPodcasts = await loadRecentPodcasts(viewer, 4);
   const ispProviders = await loadIspProviders();
+  // LE-only funding card. Only query/expose for the LE side (admins included).
+  const canSeeGrants = viewer.audience === "LE" || isAdmin;
+  const grants = canSeeGrants ? await loadPublishedGrants() : [];
+  // Audience-filtered picker choices (hides LE-only widgets from civilians).
+  const cardChoices = slotChoicesFor({ audience: viewer.audience, isAdmin });
 
   // ------------------------------------------------------------- album data
   const now = new Date();
@@ -302,6 +309,13 @@ export default async function DashboardPage() {
           />
         );
 
+      case "grants":
+        // Never render LE funding to the civilian side, even if a stale saved
+        // layout still references it.
+        if (!canViewWidget("grants", { audience: viewer.audience, isAdmin }))
+          return null;
+        return <GrantsCard items={grants} number="14" />;
+
       case "partners":
         return <PartnersCard items={spotlightPartners} number="11" />;
 
@@ -406,7 +420,7 @@ export default async function DashboardPage() {
         <div className="mt-4 grid gap-5 lg:grid-cols-6">
           {cards.map((card, i) => (
             <div key={i} className={SPAN_CLASS[card.span]}>
-              <SlotCard index={i} choice={card.choice} span={card.span}>
+              <SlotCard index={i} choice={card.choice} span={card.span} choices={cardChoices}>
                 {renderWidget(card.choice)}
               </SlotCard>
             </div>
