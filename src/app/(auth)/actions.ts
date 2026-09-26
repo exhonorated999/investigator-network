@@ -4,6 +4,10 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { registerSchema, loginSchema } from "@/lib/validation";
+import {
+  SIGNUP_EMAIL_REJECTION_MESSAGE,
+  signupEmailBlockReason,
+} from "@/lib/signup-email";
 import { signIn, signOut } from "@/auth";
 import { issueInviteToken, RESET_TTL_DAYS } from "@/lib/invite";
 import { sendPasswordResetEmail } from "@/lib/email";
@@ -40,6 +44,19 @@ export async function registerAction(
   }
 
   const { name, audience, agency, state, email, password } = parsed.data;
+
+  // Reject bot signups before any read or write. No pending row, no mail.
+  const emailBlock = signupEmailBlockReason(email);
+  if (emailBlock) {
+    console.info("[register] rejected signup email", {
+      reason: emailBlock,
+      domain: email.split("@")[1] ?? "",
+    });
+    return {
+      ok: false,
+      fieldErrors: { email: SIGNUP_EMAIL_REJECTION_MESSAGE },
+    };
+  }
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {

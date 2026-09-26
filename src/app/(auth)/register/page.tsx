@@ -10,6 +10,11 @@ const initialState: FormState = { ok: false };
 export default function RegisterPage() {
   const [state, formAction] = useActionState(registerAction, initialState);
   const [audience, setAudience] = useState<"LE" | "CIVILIAN">("LE");
+  const [name, setName] = useState("");
+  const [agency, setAgency] = useState("");
+  const [region, setRegion] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   if (state.ok) {
     const approved = state.autoApproved;
@@ -88,6 +93,8 @@ export default function RegisterPage() {
           label="Full name"
           name="name"
           autoComplete="name"
+          value={name}
+          onChange={(event) => setName(event.target.value)}
           error={state.fieldErrors?.name}
         />
         <Field
@@ -96,12 +103,16 @@ export default function RegisterPage() {
           }
           name="agency"
           autoComplete="organization"
+          value={agency}
+          onChange={(event) => setAgency(event.target.value)}
           error={state.fieldErrors?.agency}
         />
         <Field
           label="State"
           name="state"
           autoComplete="address-level1"
+          value={region}
+          onChange={(event) => setRegion(event.target.value)}
           error={state.fieldErrors?.state}
         />
         <Field
@@ -109,6 +120,8 @@ export default function RegisterPage() {
           name="email"
           type="email"
           autoComplete="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
           error={state.fieldErrors?.email}
         />
         <Field
@@ -116,6 +129,8 @@ export default function RegisterPage() {
           name="password"
           type="password"
           autoComplete="new-password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
           error={state.fieldErrors?.password}
         />
         <SubmitButton label="Request access" />
