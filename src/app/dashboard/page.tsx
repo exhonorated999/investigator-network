@@ -124,7 +124,7 @@ export default async function DashboardPage() {
     feeds[t.id] = communityFeeds[i];
   });
 
-  const conferences = await loadUpcomingConferences(viewer, 6);
+  const conferences = await loadUpcomingConferences(viewer);
   const resources = await loadResourcesForViewer(viewer);
   const spotlightPartners = await loadSpotlightPartners(viewer);
   const recentPodcasts = await loadRecentPodcasts(viewer, 4);

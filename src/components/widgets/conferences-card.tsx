@@ -158,7 +158,20 @@ export function ConferencesCard({
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
 
+  const [query, setQuery] = useState("");
+
   const toggle = (id: string) => setOpenId((cur) => (cur === id ? null : id));
+
+  // Keyword filter across name, location, description, site and month name.
+  const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const filtered =
+    terms.length === 0
+      ? items
+      : items.filter((c) => {
+          const month = new Date(c.startsAt).toLocaleDateString(undefined, { month: "long" });
+          const hay = `${c.name} ${c.location} ${c.about} ${c.url} ${month}`.toLowerCase();
+          return terms.every((t) => hay.includes(t));
+        });
 
   return (
     <WidgetCard number={number} eyebrow="Events" title="Conferences" count={items.length}>
@@ -166,14 +179,34 @@ export function ConferencesCard({
         <WidgetEmpty>No upcoming events. Check back soon.</WidgetEmpty>
       ) : (
         <div>
-          {items.map((c) => (
-            <ConferenceRow
-              key={c.id}
-              c={c}
-              open={c.id === openId}
-              onToggle={toggle}
+          {/* Sticky search — stays visible while the list scrolls. */}
+          <div className="sticky top-0 z-10 bg-surface pb-2">
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search by keyword, city, or month…"
+              aria-label="Search conferences"
+              className="field !py-1.5 !text-[14px]"
             />
-          ))}
+            {terms.length > 0 ? (
+              <p className="mt-1 font-mono text-[10px] uppercase tracking-wider text-muted">
+                {filtered.length} of {items.length} match
+              </p>
+            ) : null}
+          </div>
+          {filtered.length === 0 ? (
+            <WidgetEmpty>No events match “{query.trim()}”.</WidgetEmpty>
+          ) : (
+            filtered.map((c) => (
+              <ConferenceRow
+                key={c.id}
+                c={c}
+                open={c.id === openId}
+                onToggle={toggle}
+              />
+            ))
+          )}
         </div>
       )}
     </WidgetCard>

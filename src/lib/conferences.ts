@@ -8,8 +8,8 @@ function audienceWhere(viewer: AudienceViewer): Prisma.ConferenceWhereInput {
   return { OR: [{ audience: viewer.audience }, { audience: null }] };
 }
 
-/** Upcoming conferences for a viewer, audience-gated (admins see all). */
-export async function loadUpcomingConferences(viewer: AudienceViewer, limit = 6) {
+/** Upcoming conferences for a viewer, audience-gated (admins see all). Omit `limit` for all. */
+export async function loadUpcomingConferences(viewer: AudienceViewer, limit?: number) {
   return prisma.conference.findMany({
     where: {
       AND: [
