@@ -7,6 +7,7 @@ import {
   deletePost,
   deleteComment,
 } from "./actions";
+import { ReplyBox } from "./reply-box";
 
 export const dynamic = "force-dynamic";
 
@@ -17,11 +18,6 @@ const FILTER_TABS: { key: Filter; label: string }[] = [
   { key: "visible", label: "Visible" },
   { key: "hidden", label: "Hidden" },
 ];
-
-function excerpt(body: string, max = 220): string {
-  const clean = body.replace(/\s+/g, " ").trim();
-  return clean.length > max ? clean.slice(0, max).trimEnd() + "…" : clean;
-}
 
 function formatDate(d: Date): string {
   return d.toLocaleDateString("en-US", {
@@ -138,8 +134,8 @@ export default async function ModerationPage({
                         </span>
                       )}
                     </div>
-                    <p className="mt-1.5 text-[15px] leading-relaxed text-foreground">
-                      {excerpt(post.body)}
+                    <p className="mt-1.5 whitespace-pre-line text-[15px] leading-relaxed text-foreground">
+                      {post.body}
                     </p>
                     <p className="mt-2 font-mono text-[11px] text-muted">
                       {post.author.name} · {post.author.agency} ·{" "}
@@ -204,21 +200,30 @@ export default async function ModerationPage({
                                 </span>
                               )}
                               <span className="font-mono text-[10px] text-muted">
+                                {comment.parentId ? "↳ reply · " : ""}
                                 {comment.author.name} · {comment.author.agency}
                               </span>
                             </div>
                             <p
-                              className={`mt-1 text-[13px] leading-relaxed ${
+                              className={`mt-1 whitespace-pre-line text-[13px] leading-relaxed ${
                                 comment.hidden ? "text-muted line-through" : "text-foreground"
                               }`}
                             >
-                              {excerpt(comment.body, 160)}
+                              {comment.body}
                             </p>
                             <p className="mt-1 font-mono text-[10px] text-muted">
                               {formatDate(comment.createdAt)} ·{" "}
                               {comment.reactions.length} reaction
                               {comment.reactions.length === 1 ? "" : "s"}
                             </p>
+                            <div className="mt-1.5">
+                              <ReplyBox
+                                postId={post.id}
+                                parentId={comment.id}
+                                replyingTo={comment.author.name}
+                                compact
+                              />
+                            </div>
                           </div>
 
                           {/* comment actions (sibling forms) */}
@@ -256,6 +261,11 @@ export default async function ModerationPage({
                     </div>
                   </div>
                 )}
+
+                {/* --- reply to the post as the signed-in admin --- */}
+                <div className="mt-3 border-t border-border pt-3">
+                  <ReplyBox postId={post.id} replyingTo={post.author.name} />
+                </div>
               </div>
             );
           })

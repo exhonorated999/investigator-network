@@ -38,6 +38,42 @@ export async function deletePost(formData: FormData) {
   revalidatePath("/community");
 }
 
+// ----------------------------- Replies -----------------------------
+
+const MAX_BODY = 4000;
+
+/**
+ * Reply to a post (or thread a reply under a comment) directly from the
+ * moderation console. Authored by the signed-in admin — no account switching.
+ * Admins are audience-neutral, so either side's posts can be answered.
+ */
+export async function adminReply(formData: FormData) {
+  const session = await requireAdmin();
+  const authorId = session.user!.id;
+  const postId = String(formData.get("postId") ?? "");
+  const parentId = String(formData.get("parentId") ?? "").trim() || null;
+  const body = String(formData.get("body") ?? "").trim();
+  if (!postId || !body) return;
+
+  const post = await prisma.post.findUnique({ where: { id: postId }, select: { id: true } });
+  if (!post) return;
+  if (parentId) {
+    const parent = await prisma.postComment.findUnique({
+      where: { id: parentId },
+      select: { postId: true },
+    });
+    if (!parent || parent.postId !== postId) return;
+  }
+
+  await prisma.postComment.create({
+    data: { postId, authorId, parentId, body: body.slice(0, MAX_BODY) },
+  });
+
+  revalidatePath("/admin/moderation");
+  revalidatePath("/community");
+  revalidatePath("/dashboard");
+}
+
 // ----------------------------- Comments -----------------------------
 
 /** Hide or unhide a comment (soft moderation — reversible). */
