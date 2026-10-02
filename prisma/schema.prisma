@@ -269,6 +269,11 @@ model Enrollment {
   course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
   enrolledAt DateTime @default(now())
 
+  // VIPER hard-drive fulfillment (Cybertips A to Z) — admin-tracked.
+  viperRequestedAt DateTime?
+  viperShippedAt   DateTime?
+  viperTracking    String?
+
   @@unique([userId, courseId])
 }
 

@@ -100,6 +100,47 @@ export async function courseTopLearners(
   });
 }
 
+/** Course slug whose roster gets VIPER hard-drive fulfillment tracking. */
+export const VIPER_COURSE_SLUG = "cybertips-a-to-z";
+
+export interface ViperRow {
+  enrollmentId: string;
+  name: string;
+  email: string;
+  agency: string;
+  enrolledAt: Date;
+  requested: boolean;
+  shipped: boolean;
+  tracking: string;
+}
+
+/** Every enrollee on the course with their VIPER drive status, by name. */
+export async function viperRoster(courseId: string): Promise<ViperRow[]> {
+  const rows = await prisma.enrollment.findMany({
+    where: { courseId },
+    select: {
+      id: true,
+      enrolledAt: true,
+      viperRequestedAt: true,
+      viperShippedAt: true,
+      viperTracking: true,
+      user: { select: { name: true, email: true, agency: true } },
+    },
+  });
+  return rows
+    .map((r) => ({
+      enrollmentId: r.id,
+      name: r.user.name,
+      email: r.user.email,
+      agency: r.user.agency ?? "",
+      enrolledAt: r.enrolledAt,
+      requested: r.viperRequestedAt !== null,
+      shipped: r.viperShippedAt !== null,
+      tracking: r.viperTracking ?? "",
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
 /** `3h 12m` / `48m` / `<1m`. */
 export function formatTime(seconds: number): string {
   if (seconds < 60) return "<1m";

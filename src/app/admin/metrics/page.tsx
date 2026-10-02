@@ -2,9 +2,10 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import type { PeriodKey } from "@/lib/analytics";
 import { PERIOD_LABEL } from "@/lib/analytics";
-import { courseTimeTotals, courseTopLearners, formatTime, certificateCounts, courseCertificates } from "@/lib/metrics";
+import { courseTimeTotals, courseTopLearners, formatTime, certificateCounts, courseCertificates, viperRoster, VIPER_COURSE_SLUG } from "@/lib/metrics";
 import { loadLiveTrainingReminders } from "@/lib/reminders";
 import { CopyEmails } from "../reminders/copy-emails";
+import { ViperTracker } from "./viper-tracker";
 
 export const dynamic = "force-dynamic";
 
@@ -39,13 +40,16 @@ export default async function MetricsPage({
   // Default the drill-down to the busiest course, unless one is chosen.
   const selectedId = sp.course || totals[0]?.courseId || "";
   const showCerts = sp.certs === "1" && !!selectedId;
-  const [selectedCourse, topLearners, certificates] = await Promise.all([
+  const [selectedCourse, topLearners, certificates, viperCourse] = await Promise.all([
     selectedId
-      ? prisma.course.findUnique({ where: { id: selectedId }, select: { id: true, title: true } })
+      ? prisma.course.findUnique({ where: { id: selectedId }, select: { id: true, title: true, slug: true } })
       : null,
     selectedId ? courseTopLearners(selectedId, period) : Promise.resolve([]),
     showCerts ? courseCertificates(selectedId) : Promise.resolve([]),
+    prisma.course.findUnique({ where: { slug: VIPER_COURSE_SLUG }, select: { id: true } }),
   ]);
+  const showViper = selectedCourse?.slug === VIPER_COURSE_SLUG;
+  const viperRows = showViper && selectedCourse ? await viperRoster(selectedCourse.id) : [];
 
   // New-enrollee reminders (since the last live session) for the selected
   // course. Reuses the same source as the standalone Reminders page.
@@ -97,6 +101,14 @@ export default async function MetricsPage({
         <span className="ml-auto self-center font-mono text-[11px] text-muted">
           {formatTime(grandTotal)} total across all courses
         </span>
+        {viperCourse ? (
+          <Link
+            href={`${href(period, viperCourse.id)}#viper`}
+            className="btn btn-ghost btn-sm self-center"
+          >
+            VIPER drives →
+          </Link>
+        ) : null}
       </div>
 
       {/* Per-course totals */}
@@ -199,6 +211,33 @@ export default async function MetricsPage({
               </tbody>
             </table>
           </div>
+        </div>
+      ) : null}
+
+      {/* VIPER hard-drive fulfillment — Cybertips A to Z only, full roster. */}
+      {showViper && selectedCourse ? (
+        <div id="viper" className="mt-8">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="eyebrow eyebrow-gold">// VIPER HARD DRIVES</p>
+              <h2 className="display-sm mt-1 text-foreground">{selectedCourse.title} · drive fulfillment</h2>
+              <p className="mt-1 font-mono text-[11px] text-muted">
+                {viperRows.length} enrolled · {viperRows.filter((r) => r.requested).length} requested ·{" "}
+                {viperRows.filter((r) => r.shipped).length} shipped
+              </p>
+            </div>
+          </div>
+          <ViperTracker
+            rows={viperRows.map((r) => ({
+              enrollmentId: r.enrollmentId,
+              name: r.name,
+              email: r.email,
+              agency: r.agency,
+              requested: r.requested,
+              shipped: r.shipped,
+              tracking: r.tracking,
+            }))}
+          />
         </div>
       ) : null}
 
