@@ -10,7 +10,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test src/lib/signup-email.test.ts",
+    "test": "tsx --test src/lib/*.test.ts",
     "postinstall": "prisma generate",
     "seed": "node prisma/seed.mjs"
   },

@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { hashPassword, verifyPassword } from "@/lib/password";
@@ -8,6 +9,13 @@ import {
   SIGNUP_EMAIL_REJECTION_MESSAGE,
   signupEmailBlockReason,
 } from "@/lib/signup-email";
+import {
+  AUTH_RATE_LIMIT_MESSAGE,
+  clientIpFromHeaders,
+  consumeAuthLimit,
+  withRateLimitScope,
+  type AuthLimitBucket,
+} from "@/lib/rate-limit";
 import { signIn, signOut } from "@/auth";
 import { issueInviteToken, RESET_TTL_DAYS } from "@/lib/invite";
 import { sendPasswordResetEmail } from "@/lib/email";
@@ -18,6 +26,17 @@ export type FormState = {
   autoApproved?: boolean;
   fieldErrors?: Record<string, string>;
 };
+
+async function rateLimitResponse(
+  bucket: AuthLimitBucket
+): Promise<FormState | null> {
+  const headerList = await headers();
+  const ip = clientIpFromHeaders(headerList);
+  const result = consumeAuthLimit(bucket, ip);
+  if (result.ok) return null;
+  console.info("[auth] rate limit", { bucket, ip });
+  return { ok: false, message: AUTH_RATE_LIMIT_MESSAGE };
+}
 
 export async function registerAction(
   _prev: FormState,
@@ -45,7 +64,11 @@ export async function registerAction(
 
   const { name, audience, agency, state, email, password } = parsed.data;
 
-  // Reject bot signups before any read or write. No pending row, no mail.
+  // Count the attempt, then reject bot emails. Both happen before any read
+  // or write, so a limited or disposable address never creates a user or mail.
+  const limited = await rateLimitResponse("register");
+  if (limited) return limited;
+
   const emailBlock = signupEmailBlockReason(email);
   if (emailBlock) {
     console.info("[register] rejected signup email", {
@@ -97,6 +120,13 @@ export async function registerAction(
 }
 
 export async function loginAction(
+  prev: FormState,
+  formData: FormData
+): Promise<FormState> {
+  return withRateLimitScope(() => loginActionLimited(prev, formData));
+}
+
+async function loginActionLimited(
   _prev: FormState,
   formData: FormData
 ): Promise<FormState> {
@@ -110,6 +140,10 @@ export async function loginAction(
   }
 
   const { email, password } = parsed.data;
+
+  const limited = await rateLimitResponse("login");
+  if (limited) return limited;
+
   const user = await prisma.user.findUnique({ where: { email } });
 
   // Migrated / admin-created account that has never been activated. Tell them
@@ -174,6 +208,9 @@ export async function forgotPasswordAction(
   _prev: FormState,
   formData: FormData
 ): Promise<FormState> {
+  const limited = await rateLimitResponse("forgotPassword");
+  if (limited) return limited;
+
   const email = String(formData.get("email") ?? "")
     .trim()
     .toLowerCase();
