@@ -1,8 +1,10 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { verifyPassword } from "@/lib/password";
 import { loginSchema } from "@/lib/validation";
+import { clientIpFromHeaders, consumeAuthLimit } from "@/lib/rate-limit";
 import type { Role, UserStatus, Audience } from "@/generated/prisma";
 
 export const { handlers, signIn, signOut, auth, unstable_update: updateSession } = NextAuth({
@@ -18,6 +20,12 @@ export const { handlers, signIn, signOut, auth, unstable_update: updateSession }
       async authorize(raw) {
         const parsed = loginSchema.safeParse(raw);
         if (!parsed.success) return null;
+
+        // Same login bucket as the sign-in form. A direct credentials POST
+        // counts here; a form post already counted inside loginAction and
+        // does not count again (see withRateLimitScope).
+        const ip = clientIpFromHeaders(await headers());
+        if (!consumeAuthLimit("login", ip).ok) return null;
 
         const { email, password } = parsed.data;
         const user = await prisma.user.findUnique({ where: { email } });

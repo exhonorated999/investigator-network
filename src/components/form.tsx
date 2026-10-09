@@ -1,5 +1,6 @@
 "use client";
 
+import type React from "react";
 import { useFormStatus } from "react-dom";
 
 export function Field({
@@ -9,6 +10,8 @@ export function Field({
   autoComplete,
   error,
   defaultValue,
+  value,
+  onChange,
   placeholder,
 }: {
   label: string;
@@ -17,6 +20,8 @@ export function Field({
   autoComplete?: string;
   error?: string;
   defaultValue?: string;
+  value?: string;
+  onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
   placeholder?: string;
 }) {
   return (
@@ -29,7 +34,9 @@ export function Field({
         name={name}
         type={type}
         autoComplete={autoComplete}
-        defaultValue={defaultValue}
+        // Controlled fields survive React's post-action form reset, so a
+        // validation error doesn't wipe what the person just typed.
+        {...(value !== undefined ? { value, onChange } : { defaultValue })}
         placeholder={placeholder}
         className="field"
         aria-invalid={error ? true : undefined}
