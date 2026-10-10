@@ -25,21 +25,25 @@ export default async function CourseEvaluationPage({
   });
   if (!course) notFound();
 
+  const isAdmin = user.role === "ADMIN";
   const enrollment = await prisma.enrollment.findUnique({
     where: { userId_courseId: { userId: user.id, courseId: course.id } },
     select: { id: true },
   });
-  if (!enrollment) redirect(`/courses/${slug}`);
+  // Admins may always open the form; without an enrollment it's a preview.
+  if (!enrollment && !isAdmin) redirect(`/courses/${slug}`);
+  const preview = !enrollment;
 
   const existing = await prisma.courseEvaluation.findUnique({
     where: { userId_courseId: { userId: user.id, courseId: course.id } },
     select: { id: true },
   });
-  const complete = await isCourseComplete(user.id, course.id);
+  const complete =
+    isAdmin || (await isCourseComplete(user.id, course.id));
 
   return (
     <div className="min-h-screen">
-      <SiteHeader name={user.name} isAdmin={user.role === "ADMIN"} />
+      <SiteHeader name={user.name} isAdmin={isAdmin} />
       <main className="mx-auto max-w-3xl px-5 pb-20 pt-8">
         <Link
           href={`/courses/${slug}`}
@@ -75,7 +79,16 @@ export default async function CourseEvaluationPage({
               </Link>
             </div>
           ) : (
-            <EvaluationForm slug={slug} config={config} />
+            <>
+              {preview ? (
+                <p className="mb-6 border border-gold/40 bg-[rgba(244,162,97,0.08)] px-4 py-3 text-[14px] text-gold">
+                  Admin preview — you&apos;re not enrolled in this course, so
+                  this form can&apos;t be submitted. Learners see it once
+                  they&apos;ve completed the course.
+                </p>
+              ) : null}
+              <EvaluationForm slug={slug} config={config} preview={preview} />
+            </>
           )}
         </div>
       </main>

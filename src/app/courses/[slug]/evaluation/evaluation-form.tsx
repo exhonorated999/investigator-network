@@ -13,9 +13,11 @@ const initial: EvalFormState = { error: null };
 export function EvaluationForm({
   slug,
   config,
+  preview = false,
 }: {
   slug: string;
   config: EvaluationConfig;
+  preview?: boolean;
 }) {
   const [state, action, pending] = useActionState(submitEvaluation, initial);
   const [testimonialOk, setTestimonialOk] = useState<"" | "yes" | "no">("");
@@ -77,8 +79,12 @@ export function EvaluationForm({
       ) : null}
 
       <div>
-        <button className="btn btn-primary" disabled={pending}>
-          {pending ? "Submitting…" : "Submit evaluation & get certificate"}
+        <button className="btn btn-primary" disabled={pending || preview}>
+          {preview
+            ? "Submit disabled (admin preview)"
+            : pending
+              ? "Submitting…"
+              : "Submit evaluation & get certificate"}
         </button>
       </div>
     </form>
