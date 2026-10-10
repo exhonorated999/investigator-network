@@ -21,6 +21,7 @@ const links = [
   { href: "/admin/contacts", label: "Contacts" },
   { href: "/admin/reminders", label: "Reminders" },
   { href: "/admin/grading", label: "Grading" },
+  { href: "/admin/evaluations", label: "Evaluations" },
   { href: "/admin/moderation", label: "Moderation" },
   { href: "/admin/preview", label: "View as learner" },
 ];

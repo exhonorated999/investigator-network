@@ -1,5 +1,6 @@
 import { randomUUID } from "crypto";
 import { prisma } from "@/lib/prisma";
+import { evaluationFor } from "@/lib/evaluation-config";
 
 /**
  * Certificate issuance. Issuance is idempotent (unique userId+courseId).
@@ -87,6 +88,26 @@ export async function isCourseComplete(
 }
 
 /**
+ * True when the course has no end-of-course evaluation configured, or the
+ * learner has already submitted it.
+ */
+export async function evaluationSatisfied(
+  userId: string,
+  courseId: string
+): Promise<boolean> {
+  const course = await prisma.course.findUnique({
+    where: { id: courseId },
+    select: { slug: true },
+  });
+  if (!course || !evaluationFor(course.slug)) return true;
+  const ev = await prisma.courseEvaluation.findUnique({
+    where: { userId_courseId: { userId, courseId } },
+    select: { id: true },
+  });
+  return !!ev;
+}
+
+/**
  * Issue a certificate if the course is complete and none exists yet.
  * Returns the certificate (existing or new), or null if not yet earned.
  */
@@ -97,6 +118,10 @@ export async function maybeIssueCertificate(userId: string, courseId: string) {
   if (existing) return existing;
 
   if (!(await isCourseComplete(userId, courseId))) return null;
+
+  // Courses with an end-of-course evaluation hold the certificate until the
+  // learner has submitted it.
+  if (!(await evaluationSatisfied(userId, courseId))) return null;
 
   try {
     return await prisma.certificate.create({

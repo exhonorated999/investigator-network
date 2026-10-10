@@ -78,6 +78,7 @@ model User {
   quizDrafts    QuizDraft[]
   uploads       FileUpload[]
   certificates  Certificate[]
+  evaluations   CourseEvaluation[]
   gradedAnswers Answer[]        @relation("GradedBy")
   assignmentSubmissions AssignmentSubmission[] @relation("SubmissionAuthor")
   gradedSubmissions     AssignmentSubmission[] @relation("SubmissionGrader")
@@ -215,6 +216,7 @@ model Course {
   sections     Section[]
   enrollments  Enrollment[]
   certificates Certificate[]
+  evaluations  CourseEvaluation[]
   favorites    CourseFavorite[]
   questions    CourseQuestion[]
   activity     CourseActivity[]
@@ -277,6 +279,25 @@ model Enrollment {
   viperDigitalAt   DateTime?
 
   @@unique([userId, courseId])
+}
+
+/// End-of-course evaluation. Questions are defined in code per course
+/// (src/lib/evaluation-config.ts); `answers` maps question id -> value
+/// (1-5 for stars, true/false for yes/no, string for short answers).
+/// Required before the certificate is issued on courses that have one.
+model CourseEvaluation {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId      String
+  course        Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  answers       Json
+  testimonialOk Boolean  @default(false)
+  testimonial   String?
+  createdAt     DateTime @default(now())
+
+  @@unique([userId, courseId])
+  @@index([courseId, createdAt])
 }
 
 enum ProgressStatus {
