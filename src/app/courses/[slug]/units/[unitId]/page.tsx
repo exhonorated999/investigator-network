@@ -23,15 +23,21 @@ import {
 import { setUnitComplete } from "../../../actions";
 import { evaluationFor } from "@/lib/evaluation-config";
 import { evaluationSatisfied, isCourseComplete } from "@/lib/certificate";
+import { boardEnabled } from "@/lib/board-config";
+import { loadBoard } from "@/lib/board";
+import { BoardPanel } from "@/components/board/board-panel";
 
 export const dynamic = "force-dynamic";
 
 export default async function CoursePlayer({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string; unitId: string }>;
+  searchParams: Promise<{ board?: string }>;
 }) {
   const { slug, unitId } = await params;
+  const { board: boardParam } = await searchParams;
   const user = await requireViewer();
   const isAdmin = user.role === "ADMIN";
 
@@ -98,6 +104,10 @@ export default async function CoursePlayer({
   const courseComplete =
     !!evalConfig && !evalDone && (await isCourseComplete(user.id, course.id));
 
+  // Class board (slide-out from the outline).
+  const boardOn = boardEnabled(slug);
+  const boardPosts = boardOn ? await loadBoard(course.id, user.id) : [];
+
   return (
     <div className="min-h-screen md:grid md:grid-cols-[320px_1fr]">
       {/* ----------------------------------------------------------- outline */}
@@ -134,6 +144,27 @@ export default async function CoursePlayer({
         </div>
 
         <nav className="pb-6">
+          {boardOn ? (
+            <div className="mt-3">
+              <p className="eyebrow eyebrow-muted px-4 py-1.5 text-[10px]">
+                Community
+              </p>
+              <BoardPanel
+                slug={slug}
+                courseTitle={course.title}
+                posts={boardPosts}
+                viewer={{
+                  id: user.id,
+                  name: user.name,
+                  agency: user.agency,
+                  isAdmin,
+                }}
+                initialOpen={!!boardParam}
+                focusPostId={boardParam && boardParam !== "1" ? boardParam : null}
+              />
+            </div>
+          ) : null}
+
           {course.sections.map((section) => (
             <div key={section.id} className="mt-3">
               <p className="eyebrow eyebrow-muted px-4 py-1.5 text-[10px]">

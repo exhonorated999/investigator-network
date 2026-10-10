@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/rbac";
+import { createBoardReply } from "@/app/courses/[slug]/board/actions";
 
 /**
  * Moderation actions for the community social feed. Each action requires an
@@ -100,4 +101,57 @@ export async function deleteComment(formData: FormData) {
 
   revalidatePath("/admin/moderation");
   revalidatePath("/community");
+}
+
+// --------------------------- Class boards ---------------------------
+
+function revalidateBoards() {
+  revalidatePath("/admin/moderation");
+  revalidatePath("/dashboard");
+  revalidatePath("/courses", "layout");
+}
+
+export async function setBoardPostHidden(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id"));
+  const hidden = formData.get("hidden") === "true";
+  await prisma.boardPost.update({ where: { id }, data: { hidden } });
+  revalidateBoards();
+}
+
+export async function adminDeleteBoardPost(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id"));
+  const post = await prisma.boardPost.findUnique({ where: { id }, select: { fileId: true } });
+  if (!post) return;
+  await prisma.boardPost.delete({ where: { id } });
+  if (post.fileId) {
+    await prisma.fileUpload.delete({ where: { id: post.fileId } }).catch(() => {});
+  }
+  revalidateBoards();
+}
+
+export async function setBoardReplyHidden(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id"));
+  const hidden = formData.get("hidden") === "true";
+  await prisma.boardReply.update({ where: { id }, data: { hidden } });
+  revalidateBoards();
+}
+
+export async function adminDeleteBoardReply(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id"));
+  await prisma.boardReply.delete({ where: { id } });
+  revalidateBoards();
+}
+
+/** Reply to a class-board post as the signed-in admin (Instructor badge). */
+export async function adminBoardReply(formData: FormData) {
+  await requireAdmin();
+  const postId = String(formData.get("postId") ?? "");
+  const body = String(formData.get("body") ?? "");
+  if (!postId || !body.trim()) return;
+  await createBoardReply(postId, body);
+  revalidateBoards();
 }

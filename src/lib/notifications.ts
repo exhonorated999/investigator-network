@@ -1,13 +1,16 @@
 import { prisma } from "@/lib/prisma";
 import { unitData } from "@/lib/course";
 import { courseAudienceWhere, type AudienceViewer } from "@/lib/audience";
+import { loadBoardAlerts } from "@/lib/board";
+import { boardKindMeta } from "@/lib/board-config";
 
 export type NotifKind =
   | "live"
   | "result"
   | "certificate"
   | "grading"
-  | "release";
+  | "release"
+  | "board";
 
 export interface Notification {
   id: string;
@@ -36,7 +39,7 @@ export async function loadNotifications(
   const now = Date.now();
   const items: Notification[] = [];
 
-  const [liveUnits, attempts, certificates, newCourses] = await Promise.all([
+  const [liveUnits, attempts, certificates, newCourses, boardAlerts] = await Promise.all([
     prisma.unit.findMany({
       where: {
         type: "LIVE_SESSION",
@@ -78,7 +81,26 @@ export async function loadNotifications(
       take: 3,
       select: { id: true, slug: true, title: true, updatedAt: true },
     }),
+    loadBoardAlerts(userId, viewer?.role === "ADMIN"),
   ]);
+
+  // --- Class board activity since the learner last looked.
+  for (const a of boardAlerts) {
+    const meta = boardKindMeta(a.kind);
+    items.push({
+      id: `board-${a.type}-${a.postId}`,
+      kind: "board",
+      title:
+        a.type === "post"
+          ? `New ${meta.label.toLowerCase()} on the class board`
+          : "New reply in your thread",
+      body: `${a.by}: ${a.type === "post" ? a.title : a.snippet}`,
+      course: a.courseTitle,
+      at: a.at,
+      href: `/courses/${a.courseSlug}/board/${a.postId}`,
+      tone: "gold",
+    });
+  }
 
   // --- Live sessions: upcoming, or in progress right now.
   for (const unit of liveUnits) {
@@ -166,13 +188,15 @@ export async function loadNotifications(
     });
   }
 
-  // Upcoming live sessions float to the top, then most recent activity.
+  // Upcoming live sessions float to the top, then unread class-board
+  // activity, then most recent activity.
+  const rank = (n: Notification) => (n.kind === "live" ? 0 : n.kind === "board" ? 1 : 2);
   return items.sort((a, b) => {
-    const aLive = a.kind === "live" ? 0 : 1;
-    const bLive = b.kind === "live" ? 0 : 1;
-    if (aLive !== bLive) return aLive - bLive;
+    const ar = rank(a);
+    const br = rank(b);
+    if (ar !== br) return ar - br;
     const at = a.at?.getTime() ?? 0;
     const bt = b.at?.getTime() ?? 0;
-    return aLive === 0 ? at - bt : bt - at;
+    return ar === 0 ? at - bt : bt - at;
   });
 }

@@ -232,6 +232,34 @@ export function sendAdminQuestionAlert(
 }
 
 /**
+ * Tell a class-board post author that someone replied to their post.
+ */
+export function sendBoardReplyEmail(
+  to: string,
+  name: string,
+  opts: {
+    courseTitle: string;
+    postTitle: string;
+    replierName: string;
+    preview: string;
+    path: string;
+  }
+) {
+  const preview = opts.preview.trim().slice(0, 300);
+  return send({
+    to,
+    subject: `New reply on the ${opts.courseTitle} class board`,
+    text:
+      `Hi ${name},\n\n` +
+      `${opts.replierName} replied to your post "${opts.postTitle}" on the ` +
+      `${opts.courseTitle} class board.\n\n` +
+      (preview ? `Reply:\n"${preview}"\n\n` : "") +
+      `View and respond:\n${appUrl()}${opts.path}\n\n` +
+      `— Investigator Network`,
+  });
+}
+
+/**
  * Format a session start time for display in Pacific, resolving naive
  * wall-clock timestamps via the shared session-time parser.
  */

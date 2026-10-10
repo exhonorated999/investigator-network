@@ -15,6 +15,7 @@ import {
 import { UNIT_LABEL } from "@/lib/units";
 import { CourseForum } from "@/components/course-forum";
 import { loadQuestions } from "@/lib/course-forum";
+import { boardEnabled } from "@/lib/board-config";
 import { sanitizeHtml } from "@/lib/sanitize-html";
 import { PROSE_INLINE } from "@/components/blocks/prose";
 import {
@@ -98,7 +99,8 @@ export default async function CourseOverview({
   const doneCount = requiredUnits.filter((u) => completed.has(u.id)).length;
 
   // Course forum — visible to enrolled learners and admins.
-  const canForum = isAdmin || !!enrollment;
+  // Courses with a Class Board (slide-out in the player) drop the overview Q&A.
+  const canForum = (isAdmin || !!enrollment) && !boardEnabled(slug);
   const questions = canForum ? await loadQuestions(course.id) : [];
 
   // Landing-page treatment: long markdown descriptions render as a panel

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { readFile } from "@/lib/storage";
+import { canAccessBoard } from "@/lib/board";
 
 /**
  * Serve an uploaded file. Access: the owner, or any ADMIN.
@@ -31,7 +32,19 @@ export async function GET(
     file.purpose === "partner-logo" ||
     file.purpose === "podcast-audio";
   if (!isOwner && !isAdmin && !isPublicAsset) {
-    return new NextResponse("Forbidden", { status: 403 });
+    // Class-board attachments are readable by anyone with access to that board.
+    let boardOk = false;
+    if (file.purpose === "board-file") {
+      const post = await prisma.boardPost.findUnique({
+        where: { fileId: file.id },
+        select: { courseId: true, hidden: true },
+      });
+      boardOk =
+        !!post &&
+        !post.hidden &&
+        (await canAccessBoard(session.user.id as string, session.user.role, post.courseId));
+    }
+    if (!boardOk) return new NextResponse("Forbidden", { status: 403 });
   }
 
   let buffer: Buffer;
@@ -39,6 +52,28 @@ export async function GET(
     buffer = await readFile(file.path);
   } catch {
     return new NextResponse("File missing", { status: 404 });
+  }
+
+  // Board uploads come from learners: never trust the browser-supplied MIME
+  // type. Only PDFs and images render inline; everything else downloads.
+  if (file.purpose === "board-file") {
+    const ext = file.filename.toLowerCase().split(".").pop() ?? "";
+    const inlineType: Record<string, string> = {
+      pdf: "application/pdf",
+      png: "image/png",
+      jpg: "image/jpeg",
+      jpeg: "image/jpeg",
+      gif: "image/gif",
+    };
+    const t = inlineType[ext];
+    return new NextResponse(new Uint8Array(buffer), {
+      headers: {
+        "Content-Type": t ?? "application/octet-stream",
+        "Content-Disposition": `${t ? "inline" : "attachment"}; filename="${encodeURIComponent(file.filename)}"`,
+        "Content-Length": String(buffer.byteLength),
+        "X-Content-Type-Options": "nosniff",
+      },
+    });
   }
 
   const contentType = file.mimeType || "application/octet-stream";

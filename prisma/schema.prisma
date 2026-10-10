@@ -93,6 +93,9 @@ model User {
   messagesSent Message[]
   courseQuestions CourseQuestion[]
   courseAnswers   CourseAnswer[]
+  boardPosts      BoardPost[]
+  boardReplies    BoardReply[]
+  boardReads      BoardRead[]
   courseActivity  CourseActivity[]
   inviteTokens    InviteToken[]
 
@@ -219,6 +222,7 @@ model Course {
   evaluations  CourseEvaluation[]
   favorites    CourseFavorite[]
   questions    CourseQuestion[]
+  boardPosts   BoardPost[]
   activity     CourseActivity[]
   presentUsers User[]           @relation("PresenceCourse")
   campaigns    Campaign[]
@@ -506,6 +510,7 @@ model FileUpload {
 
   answers Answer[]
   submission AssignmentSubmission?
+  boardPost  BoardPost?
 }
 
 model Certificate {
@@ -725,6 +730,69 @@ model CourseAnswer {
   createdAt  DateTime       @default(now())
 
   @@index([questionId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Class board — per-course discussion board opened as a slide-out from the
+// in-course sidebar (enabled per course in src/lib/board-config.ts). Replaces
+// the overview-page Q&A for courses that have it. Unread state is tracked per
+// user per post (BoardRead) and drives the sidebar badge + dashboard alerts.
+// ---------------------------------------------------------------------------
+
+model BoardPost {
+  id             String       @id @default(cuid())
+  courseId       String
+  course         Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  authorId       String
+  author         User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  /// INTRO | QUESTION | NEWS | RESOURCE (see src/lib/board-config.ts)
+  kind           String
+  title          String?
+  body           String       @default("")
+  linkUrl        String?
+  /// Introductions: agency + optional contact email shown to the class.
+  agency         String?
+  contactEmail   String?
+  fileId         String?      @unique
+  file           FileUpload?  @relation(fields: [fileId], references: [id], onDelete: SetNull)
+  hidden         Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  /// Bumped on every reply so active threads float up.
+  lastActivityAt DateTime     @default(now())
+
+  replies BoardReply[]
+  reads   BoardRead[]
+
+  @@index([courseId, lastActivityAt])
+  @@index([authorId])
+}
+
+model BoardReply {
+  id        String    @id @default(cuid())
+  postId    String
+  post      BoardPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  body      String
+  /// Written by an admin/instructor — shown with an Instructor badge.
+  staff     Boolean   @default(false)
+  hidden    Boolean   @default(false)
+  createdAt DateTime  @default(now())
+
+  @@index([postId, createdAt])
+}
+
+/// Last time a user viewed a board post (and its replies).
+model BoardRead {
+  userId String
+  user   User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId String
+  post   BoardPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  readAt DateTime  @default(now())
+
+  @@id([userId, postId])
+  @@index([postId])
 }
 
 // ---------------------------------------------------------------------------

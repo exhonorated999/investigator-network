@@ -8,6 +8,7 @@ import {
   deleteComment,
 } from "./actions";
 import { ReplyBox } from "./reply-box";
+import { BoardModeration } from "./board-moderation";
 
 export const dynamic = "force-dynamic";
 
@@ -32,9 +33,10 @@ function formatDate(d: Date): string {
 export default async function ModerationPage({
   searchParams,
 }: {
-  searchParams: Promise<{ filter?: string }>;
+  searchParams: Promise<{ filter?: string; view?: string }>;
 }) {
-  const { filter = "all" } = await searchParams;
+  const { filter = "all", view } = await searchParams;
+  const boards = view === "boards";
   const activeFilter: Filter =
     filter === "hidden" || filter === "visible" ? filter : "all";
 
@@ -68,18 +70,51 @@ export default async function ModerationPage({
     where: { hidden: true },
   });
 
+  const [hiddenBoardPosts, boardPostCount] = await Promise.all([
+    prisma.boardPost.count({ where: { hidden: true } }),
+    prisma.boardPost.count(),
+  ]);
+  const qs = (f: string, v: boolean) =>
+    `/admin/moderation?filter=${f}${v ? "&view=boards" : ""}`;
+
   return (
     <div className="reveal">
       {/* ----------------------------------------------------------- header */}
       <p className="eyebrow eyebrow-gold">// COMMUNITY MODERATION</p>
-      <h1 className="display-lg mt-2 text-foreground">Social feed moderation</h1>
+      <h1 className="display-lg mt-2 text-foreground">
+        {boards ? "Class board moderation" : "Social feed moderation"}
+      </h1>
       <p className="mt-2 max-w-2xl text-[15px] text-muted">
-        Review, hide, unhide, or remove community posts and comments. Hidden
-        items disappear from the learner feed but remain here for audit.
+        {boards
+          ? "Posts and replies from course class boards. Hidden items disappear from the class board and dashboard alerts but remain here for audit."
+          : "Review, hide, unhide, or remove community posts and comments. Hidden items disappear from the learner feed but remain here for audit."}
       </p>
+
+      {/* ----------------------------------------------------------- source */}
+      <div className="mt-5 flex gap-2">
+        <Link
+          href={qs(activeFilter, false)}
+          className={`btn btn-sm ${boards ? "btn-ghost" : "btn-primary"}`}
+        >
+          Social feed
+        </Link>
+        <Link
+          href={qs(activeFilter, true)}
+          className={`btn btn-sm ${boards ? "btn-primary" : "btn-ghost"}`}
+        >
+          💬 Class boards ({boardPostCount})
+        </Link>
+      </div>
 
       {/* ---------------------------------------------------------- summary */}
       <div className="mt-5 flex flex-wrap gap-3">
+        {boards ? (
+          <div className="panel rule-top px-4 py-3">
+            <p className="eyebrow eyebrow-muted">Hidden board posts</p>
+            <p className="display-sm mt-1 text-gold">{hiddenBoardPosts}</p>
+          </div>
+        ) : (
+          <>
         <div className="panel rule-top px-4 py-3">
           <p className="eyebrow eyebrow-muted">Hidden posts</p>
           <p className="display-sm mt-1 text-gold">{hiddenCount}</p>
@@ -88,6 +123,8 @@ export default async function ModerationPage({
           <p className="eyebrow eyebrow-muted">Hidden comments</p>
           <p className="display-sm mt-1 text-gold">{hiddenCommentCount}</p>
         </div>
+          </>
+        )}
       </div>
 
       {/* ------------------------------------------------------------- tabs */}
@@ -97,7 +134,7 @@ export default async function ModerationPage({
           return (
             <Link
               key={t.key}
-              href={`/admin/moderation?filter=${t.key}`}
+              href={qs(t.key, boards)}
               className={`shrink-0 border-l-2 px-3 py-2 font-display text-[11px] font-semibold uppercase tracking-[0.18em] transition ${
                 active
                   ? "border-accent-bright bg-[rgba(0,180,216,0.08)] text-accent-bright"
@@ -111,6 +148,9 @@ export default async function ModerationPage({
       </div>
 
       {/* ------------------------------------------------------------- list */}
+      {boards ? (
+        <BoardModeration filter={activeFilter} />
+      ) : (
       <div className="mt-4 grid gap-3">
         {posts.length === 0 ? (
           <p className="text-muted">No posts match this filter.</p>
@@ -271,6 +311,7 @@ export default async function ModerationPage({
           })
         )}
       </div>
+      )}
     </div>
   );
 }

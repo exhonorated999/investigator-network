@@ -14,6 +14,7 @@ const ICON: Record<Notification["kind"], string> = {
   certificate: "🏅",
   grading: "⏳",
   release: "▣",
+  board: "⚑",
 };
 
 function when(n: Notification): string {
@@ -47,7 +48,7 @@ export function NotificationsCard({ items }: { items: Notification[] }) {
 
       {items.length === 0 ? (
         <p className="mt-5 flex-1 text-[15px] text-muted">
-          Nothing needs your attention. Live sessions, test results and new
+          Nothing needs your attention. Live sessions, test results, class board posts and new
           credentials will appear here.
         </p>
       ) : (
