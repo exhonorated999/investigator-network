@@ -23,8 +23,6 @@ import {
   DEFAULT_INVOICE_EMAIL,
 } from "@/lib/course-checkout";
 import { enroll } from "../actions";
-import { evaluationSatisfied, isCourseComplete } from "@/lib/certificate";
-import { evaluationFor } from "@/lib/evaluation-config";
 
 /**
  * A course description doubles as its landing page. Short descriptions are
@@ -94,15 +92,6 @@ export default async function CourseOverview({
           where: { userId_courseId: { userId: user.id, courseId: course.id } },
         })
       : null;
-
-  // End-of-course evaluation gate: complete course + no evaluation yet means
-  // the certificate is being held — prompt the learner to submit it.
-  const needsEvaluation =
-    !!enrollment &&
-    !certificate &&
-    !!evaluationFor(slug) &&
-    !(await evaluationSatisfied(user.id, course.id)) &&
-    (await isCourseComplete(user.id, course.id));
 
   const requiredUnits = units.filter((u) => u.completionRule !== "OPTIONAL");
   const totalUnits = requiredUnits.length;
@@ -196,22 +185,8 @@ export default async function CourseOverview({
                     🏅 View certificate
                   </Link>
                 ) : null}
-                {needsEvaluation ? (
-                  <Link
-                    href={`/courses/${slug}/evaluation`}
-                    className="btn btn-gold"
-                  >
-                    ★ Complete course evaluation
-                  </Link>
-                ) : null}
               </div>
             </div>
-            {needsEvaluation ? (
-              <p className="mt-4 border border-gold/40 bg-[rgba(244,162,97,0.08)] px-4 py-3 text-[14px] text-gold">
-                You&apos;ve finished the course. Complete the short course
-                evaluation to receive your certificate.
-              </p>
-            ) : null}
             <div className="mt-5">
               <div className="h-[6px] w-full overflow-hidden bg-[rgba(255,255,255,0.06)]">
                 <div
