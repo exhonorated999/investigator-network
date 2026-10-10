@@ -111,7 +111,7 @@ export default async function CoursePlayer({
   return (
     <div className="min-h-screen md:grid md:grid-cols-[320px_1fr]">
       {/* ----------------------------------------------------------- outline */}
-      <aside className="border-b border-border bg-surface md:sticky md:top-0 md:min-h-screen md:border-b-0 md:border-r">
+      <aside className="relative z-40 border-b border-border bg-surface md:sticky md:top-0 md:min-h-screen md:border-b-0 md:border-r">
         <div className="flex items-center gap-2.5 border-b border-border px-4 py-3">
           <Image src="/brand/logo.png" alt="" width={28} height={28} />
           <Link

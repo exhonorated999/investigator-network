@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import type { BoardPostView } from "@/lib/board";
 import { BOARD_KINDS } from "@/lib/board-config";
@@ -40,8 +39,6 @@ export function BoardPanel({
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(initialOpen);
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
   const [composing, setComposing] = useState(false);
   const [filter, setFilter] = useState<string>("ALL");
   const [seen, setSeen] = useState<Set<string>>(() => new Set(unreadIds(posts)));
@@ -101,10 +98,9 @@ export function BoardPanel({
   }, [posts]);
   const shown = filter === "ALL" ? posts : posts.filter((p) => p.kind === filter);
 
-  // Rendered into <body> so the drawer is never trapped under course content
-  // (the sticky sidebar creates its own stacking context).
-  if (!mounted) return null;
-  return createPortal(
+  // The tab is absolutely positioned on the outline <aside>'s right edge (the
+  // aside is `relative` + raised z-index so the drawer paints over content).
+  return (
     <>
       {/* ------------------------------------------------ edge tab */}
       <button
@@ -116,27 +112,20 @@ export function BoardPanel({
             ? `Class Board — ${unreadCount} new since your last visit`
             : "Class Board"
         }
-        className={`fixed top-1/2 z-[1001] flex -translate-y-1/2 flex-col items-center gap-2 rounded-r-md border border-l-0 px-1.5 py-3 shadow-lg transition-all duration-200 ${
-          open
-            ? "left-0 hidden border-accent bg-surface-2 text-foreground md:left-[860px] md:flex"
-            : unreadCount > 0
-              ? "left-0 border-gold/70 bg-surface text-foreground hover:bg-surface-2 md:left-[320px]"
-              : "left-0 border-border bg-surface text-muted hover:bg-surface-2 hover:text-foreground md:left-[320px]"
+        className={`absolute right-2 top-2 z-10 flex items-center gap-1.5 rounded-md border px-2 py-1.5 shadow-lg transition md:left-full md:right-auto md:top-28 md:flex-col md:gap-2 md:rounded-l-none md:rounded-r-md md:border-l-0 md:px-1.5 md:py-3 ${
+          unreadCount > 0
+            ? "border-gold/70 bg-surface text-foreground hover:bg-surface-2"
+            : "border-border bg-surface text-muted hover:bg-surface-2 hover:text-foreground"
         }`}
         style={
-          !open && unreadCount > 0
-            ? { boxShadow: "0 0 14px rgba(244,162,97,0.45)" }
-            : undefined
+          unreadCount > 0 ? { boxShadow: "0 0 14px rgba(244,162,97,0.45)" } : undefined
         }
       >
         <span className="text-base leading-none">💬</span>
-        <span
-          className="font-display text-[10px] font-bold uppercase tracking-[0.2em]"
-          style={{ writingMode: "vertical-rl" }}
-        >
-          {open ? "Close" : "Board"}
+        <span className="font-display text-[10px] font-bold uppercase tracking-[0.2em] md:[writing-mode:vertical-rl]">
+          Board
         </span>
-        {!open && unreadCount > 0 ? (
+        {unreadCount > 0 ? (
           <span className="inline-flex animate-pulse items-center rounded-sm bg-gold px-1 py-0.5 font-mono text-[10px] font-bold leading-none text-black">
             ⚑{unreadCount}
           </span>
@@ -238,7 +227,6 @@ export function BoardPanel({
           )}
         </div>
       </section>
-    </>,
-    document.body
+    </>
   );
 }
