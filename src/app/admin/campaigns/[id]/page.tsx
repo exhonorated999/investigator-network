@@ -404,7 +404,8 @@ export default async function CampaignDetailPage({
               <p className="text-[12px] text-muted sm:col-span-2">
                 Personalize with <code>{"{{first_name}}"}</code> in the subject or body (blank →
                 &ldquo;{DEFAULT_FIRST_NAME_FALLBACK}&rdquo;; custom fallback:{" "}
-                <code>{"{{first_name|Officer}}"}</code>).
+                <code>{"{{first_name|Officer}}"}</code>; <code>{"Hello {{first_name|}},"}</code> →
+                &ldquo;Hello,&rdquo; when blank).
               </p>
               <div className="sm:col-span-2">
                 <button type="submit" className="btn btn-primary btn-sm">Save draft</button>

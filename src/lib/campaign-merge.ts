@@ -5,6 +5,7 @@
  * Merge tags (case-insensitive, whitespace tolerant):
  *   {{first_name}}            -> recipient first name, or "there" when blank
  *   {{first_name|Officer}}    -> custom fallback when blank
+ *   Hello {{first_name|}},    -> "Hello Dana," / "Hello," (empty fallback drops the space)
  *   {{firstName}} / {{ first_name }} also work.
  *
  * Full-HTML placeholders (only for campaigns that supply a complete email
@@ -62,7 +63,12 @@ export function applyMerge(
   mode: "html" | "text" = "html"
 ): string {
   const first = (vars.firstName || "").trim();
-  return input.replace(FIRST_NAME_RE, (_m, fallback?: string) => {
+  // An explicitly empty fallback ({{first_name|}}) drops the tag AND the space
+  // before it, so "Hello {{first_name|}}," becomes "Hello," when blank.
+  const out = first
+    ? input
+    : input.replace(/[ \t]?\{\{\s*first_?name\s*\|\s*\}\}/gi, "");
+  return out.replace(FIRST_NAME_RE, (_m, fallback?: string) => {
     const value = first || (fallback ?? "").trim() || DEFAULT_FIRST_NAME_FALLBACK;
     return mode === "html" ? escapeHtml(value) : value;
   });

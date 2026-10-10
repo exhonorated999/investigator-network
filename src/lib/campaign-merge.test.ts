@@ -14,6 +14,8 @@ test("applyMerge substitutes first name, escapes html, falls back", () => {
   assert.equal(applyMerge("Hi {{first_name|Officer}},", { firstName: " " }), "Hi Officer,");
   assert.equal(applyMerge("Hi {{firstName}}", { firstName: "<b>" }), "Hi &lt;b&gt;");
   assert.equal(applyMerge("Hi {{first_name}}", { firstName: "A&B" }, "text"), "Hi A&B");
+  assert.equal(applyMerge("Hello {{first_name|}},", { firstName: "" }), "Hello,");
+  assert.equal(applyMerge("Hello {{ first_name | }},", { firstName: "Paula" }), "Hello Paula,");
   assert.ok(hasMergeTags("x {{first_name}}"));
   assert.ok(!hasMergeTags("x {{last_name}}"));
 });
