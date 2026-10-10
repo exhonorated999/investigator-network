@@ -145,11 +145,8 @@ export default async function CoursePlayer({
 
         <nav className="pb-6">
           {boardOn ? (
-            <div className="mt-3">
-              <p className="eyebrow eyebrow-muted px-4 py-1.5 text-[10px]">
-                Community
-              </p>
-              <BoardPanel
+            // Renders a tab on the sidebar edge + the drawer (portaled to body).
+            <BoardPanel
                 slug={slug}
                 courseTitle={course.title}
                 posts={boardPosts}
@@ -162,7 +159,6 @@ export default async function CoursePlayer({
                 initialOpen={!!boardParam}
                 focusPostId={boardParam && boardParam !== "1" ? boardParam : null}
               />
-            </div>
           ) : null}
 
           {course.sections.map((section) => (

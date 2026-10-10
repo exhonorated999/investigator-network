@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import type { BoardPostView } from "@/lib/board";
 import { BOARD_KINDS } from "@/lib/board-config";
@@ -39,6 +40,8 @@ export function BoardPanel({
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(initialOpen);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const [composing, setComposing] = useState(false);
   const [filter, setFilter] = useState<string>("ALL");
   const [seen, setSeen] = useState<Set<string>>(() => new Set(unreadIds(posts)));
@@ -98,29 +101,45 @@ export function BoardPanel({
   }, [posts]);
   const shown = filter === "ALL" ? posts : posts.filter((p) => p.kind === filter);
 
-  return (
+  // Rendered into <body> so the drawer is never trapped under course content
+  // (the sticky sidebar creates its own stacking context).
+  if (!mounted) return null;
+  return createPortal(
     <>
-      {/* ------------------------------------------------ sidebar trigger */}
+      {/* ------------------------------------------------ edge tab */}
       <button
         type="button"
-        onClick={() => setOpen(true)}
-        className={`flex w-full items-center gap-3 border-l-2 px-4 py-2.5 text-left text-sm transition ${
+        onClick={() => setOpen((v) => !v)}
+        aria-label={open ? "Close class board" : "Open class board"}
+        title={
+          unreadCount > 0
+            ? `Class Board — ${unreadCount} new since your last visit`
+            : "Class Board"
+        }
+        className={`fixed top-1/2 z-[1001] flex -translate-y-1/2 flex-col items-center gap-2 rounded-r-md border border-l-0 px-1.5 py-3 shadow-lg transition-all duration-200 ${
           open
-            ? "border-accent bg-surface-2 text-foreground"
-            : "border-transparent text-muted hover:bg-surface-2 hover:text-foreground"
+            ? "left-0 hidden border-accent bg-surface-2 text-foreground md:left-[860px] md:flex"
+            : unreadCount > 0
+              ? "left-0 border-gold/70 bg-surface text-foreground hover:bg-surface-2 md:left-[320px]"
+              : "left-0 border-border bg-surface text-muted hover:bg-surface-2 hover:text-foreground md:left-[320px]"
         }`}
+        style={
+          !open && unreadCount > 0
+            ? { boxShadow: "0 0 14px rgba(244,162,97,0.45)" }
+            : undefined
+        }
       >
-        <span className="font-mono text-[11px]">💬</span>
-        <span className="flex-1 truncate">Class Board</span>
-        {unreadCount > 0 ? (
-          <span
-            className="inline-flex animate-pulse items-center gap-1 rounded-sm bg-gold px-1.5 py-0.5 font-mono text-[10px] font-bold text-black"
-            title={`${unreadCount} new since your last visit`}
-          >
-            ⚑ {unreadCount}
+        <span className="text-base leading-none">💬</span>
+        <span
+          className="font-display text-[10px] font-bold uppercase tracking-[0.2em]"
+          style={{ writingMode: "vertical-rl" }}
+        >
+          {open ? "Close" : "Board"}
+        </span>
+        {!open && unreadCount > 0 ? (
+          <span className="inline-flex animate-pulse items-center rounded-sm bg-gold px-1 py-0.5 font-mono text-[10px] font-bold leading-none text-black">
+            ⚑{unreadCount}
           </span>
-        ) : posts.length ? (
-          <span className="font-mono text-[10px] text-muted">{posts.length}</span>
         ) : null}
       </button>
 
@@ -128,7 +147,7 @@ export function BoardPanel({
       <div
         aria-hidden
         onClick={() => setOpen(false)}
-        className={`fixed inset-0 z-40 bg-black/50 transition-opacity md:left-[320px] ${
+        className={`fixed inset-0 z-[999] bg-black/60 transition-opacity md:left-[320px] ${
           open ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
       />
@@ -138,7 +157,7 @@ export function BoardPanel({
         role="dialog"
         aria-label="Class board"
         aria-hidden={!open}
-        className={`fixed inset-y-0 left-0 z-50 flex w-full flex-col border-r border-border bg-surface shadow-2xl transition-all duration-200 md:left-[320px] md:w-[540px] ${
+        className={`fixed inset-y-0 left-0 z-[1000] flex w-full flex-col border-r border-border bg-surface shadow-2xl transition-all duration-200 md:left-[320px] md:w-[540px] ${
           open ? "visible translate-x-0 opacity-100" : "invisible -translate-x-6 opacity-0"
         }`}
       >
@@ -219,6 +238,7 @@ export function BoardPanel({
           )}
         </div>
       </section>
-    </>
+    </>,
+    document.body
   );
 }
