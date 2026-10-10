@@ -273,6 +273,8 @@ model Enrollment {
   viperRequestedAt DateTime?
   viperShippedAt   DateTime?
   viperTracking    String?
+  /// Student is using the digital download — no physical drive to ship.
+  viperDigitalAt   DateTime?
 
   @@unique([userId, courseId])
 }

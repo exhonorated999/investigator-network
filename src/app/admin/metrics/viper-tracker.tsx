@@ -11,19 +11,22 @@ export interface ViperTrackerRow {
   requested: boolean;
   shipped: boolean;
   tracking: string;
+  digital: boolean;
 }
 
 function Row({ row }: { row: ViperTrackerRow }) {
   const [requested, setRequested] = useState(row.requested);
   const [shipped, setShipped] = useState(row.shipped);
+  const [digital, setDigital] = useState(row.digital);
   const [tracking, setTracking] = useState(row.tracking);
   const [savedTracking, setSavedTracking] = useState(row.tracking);
   const [pending, start] = useTransition();
   const [error, setError] = useState("");
 
   const toggle = (field: ViperField, checked: boolean) => {
-    const prev = { requested, shipped };
-    if (field === "requested") setRequested(checked);
+    const prev = { requested, shipped, digital };
+    if (field === "digital") setDigital(checked);
+    else if (field === "requested") setRequested(checked);
     else {
       setShipped(checked);
       if (checked) setRequested(true); // shipping implies requested
@@ -35,6 +38,7 @@ function Row({ row }: { row: ViperTrackerRow }) {
       } catch {
         setRequested(prev.requested);
         setShipped(prev.shipped);
+        setDigital(prev.digital);
         setError("Save failed");
       }
     });
@@ -73,6 +77,28 @@ function Row({ row }: { row: ViperTrackerRow }) {
           className="h-4 w-4 cursor-pointer accent-[var(--accent)]"
         />
       </td>
+      <td className="px-4 py-3 text-center">
+        <input
+          type="checkbox"
+          checked={digital}
+          onChange={(e) => toggle("digital", e.target.checked)}
+          aria-label={`VIPER digital download for ${row.name}`}
+          className="h-4 w-4 cursor-pointer accent-[var(--accent)]"
+        />
+      </td>
+      {digital ? (
+        <td colSpan={2} className="px-4 py-3">
+          <span className="font-mono text-[11px] uppercase tracking-wider text-accent-bright">
+            Digital download — no drive
+          </span>
+          {error ? (
+            <span className="mt-1 block font-mono text-[10px] text-red-400">{error}</span>
+          ) : pending ? (
+            <span className="mt-1 block font-mono text-[10px] text-muted">Saving…</span>
+          ) : null}
+        </td>
+      ) : (
+      <>
       <td className="px-4 py-3 text-center">
         <input
           type="checkbox"
@@ -119,6 +145,8 @@ function Row({ row }: { row: ViperTrackerRow }) {
           <span className="mt-1 block font-mono text-[10px] text-muted">Saving…</span>
         ) : null}
       </td>
+      </>
+      )}
     </tr>
   );
 }
@@ -132,6 +160,7 @@ export function ViperTracker({ rows }: { rows: ViperTrackerRow[] }) {
           <tr>
             <th className="eyebrow eyebrow-muted px-4 py-3">Student</th>
             <th className="eyebrow eyebrow-muted px-4 py-3 text-center">Requested</th>
+            <th className="eyebrow eyebrow-muted px-4 py-3 text-center">Digital</th>
             <th className="eyebrow eyebrow-muted px-4 py-3 text-center">Shipped</th>
             <th className="eyebrow eyebrow-muted px-4 py-3">Tracking #</th>
           </tr>
@@ -139,7 +168,7 @@ export function ViperTracker({ rows }: { rows: ViperTrackerRow[] }) {
         <tbody>
           {rows.length === 0 ? (
             <tr>
-              <td colSpan={4} className="px-4 py-10 text-center text-muted">
+              <td colSpan={5} className="px-4 py-10 text-center text-muted">
                 No students enrolled yet.
               </td>
             </tr>

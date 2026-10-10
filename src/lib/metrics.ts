@@ -112,6 +112,7 @@ export interface ViperRow {
   requested: boolean;
   shipped: boolean;
   tracking: string;
+  digital: boolean;
 }
 
 /** Every enrollee on the course with their VIPER drive status, by name. */
@@ -124,6 +125,7 @@ export async function viperRoster(courseId: string): Promise<ViperRow[]> {
       viperRequestedAt: true,
       viperShippedAt: true,
       viperTracking: true,
+      viperDigitalAt: true,
       user: { select: { name: true, email: true, agency: true } },
     },
   });
@@ -137,6 +139,7 @@ export async function viperRoster(courseId: string): Promise<ViperRow[]> {
       requested: r.viperRequestedAt !== null,
       shipped: r.viperShippedAt !== null,
       tracking: r.viperTracking ?? "",
+      digital: r.viperDigitalAt !== null,
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
 }

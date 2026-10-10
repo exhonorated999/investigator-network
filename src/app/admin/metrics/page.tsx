@@ -223,6 +223,7 @@ export default async function MetricsPage({
               <h2 className="display-sm mt-1 text-foreground">{selectedCourse.title} · drive fulfillment</h2>
               <p className="mt-1 font-mono text-[11px] text-muted">
                 {viperRows.length} enrolled · {viperRows.filter((r) => r.requested).length} requested ·{" "}
+                {viperRows.filter((r) => r.digital).length} digital ·{" "}
                 {viperRows.filter((r) => r.shipped).length} shipped
               </p>
             </div>
@@ -236,6 +237,7 @@ export default async function MetricsPage({
               requested: r.requested,
               shipped: r.shipped,
               tracking: r.tracking,
+              digital: r.digital,
             }))}
           />
         </div>
