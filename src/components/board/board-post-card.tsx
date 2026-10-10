@@ -122,6 +122,10 @@ export function BoardPostCard({
   const router = useRouter();
   const meta = boardKindMeta(post.kind);
   const [open, setOpen] = useState(defaultOpen);
+  // Introductions collapse to a one-line row so the board stays scannable;
+  // they start expanded only when the viewer was sent to this specific post.
+  const collapsible = post.kind === "INTRO";
+  const [expanded, setExpanded] = useState(!collapsible || defaultOpen);
   const [pending, start] = useTransition();
   const postNew = newIds.has(post.id);
   const freshReplies = post.replies.filter((r) => newIds.has(r.id)).length;
@@ -140,6 +144,50 @@ export function BoardPostCard({
       await deleteBoardReply(id);
       router.refresh();
     });
+  }
+
+  if (collapsible && !expanded) {
+    const agency = post.agency || post.author.agency;
+    const preview = post.body.replace(/\s+/g, " ").trim();
+    return (
+      <article
+        id={`board-post-${post.id}`}
+        className={`panel ${postNew ? "border-gold/60" : ""}`}
+        style={postNew ? { boxShadow: "inset 3px 0 0 var(--gold)" } : undefined}
+      >
+        <button
+          type="button"
+          onClick={() => setExpanded(true)}
+          aria-expanded={false}
+          className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition hover:bg-surface-2"
+        >
+          <span className="text-sm leading-none">👋</span>
+          <span className="min-w-0 flex-1">
+            <span className="flex items-center gap-2">
+              <span className="truncate text-sm font-semibold text-foreground">
+                {post.title || post.author.name}
+              </span>
+              {post.author.isStaff ? (
+                <span className="font-mono text-[9px] uppercase text-gold">Instructor</span>
+              ) : null}
+              {postNew ? <NewFlag /> : null}
+            </span>
+            <span className="block truncate text-xs text-muted">
+              {agency ? `${agency}` : ""}
+              {agency && preview ? " — " : ""}
+              {preview}
+            </span>
+          </span>
+          {post.replies.length ? (
+            <span className="shrink-0 font-mono text-[10px] text-muted">
+              💬 {post.replies.length}
+              {freshReplies > 0 ? <span className="ml-1 text-gold">⚑{freshReplies}</span> : null}
+            </span>
+          ) : null}
+          <span className="shrink-0 text-xs text-muted">▾</span>
+        </button>
+      </article>
+    );
   }
 
   return (
@@ -162,6 +210,16 @@ export function BoardPostCard({
         <span className="ml-auto font-mono text-[10px] text-muted" suppressHydrationWarning>
           {timeAgo(post.createdAt)}
         </span>
+        {collapsible ? (
+          <button
+            type="button"
+            onClick={() => setExpanded(false)}
+            className="text-xs text-muted hover:text-foreground"
+            aria-label="Collapse introduction"
+          >
+            Collapse ▴
+          </button>
+        ) : null}
       </header>
 
       {post.title ? (
