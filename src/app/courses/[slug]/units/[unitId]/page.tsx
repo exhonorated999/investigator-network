@@ -21,6 +21,8 @@ import {
   UNIT_ICON,
 } from "@/lib/course";
 import { setUnitComplete } from "../../../actions";
+import { evaluationFor } from "@/lib/evaluation-config";
+import { evaluationSatisfied, isCourseComplete } from "@/lib/certificate";
 
 export const dynamic = "force-dynamic";
 
@@ -88,6 +90,13 @@ export default async function CoursePlayer({
     current.type === "QUIZ" && !isPreview
       ? await testGate(user.id, course.id)
       : null;
+
+  // End-of-course evaluation (if configured) is listed after the last unit.
+  const evalConfig = evaluationFor(slug);
+  const evalDone =
+    !!evalConfig && !isPreview && (await evaluationSatisfied(user.id, course.id));
+  const courseComplete =
+    !!evalConfig && !evalDone && (await isCourseComplete(user.id, course.id));
 
   return (
     <div className="min-h-screen md:grid md:grid-cols-[320px_1fr]">
@@ -164,6 +173,30 @@ export default async function CoursePlayer({
               </ul>
             </div>
           ))}
+
+          {evalConfig ? (
+            <div className="mt-3">
+              <p className="eyebrow eyebrow-muted px-4 py-1.5 text-[10px]">
+                Wrap-up
+              </p>
+              <Link
+                href={`/courses/${slug}/evaluation`}
+                className="flex items-center gap-3 border-l-2 border-transparent px-4 py-2.5 text-sm text-muted transition hover:bg-surface-2 hover:text-foreground"
+              >
+                <span className="font-mono text-[11px] text-gold">★</span>
+                <span className="flex-1 truncate">Course Evaluation</span>
+                {evalDone ? (
+                  <span className="text-xs text-success">✓</span>
+                ) : !courseComplete ? (
+                  <span className="text-xs" title="Unlocks when the course is complete">
+                    🔒
+                  </span>
+                ) : (
+                  <span className="text-xs text-gold">Required</span>
+                )}
+              </Link>
+            </div>
+          ) : null}
         </nav>
       </aside>
 
@@ -262,6 +295,10 @@ export default async function CoursePlayer({
                 className="btn btn-ghost btn-sm"
               >
                 Next →
+              </Link>
+            ) : evalConfig && !evalDone ? (
+              <Link href={`/courses/${slug}/evaluation`} className="btn btn-gold">
+                Next: Course Evaluation →
               </Link>
             ) : (
               <Link href={`/courses/${slug}`} className="btn btn-gold">
