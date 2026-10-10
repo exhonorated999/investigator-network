@@ -5,8 +5,15 @@ import {
   loadCampaignStats,
   previewAudience,
   courseEnrolleeEmails,
+  sampleFirstName,
   type CampaignStat,
 } from "@/lib/campaigns";
+import {
+  readCustomList,
+  hasMergeTags,
+  hasUnsubscribePlaceholder,
+  DEFAULT_FIRST_NAME_FALLBACK,
+} from "@/lib/campaign-merge";
 import {
   updateCampaign,
   deleteCampaign,
@@ -14,6 +21,8 @@ import {
   sendCampaignAction,
   scheduleCampaign,
   unscheduleCampaign,
+  uploadRecipientList,
+  clearRecipientList,
 } from "../actions";
 import { ScheduleForm } from "./schedule-form";
 import { LocalTime } from "./local-time";
@@ -74,14 +83,22 @@ function MetricsPanel({ stat }: { stat: CampaignStat }) {
 
 export default async function CampaignDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ list?: string }>;
 }) {
   const { id } = await params;
+  const { list: listMsg } = await searchParams;
   const campaign = await prisma.campaign.findUnique({ where: { id } });
   if (!campaign) notFound();
 
   const isDraft = campaign.status === "DRAFT";
+  const customList = readCustomList(campaign.customList);
+  const hasList = !!customList && customList.length > 0;
+  const mergeUsed = hasMergeTags(campaign.subject) || hasMergeTags(campaign.bodyHtml) || hasMergeTags(campaign.preheader);
+  const sampleName = sampleFirstName(campaign);
+  const missingUnsub = campaign.fullHtml && !hasUnsubscribePlaceholder(campaign.bodyHtml);
   const [stat, preview] = await Promise.all([
     loadCampaignStats(id),
     previewAudience(campaign),
@@ -119,12 +136,24 @@ export default async function CampaignDetailPage({
       </div>
       <h1 className="display-lg mt-2 text-foreground">{campaign.subject}</h1>
 
+      {listMsg ? (
+        <div className="panel mt-4 border-gold/40 bg-[rgba(244,162,97,0.06)] p-3 text-[13px] text-foreground">
+          {listMsg}
+        </div>
+      ) : null}
+
       {/* Rendered preview */}
       <div className="panel rule-top mt-6 p-5">
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="eyebrow eyebrow-gold">Preview</p>
             <h2 className="display-sm mt-1 text-foreground">As recipients see it</h2>
+            <p className="mt-1 text-[12px] text-muted">
+              {campaign.fullHtml ? "Your own HTML, sent as-is" : "Wrapped in the Investigator Network template"}
+              {mergeUsed
+                ? ` · {{first_name}} shown as “${sampleName || DEFAULT_FIRST_NAME_FALLBACK}”${sampleName ? " (first uploaded recipient)" : ""}`
+                : ""}
+            </p>
           </div>
           <a
             href={`/api/admin/campaigns/${campaign.id}/preview`}
@@ -154,16 +183,82 @@ export default async function CampaignDetailPage({
           <span className="font-display text-2xl font-black text-accent-bright">{preview.total}</span>{" "}
           recipients
           <span className="ml-2 text-[13px] text-muted">
-            — {preview.members} members · {preview.contacts} contacts (deduped, suppression removed)
+            {hasList
+              ? `— uploaded list (${customList!.length} rows, suppression removed)`
+              : `— ${preview.members} members · ${preview.contacts} contacts (deduped, suppression removed)`}
           </span>
         </p>
+        {hasList ? (
+          <p className="mt-2 text-[12px] text-gold">
+            Uploaded list overrides Members / Contacts / Course targeting for this campaign.
+          </p>
+        ) : (
         <p className="mt-2 text-[12px] text-muted">
           Targets: {campaign.includeMembers ? `members${campaign.memberAudience ? ` (${campaign.memberAudience})` : ""}` : "no members"}
           {" · "}
           {campaign.includeContacts ? "contacts" : "no contacts"}
           {targetCourse ? ` · course: ${targetCourse.title}` : ""}
         </p>
-        {targetCourse ? (
+        )}
+        {hasList ? (
+          <div className="mt-3 max-h-64 overflow-auto rounded-lg border border-border bg-void">
+            <table className="w-full text-left font-mono text-[11px]">
+              <thead className="sticky top-0 bg-surface text-muted">
+                <tr>
+                  <th className="p-2">Email</th>
+                  <th className="p-2">First name (greeting)</th>
+                  <th className="p-2">Name</th>
+                </tr>
+              </thead>
+              <tbody>
+                {customList!.map((e) => (
+                  <tr key={e.email} className="border-t border-border">
+                    <td className="p-2 text-foreground">{e.email}</td>
+                    <td className={`p-2 ${e.firstName ? "text-accent-bright" : "text-warning"}`}>
+                      {e.firstName || `(blank → “${DEFAULT_FIRST_NAME_FALLBACK}”)`}
+                    </td>
+                    <td className="p-2 text-muted">{e.name || "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
+        {isDraft ? (
+          <div className="mt-4 rule-top pt-4">
+            <p className="eyebrow eyebrow-muted">Custom recipient list (one-off)</p>
+            <p className="mt-1 max-w-2xl text-[12px] text-muted">
+              Upload a <code>.xlsx</code> or <code>.csv</code> with an <code>email</code> column and
+              optionally <code>first_name</code> (or <code>name</code> — first word is used). Only
+              these people receive this campaign; they are not added to Contacts. Suppressed /
+              unsubscribed addresses are still removed.
+            </p>
+            <div className="mt-3 flex flex-wrap items-end gap-2">
+              <form action={uploadRecipientList} className="flex flex-wrap items-end gap-2">
+                <input type="hidden" name="id" value={campaign.id} />
+                <input
+                  type="file"
+                  name="file"
+                  required
+                  accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                  className="field max-w-xs"
+                />
+                <button type="submit" className="btn btn-ghost btn-sm">
+                  {hasList ? "Replace list" : "Upload list"}
+                </button>
+              </form>
+              {hasList ? (
+                <form action={clearRecipientList}>
+                  <input type="hidden" name="id" value={campaign.id} />
+                  <button type="submit" className="btn btn-ghost btn-sm text-danger">
+                    Remove list
+                  </button>
+                </form>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+        {targetCourse && !hasList ? (
           <div className="mt-3 rule-top pt-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-[13px] text-foreground">
@@ -195,6 +290,17 @@ export default async function CampaignDetailPage({
               This sends immediately to all {preview.total} recipients and cannot be
               undone. Send a test to yourself first. Type <strong>SEND</strong> to confirm.
             </p>
+            {missingUnsub ? (
+              <p className="mt-2 max-w-2xl text-[12px] text-warning">
+                Your HTML has no <code>[UNSUBSCRIBE LINK]</code> placeholder — a small
+                unsubscribe/address footer will be appended automatically.
+              </p>
+            ) : null}
+            {mergeUsed ? (
+              <p className="mt-2 max-w-2xl text-[12px] text-muted">
+                Test sends use the first name &ldquo;{sampleName || DEFAULT_FIRST_NAME_FALLBACK}&rdquo;.
+              </p>
+            ) : null}
 
             <form action={sendTestAction} className="mt-4 flex flex-wrap items-end gap-2">
               <input type="hidden" name="id" value={campaign.id} />
@@ -285,6 +391,21 @@ export default async function CampaignDetailPage({
                 <span className="eyebrow eyebrow-muted">Body HTML</span>
                 <textarea name="bodyHtml" required rows={12} className="field font-mono text-[13px]" defaultValue={campaign.bodyHtml} />
               </label>
+              <label className="flex items-start gap-2 sm:col-span-2">
+                <input type="checkbox" name="fullHtml" defaultChecked={campaign.fullHtml} className="mt-0.5 h-4 w-4" />
+                <span className="text-[13px] text-muted">
+                  <strong className="text-foreground">Send my HTML as the complete email</strong> (skip
+                  the Investigator Network template). Auto-enabled when you paste a full{" "}
+                  <code>&lt;html&gt;</code> document. Placeholders <code>[UNSUBSCRIBE LINK]</code> and{" "}
+                  <code>[MAILING ADDRESS]</code> are filled per recipient; if no unsubscribe placeholder
+                  exists, a compliant footer is appended. The Preheader field is ignored in this mode.
+                </span>
+              </label>
+              <p className="text-[12px] text-muted sm:col-span-2">
+                Personalize with <code>{"{{first_name}}"}</code> in the subject or body (blank →
+                &ldquo;{DEFAULT_FIRST_NAME_FALLBACK}&rdquo;; custom fallback:{" "}
+                <code>{"{{first_name|Officer}}"}</code>).
+              </p>
               <div className="sm:col-span-2">
                 <button type="submit" className="btn btn-primary btn-sm">Save draft</button>
               </div>

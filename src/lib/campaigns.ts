@@ -1,6 +1,12 @@
 import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
-import { renderCampaignEmail, htmlToText, appUrl } from "@/lib/email-template";
+import { renderCampaignEmail, htmlToText, appUrl, PHYSICAL_ADDRESS } from "@/lib/email-template";
+import {
+  applyMerge,
+  fillFullHtml,
+  firstNameFrom,
+  readCustomList,
+} from "@/lib/campaign-merge";
 import type { Campaign, Audience } from "@/generated/prisma";
 
 /**
@@ -34,11 +40,18 @@ function newUnsubToken(): string {
 export interface AssembledRecipient {
   email: string;
   name: string;
-  kind: "member" | "contact";
+  firstName: string;
+  kind: "member" | "contact" | "list";
 }
+
+type TargetFields = Pick<
+  Campaign,
+  "includeMembers" | "memberAudience" | "includeContacts" | "courseId" | "customList"
+>;
 
 /**
  * Resolve the final recipient list for a campaign:
+ * - customList (uploaded one-off list): when non-empty it is the ONLY source
  * - members: APPROVED users, optionally limited to one audience
  * - contacts: SUBSCRIBED non-members
  * - dedupe: an address that is a member is never also sent as a contact
@@ -46,13 +59,26 @@ export interface AssembledRecipient {
  * Emails are lowercased for matching; the display copy keeps first-seen name.
  */
 export async function assembleRecipients(
-  campaign: Pick<
-    Campaign,
-    "includeMembers" | "memberAudience" | "includeContacts" | "courseId"
-  >
+  campaign: TargetFields
 ): Promise<AssembledRecipient[]> {
   const byEmail = new Map<string, AssembledRecipient>();
 
+  const list = readCustomList(campaign.customList);
+  if (list && list.length > 0) {
+    for (const e of list) {
+      if (!byEmail.has(e.email)) {
+        byEmail.set(e.email, {
+          email: e.email,
+          name: e.name,
+          firstName: e.firstName,
+          kind: "list",
+        });
+      }
+    }
+    const suppressed = await prisma.suppression.findMany({ select: { email: true } });
+    for (const s of suppressed) byEmail.delete(s.email.trim().toLowerCase());
+    return [...byEmail.values()];
+  }
   if (campaign.includeMembers) {
     const where: {
       status: "APPROVED";
@@ -67,7 +93,7 @@ export async function assembleRecipients(
       const key = m.email.trim().toLowerCase();
       if (!key) continue;
       if (!byEmail.has(key)) {
-        byEmail.set(key, { email: key, name: m.name ?? "", kind: "member" });
+        byEmail.set(key, { email: key, name: m.name ?? "", firstName: firstNameFrom(m.name), kind: "member" });
       }
     }
   }
@@ -83,7 +109,12 @@ export async function assembleRecipients(
       const key = e.user.email.trim().toLowerCase();
       if (!key) continue;
       if (!byEmail.has(key)) {
-        byEmail.set(key, { email: key, name: e.user.name ?? "", kind: "member" });
+        byEmail.set(key, {
+          email: key,
+          name: e.user.name ?? "",
+          firstName: firstNameFrom(e.user.name),
+          kind: "member",
+        });
       }
     }
   }
@@ -98,7 +129,7 @@ export async function assembleRecipients(
       if (!key) continue;
       // Members take precedence — never double-send.
       if (!byEmail.has(key)) {
-        byEmail.set(key, { email: key, name: c.name ?? "", kind: "contact" });
+        byEmail.set(key, { email: key, name: c.name ?? "", firstName: firstNameFrom(c.name), kind: "contact" });
       }
     }
   }
@@ -114,14 +145,54 @@ export async function assembleRecipients(
 
 /** Preview counts without creating rows or sending. */
 export async function previewAudience(
-  campaign: Pick<Campaign, "includeMembers" | "memberAudience" | "includeContacts" | "courseId">
-): Promise<{ total: number; members: number; contacts: number }> {
+  campaign: TargetFields
+): Promise<{ total: number; members: number; contacts: number; list: number }> {
   const list = await assembleRecipients(campaign);
   return {
     total: list.length,
     members: list.filter((r) => r.kind === "member").length,
     contacts: list.filter((r) => r.kind === "contact").length,
+    list: list.filter((r) => r.kind === "list").length,
   };
+}
+
+type RenderFields = Pick<Campaign, "subject" | "preheader" | "bodyHtml" | "fullHtml">;
+
+/**
+ * Render one recipient's personalized email: merge {{first_name}} into the
+ * subject/preheader/body, then either wrap in the branded shell or (fullHtml)
+ * fill the document's own unsubscribe/address placeholders.
+ */
+export function renderForRecipient(
+  campaign: RenderFields,
+  r: { firstName: string; unsubscribeUrl: string }
+): { subject: string; html: string; text: string } {
+  const subject = applyMerge(campaign.subject, r, "text");
+  const body = applyMerge(campaign.bodyHtml, r, "html");
+  if (campaign.fullHtml) {
+    const html = fillFullHtml(body, {
+      unsubscribeUrl: r.unsubscribeUrl,
+      address: PHYSICAL_ADDRESS,
+    });
+    return { subject, html, text: htmlToText(html) };
+  }
+  const html = renderCampaignEmail({
+    subject,
+    preheader: applyMerge(campaign.preheader, r, "text"),
+    bodyHtml: body,
+    unsubscribeUrl: r.unsubscribeUrl,
+  });
+  return {
+    subject,
+    html,
+    text: htmlToText(body) + `\n\nUnsubscribe: ${r.unsubscribeUrl}`,
+  };
+}
+
+/** Sample first name for previews/tests: first uploaded-list entry, else blank. */
+export function sampleFirstName(campaign: Pick<Campaign, "customList">): string {
+  const list = readCustomList(campaign.customList);
+  return list?.find((e) => e.firstName)?.firstName ?? "";
 }
 
 /**
@@ -226,6 +297,7 @@ export async function sendCampaign(campaignId: string): Promise<SendOutcome> {
       campaignId,
       email: r.email,
       name: r.name,
+      firstName: r.firstName,
       kind: r.kind,
       unsubToken: newUnsubToken(),
     })),
@@ -234,7 +306,7 @@ export async function sendCampaign(campaignId: string): Promise<SendOutcome> {
 
   const rows = await prisma.campaignRecipient.findMany({
     where: { campaignId },
-    select: { id: true, email: true, name: true, unsubToken: true },
+    select: { id: true, email: true, name: true, firstName: true, unsubToken: true },
   });
 
   const from = fromHeader(campaign.fromName);
@@ -245,18 +317,16 @@ export async function sendCampaign(campaignId: string): Promise<SendOutcome> {
   for (const group of chunk(rows, 100)) {
     const items: BatchItem[] = group.map((row) => {
       const unsubscribeUrl = `${base}/api/unsubscribe?token=${row.unsubToken}`;
-      const html = renderCampaignEmail({
-        subject: campaign.subject,
-        preheader: campaign.preheader,
-        bodyHtml: campaign.bodyHtml,
+      const msg = renderForRecipient(campaign, {
+        firstName: row.firstName,
         unsubscribeUrl,
       });
       return {
         from,
         to: [row.email],
-        subject: campaign.subject,
-        html,
-        text: htmlToText(campaign.bodyHtml) + `\n\nUnsubscribe: ${unsubscribeUrl}`,
+        subject: msg.subject,
+        html: msg.html,
+        text: msg.text,
         headers: {
           "List-Unsubscribe": `<${unsubscribeUrl}>`,
           "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
@@ -377,15 +447,13 @@ export async function loadAllCampaigns() {
  * isn't tied to a real recipient (the link still works defensively).
  */
 export async function sendTest(
-  campaign: Pick<Campaign, "subject" | "preheader" | "bodyHtml" | "fromName">,
+  campaign: RenderFields & Pick<Campaign, "fromName" | "customList">,
   toEmail: string
 ): Promise<{ ok: boolean; error?: string }> {
   const base = appUrl();
   const unsubscribeUrl = `${base}/api/unsubscribe?token=preview-${newUnsubToken()}`;
-  const html = renderCampaignEmail({
-    subject: campaign.subject,
-    preheader: campaign.preheader,
-    bodyHtml: campaign.bodyHtml,
+  const msg = renderForRecipient(campaign, {
+    firstName: sampleFirstName(campaign),
     unsubscribeUrl,
   });
   const apiKey = process.env.RESEND_API_KEY;
@@ -402,9 +470,9 @@ export async function sendTest(
     body: JSON.stringify({
       from: fromHeader(campaign.fromName),
       to: [toEmail],
-      subject: `[TEST] ${campaign.subject}`,
-      html,
-      text: htmlToText(campaign.bodyHtml),
+      subject: `[TEST] ${msg.subject}`,
+      html: msg.html,
+      text: msg.text,
     }),
   });
   if (!res.ok) {

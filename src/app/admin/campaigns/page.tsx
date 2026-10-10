@@ -102,6 +102,14 @@ export default async function CampaignsAdminPage() {
               placeholder="<h1>Heading</h1><p>Paste the campaign body HTML here…</p>"
             />
           </label>
+          <label className="flex items-start gap-2 sm:col-span-2">
+            <input type="checkbox" name="fullHtml" className="mt-0.5 h-4 w-4" />
+            <span className="text-[13px] text-muted">
+              Send my HTML as the complete email (skip the template). Auto-enabled for full{" "}
+              <code>&lt;html&gt;</code> documents. Use <code>{"{{first_name}}"}</code> to personalize;
+              upload a one-off recipient list on the draft page after creating.
+            </span>
+          </label>
           <div className="sm:col-span-2">
             <button type="submit" className="btn btn-primary btn-sm">
               Create draft

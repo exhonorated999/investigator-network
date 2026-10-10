@@ -156,17 +156,32 @@ export function renderCampaignEmail(parts: CampaignEmailParts): string {
  */
 export function htmlToText(html: string): string {
   return html
+    .replace(/<head[\s\S]*?<\/head>/gi, "")
+    .replace(/<!--[\s\S]*?-->/g, "")
     .replace(/<style[\s\S]*?<\/style>/gi, "")
     .replace(/<script[\s\S]*?<\/script>/gi, "")
+    // hidden preheader blocks
+    .replace(/<div[^>]*display\s*:\s*none[^>]*>[\s\S]*?<\/div>/gi, "")
     .replace(/<\/(p|div|tr|h[1-6]|li)>/gi, "\n")
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/<li[^>]*>/gi, "• ")
-    .replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, "$2 ($1)")
+    .replace(/<a[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi, "$2 ($1)")
     .replace(/<[^>]+>/g, "")
     .replace(/&nbsp;/gi, " ")
+    .replace(/&rsquo;|&lsquo;/gi, "'")
+    .replace(/&rdquo;|&ldquo;|&quot;/gi, '"')
+    .replace(/&middot;/gi, "·")
+    .replace(/&mdash;/gi, "—")
+    .replace(/&ndash;/gi, "–")
+    .replace(/&copy;/gi, "©")
+    .replace(/&hellip;/gi, "…")
+    .replace(/&zwnj;|&#847;|&#8204;/gi, "")
+    .replace(/&#(\d+);/g, (_m, n) => String.fromCharCode(Number(n)))
     .replace(/&amp;/gi, "&")
     .replace(/&lt;/gi, "<")
     .replace(/&gt;/gi, ">")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n[ \t]+/g, "\n")
     .replace(/\n{3,}/g, "\n\n")
     .replace(/[ \t]{2,}/g, " ")
     .trim();

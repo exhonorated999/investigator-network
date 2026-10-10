@@ -1051,6 +1051,12 @@ model Campaign {
   course          Course?        @relation(fields: [courseId], references: [id], onDelete: SetNull)
   /// Optional "From" display-name override; blank uses the platform default.
   fromName        String         @default("")
+  /// When true, bodyHtml is a complete email document sent as-is (no branded
+  /// shell); [UNSUBSCRIBE LINK]/[MAILING ADDRESS] placeholders are filled.
+  fullHtml        Boolean        @default(false)
+  /// Optional one-off uploaded recipient list: [{email, firstName, name}].
+  /// When non-empty it REPLACES members/contacts/course targeting.
+  customList      Json?
   createdById     String?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
@@ -1081,7 +1087,9 @@ model CampaignRecipient {
   campaign      Campaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   email         String
   name          String          @default("")
-  /// "member" | "contact" — provenance for reporting.
+  /// First name used for {{first_name}} merge tags at send time.
+  firstName     String          @default("")
+  /// "member" | "contact" | "list" — provenance for reporting.
   kind          String
   /// Resend message id once accepted for delivery.
   providerId    String?

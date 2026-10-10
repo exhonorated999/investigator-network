@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/rbac";
-import { renderCampaignEmail, appUrl } from "@/lib/email-template";
+import { appUrl } from "@/lib/email-template";
+import { renderForRecipient, sampleFirstName } from "@/lib/campaigns";
 
 /**
  * Admin-only rendered preview of a campaign — the full branded email exactly as
@@ -19,10 +20,8 @@ export async function GET(
   const campaign = await prisma.campaign.findUnique({ where: { id } });
   if (!campaign) return new NextResponse("Not found", { status: 404 });
 
-  const html = renderCampaignEmail({
-    subject: campaign.subject,
-    preheader: campaign.preheader,
-    bodyHtml: campaign.bodyHtml,
+  const { html } = renderForRecipient(campaign, {
+    firstName: sampleFirstName(campaign),
     unsubscribeUrl: `${appUrl()}/api/unsubscribe?token=preview`,
   });
 
