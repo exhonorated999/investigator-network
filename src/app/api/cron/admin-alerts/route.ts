@@ -45,13 +45,16 @@ function authorized(request: Request): boolean {
   return bearer === secret || header === secret;
 }
 
-/** Record a send; tolerate the overlapping-tick unique race as "already sent". */
-async function logSent(kind: string, unitId: string, userId: string, email: string) {
+/**
+ * Claim a send slot BEFORE emailing (unique kind+unitId+userId), so overlapping
+ * ticks/replicas can't double-send. Returns a release fn, or null if taken.
+ */
+async function claim(kind: string, unitId: string, userId: string, email: string) {
   try {
-    await prisma.emailLog.create({ data: { kind, unitId, userId, email } });
-    return true;
+    const row = await prisma.emailLog.create({ data: { kind, unitId, userId, email }, select: { id: true } });
+    return () => prisma.emailLog.delete({ where: { id: row.id } }).catch(() => {});
   } catch (err) {
-    if ((err as { code?: string })?.code === "P2002") return false;
+    if ((err as { code?: string })?.code === "P2002") return null;
     throw err;
   }
 }
@@ -97,14 +100,15 @@ export async function POST(request: Request) {
       recipients.push(`msg:${m.adminEmail}`);
       continue;
     }
+    const release = await claim(KIND_MSG, m.messageId, m.adminId, m.adminEmail);
+    if (!release) continue;
     const res = await sendAdminMessageAlert(m.adminEmail, m.adminName, {
       fromName: m.fromName,
       preview: m.preview,
       waitingSince: m.waitingSince,
     });
-    if (res.ok && (await logSent(KIND_MSG, m.messageId, m.adminId, m.adminEmail))) {
-      msgSent += 1;
-    }
+    if (res.ok) msgSent += 1;
+    else await release();
   }
 
   // Course questions — every approved admin.
@@ -117,15 +121,16 @@ export async function POST(request: Request) {
         continue;
       }
       const a = adminById.get(admin.id)!;
+      const release = await claim(KIND_QUESTION, q.questionId, admin.id, a.email);
+      if (!release) continue;
       const res = await sendAdminQuestionAlert(a.email, a.name, {
         courseTitle: q.courseTitle,
         askedBy: q.askedBy,
         preview: q.preview,
         waitingSince: q.waitingSince,
       });
-      if (res.ok && (await logSent(KIND_QUESTION, q.questionId, admin.id, a.email))) {
-        questionSent += 1;
-      }
+      if (res.ok) questionSent += 1;
+      else await release();
     }
   }
 

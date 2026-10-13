@@ -300,10 +300,15 @@ export async function sendCampaign(campaignId: string): Promise<SendOutcome> {
     return { ok: false, total: 0, sent: 0, failed: 0, error: "no_recipients" };
   }
 
-  await prisma.campaign.update({
-    where: { id: campaignId },
+  // Atomic claim: only one caller can flip DRAFT/SCHEDULED -> SENDING, so
+  // overlapping cron ticks or replicas can never double-send.
+  const claim = await prisma.campaign.updateMany({
+    where: { id: campaignId, status: { in: ["DRAFT", "SCHEDULED"] } },
     data: { status: "SENDING" },
   });
+  if (claim.count === 0) {
+    return { ok: false, total: 0, sent: 0, failed: 0, error: "already_sent" };
+  }
 
   // Create rows up-front (skip duplicates via unique [campaignId,email]).
   await prisma.campaignRecipient.createMany({

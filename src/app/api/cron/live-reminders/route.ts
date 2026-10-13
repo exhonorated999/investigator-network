@@ -240,6 +240,22 @@ export async function POST(request: Request) {
 
     const data = (u.data as Record<string, unknown>) ?? {};
     for (const usr of targets) {
+      // Claim first (unique kind+unitId+userId) so overlapping ticks/replicas
+      // can never both email the same learner; release the claim on failure.
+      let claimId: string;
+      try {
+        const row = await prisma.emailLog.create({
+          data: { kind: REMINDER_KIND, unitId: u.id, userId: usr.id, email: usr.email },
+          select: { id: true },
+        });
+        claimId = row.id;
+      } catch (err) {
+        if ((err as { code?: string })?.code === "P2002") {
+          base.skippedAlready += 1;
+          continue;
+        }
+        throw err;
+      }
       const res = isAdvanced
         ? await sendAdvancedTrainingReminder(usr.email, usr.name, {
             courseTitle: u.section.course.title,
@@ -255,29 +271,10 @@ export async function POST(request: Request) {
             joinUrl: data.teamsJoinUrl ? String(data.teamsJoinUrl) : undefined,
           });
       if (res.ok) {
-        // Record even for the dev/no-key "skipped" case so behavior is
-        // consistent — a successful no-op still means "handled". Tolerate a
-        // unique-constraint race (overlapping cron ticks) by treating a
-        // duplicate as already-sent instead of aborting the batch.
-        try {
-          await prisma.emailLog.create({
-            data: {
-              kind: REMINDER_KIND,
-              unitId: u.id,
-              userId: usr.id,
-              email: usr.email,
-            },
-          });
-          base.sent += 1;
-          totalSent += 1;
-        } catch (err) {
-          const code = (err as { code?: string })?.code;
-          if (code === "P2002") {
-            base.skippedAlready += 1;
-          } else {
-            throw err;
-          }
-        }
+        base.sent += 1;
+        totalSent += 1;
+      } else {
+        await prisma.emailLog.delete({ where: { id: claimId } }).catch(() => {});
       }
     }
 
