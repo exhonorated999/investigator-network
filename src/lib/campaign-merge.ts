@@ -7,11 +7,13 @@
  *   {{first_name|Officer}}    -> custom fallback when blank
  *   Hello {{first_name|}},    -> "Hello Dana," / "Hello," (empty fallback drops the space)
  *   {{firstName}} / {{ first_name }} also work.
+ *   {{first_name | default: "Detective"}}  Liquid/Mailchimp-style fallback works too.
+ *   {{agency}} / {{department}}  -> list "Agency" column ("your agency" when blank)
  *
  * Full-HTML placeholders (only for campaigns that supply a complete email
  * document instead of using the branded shell):
- *   [UNSUBSCRIBE LINK] / {{unsubscribe_url}}  -> per-recipient unsubscribe URL
- *   [MAILING ADDRESS]  / {{mailing_address}}  -> physical mailing address
+ *   [UNSUBSCRIBE LINK] / {{unsubscribe_url}} / {{unsubscribe_link}}
+ *   [MAILING ADDRESS]  / {{mailing_address}} / {{postal_address}}
  */
 
 export const DEFAULT_FIRST_NAME_FALLBACK = "there";
@@ -21,11 +23,36 @@ export interface ListEntry {
   email: string;
   firstName: string;
   name: string;
+  /** Optional agency/department, for {{agency}}. */
+  agency?: string;
 }
 
-const FIRST_NAME_RE = /\{\{\s*first_?name\s*(?:\|\s*([^}]*?)\s*)?\}\}/gi;
-const UNSUB_RE = /\[\s*UNSUBSCRIBE\s+LINK\s*\]|\{\{\s*unsubscribe_?url\s*\}\}/gi;
-const ADDRESS_RE = /\[\s*MAILING\s+ADDRESS\s*\]|\{\{\s*mailing_?address\s*\}\}/gi;
+export interface MergeVars {
+  firstName?: string | null;
+  agency?: string | null;
+}
+
+export const DEFAULT_AGENCY_FALLBACK = "your agency";
+
+const tagRe = (name: string) =>
+  new RegExp(`\\{\\{\\s*${name}\\s*(?:\\|\\s*([^}]*?)\\s*)?\\}\\}`, "gi");
+const emptyRe = (name: string) => new RegExp(`[ \\t]?\\{\\{\\s*${name}\\s*\\|\\s*\\}\\}`, "gi");
+
+const MERGE_FIELDS: { key: keyof MergeVars; re: RegExp; empty: RegExp; fallback: string }[] = [
+  { key: "firstName", re: tagRe("first_?name"), empty: emptyRe("first_?name"), fallback: DEFAULT_FIRST_NAME_FALLBACK },
+  {
+    key: "agency",
+    re: tagRe("(?:agency|department|agency_?name)"),
+    empty: emptyRe("(?:agency|department|agency_?name)"),
+    fallback: DEFAULT_AGENCY_FALLBACK,
+  },
+];
+
+const FIRST_NAME_RE = MERGE_FIELDS[0].re;
+const UNSUB_RE =
+  /\[\s*UNSUBSCRIBE\s+LINK\s*\]|\{\{\s*unsubscribe_?(?:url|link)\s*\}\}/gi;
+const ADDRESS_RE =
+  /\[\s*MAILING\s+ADDRESS\s*\]|\{\{\s*(?:mailing|postal|physical)_?address\s*\}\}/gi;
 const EMAIL_RE = /^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/;
 
 export function escapeHtml(s: string): string {
@@ -59,19 +86,30 @@ export function isFullHtmlDocument(html: string): boolean {
  */
 export function applyMerge(
   input: string,
-  vars: { firstName?: string | null },
+  vars: MergeVars,
   mode: "html" | "text" = "html"
 ): string {
-  const first = (vars.firstName || "").trim();
-  // An explicitly empty fallback ({{first_name|}}) drops the tag AND the space
-  // before it, so "Hello {{first_name|}}," becomes "Hello," when blank.
-  const out = first
-    ? input
-    : input.replace(/[ \t]?\{\{\s*first_?name\s*\|\s*\}\}/gi, "");
-  return out.replace(FIRST_NAME_RE, (_m, fallback?: string) => {
-    const value = first || (fallback ?? "").trim() || DEFAULT_FIRST_NAME_FALLBACK;
-    return mode === "html" ? escapeHtml(value) : value;
-  });
+  let out = input;
+  for (const f of MERGE_FIELDS) {
+    const value = (vars[f.key] || "").trim();
+    // An explicitly empty fallback ({{first_name|}}) drops the tag AND the space
+    // before it, so "Hello {{first_name|}}," becomes "Hello," when blank.
+    if (!value) out = out.replace(f.empty, "");
+    out = out.replace(f.re, (_m, fallback?: string) => {
+      const v = value || cleanFallback(fallback) || f.fallback;
+      return mode === "html" ? escapeHtml(v) : v;
+    });
+  }
+  return out;
+}
+
+/** `X`, `"X"`, `default: "X"`, `default: X` -> X (Liquid/Mailchimp-style tolerant). */
+function cleanFallback(raw: string | undefined): string {
+  return (raw ?? "")
+    .trim()
+    .replace(/^default\s*:\s*/i, "")
+    .replace(/^["'“”‘’](.*)["'“”‘’]$/, "$1")
+    .trim();
 }
 
 /**
@@ -147,6 +185,8 @@ export function parseRecipientRows(rows: unknown[][]): ParsedList {
   }
   const firstCol = findCol(header, ["first name", "firstname", "first", "given name"]);
   const nameCol = findCol(header, ["contact name", "name", "full name", "fullname"]);
+  const titleCol = findCol(header, ["title/role", "title", "role", "rank", "position", "job title"]);
+  const agencyCol = findCol(header, ["agency", "department", "agency name", "organization", "org"]);
 
   const seen = new Set<string>();
   const entries: ListEntry[] = [];
@@ -167,12 +207,90 @@ export function parseRecipientRows(rows: unknown[][]): ParsedList {
     }
     seen.add(email);
     const name = cell(nameCol);
-    const firstName = cell(firstCol) || firstNameFrom(name);
+    const firstName = cell(firstCol) || greetingNameFrom(name, cell(titleCol));
     if (!firstName) blankFirstName++;
-    entries.push({ email, firstName, name });
+    const entry: ListEntry = { email, firstName, name };
+    const agency = cleanAgency(cell(agencyCol));
+    if (agency) entry.agency = agency;
+    entries.push(entry);
   }
 
   return { entries, skippedNoEmail, duplicates, blankFirstName };
+}
+
+const RANKS: [RegExp, string][] = [
+  [/^(det|detective)\.?$/i, "Detective"],
+  [/^(sgt|sergeant)\.?$/i, "Sergeant"],
+  [/^(lt|lieut|lieutenant)\.?$/i, "Lieutenant"],
+  [/^(capt|cpt|captain)\.?$/i, "Captain"],
+  [/^(cpl|corporal)\.?$/i, "Corporal"],
+  [/^(inv|investigator)\.?$/i, "Investigator"],
+  [/^(ofc|officer)\.?$/i, "Officer"],
+  [/^(dep|deputy)\.?$/i, "Deputy"],
+  [/^(chief)\.?$/i, "Chief"],
+  [/^(sheriff)\.?$/i, "Sheriff"],
+];
+const isInitial = (t: string) => /^[A-Z]\.?$/i.test(t) || /^([A-Z]\.){2,}$/i.test(t);
+const SUFFIX = /^(jr|sr|ii|iii|iv)\.?$/i;
+
+function rankFromTitle(title: string): string {
+  const t = title.toLowerCase();
+  if (/lieutenant/.test(t)) return "Lieutenant";
+  if (/sergeant/.test(t)) return "Sergeant";
+  if (/captain/.test(t)) return "Captain";
+  if (/detective/.test(t)) return "Detective";
+  if (/investigator/.test(t)) return "Investigator";
+  if (/chief/.test(t)) return "Chief";
+  return "";
+}
+
+/**
+ * Greeting name from a messy contact-name cell (+ optional title):
+ *   "Dustin Baker" -> "Dustin"        "Fields, Twandy" -> "Twandy"
+ *   "Det. Frias"   -> "Detective Frias"  "J. Michael Sesher" -> "Michael"
+ *   "D. Robertson" + title "Detective" -> "Detective Robertson" (no title -> "")
+ *   "(Investigations)" / "A / B / C" -> "" (template fallback greeting)
+ */
+export function greetingNameFrom(name: string | null | undefined, title = ""): string {
+  let t = (name || "").replace(/\([^)]*\)/g, " ").replace(/\s+/g, " ").trim();
+  if (!t || /\//.test(t) || /&|\band\b/i.test(t)) return "";
+  const commas = t.split(",").map((s) => s.trim()).filter(Boolean);
+  if (commas.length > 2) return "";
+  if (commas.length === 2) {
+    if (SUFFIX.test(commas[1])) t = commas[0];
+    else if (!commas[0].includes(" ")) t = `${commas[1]} ${commas[0]}`; // "Last, First"
+    else return "";
+  }
+  let toks = t.split(" ").filter((x) => !SUFFIX.test(x));
+  if (toks.length === 0) return "";
+  let rank = "";
+  for (const [re, label] of RANKS) {
+    if (re.test(toks[0])) {
+      rank = label;
+      toks = toks.slice(1);
+      break;
+    }
+  }
+  if (toks.length === 0) return "";
+  const last = toks[toks.length - 1];
+  if (rank) return isInitial(last) ? "" : `${rank} ${last}`;
+  if (!isInitial(toks[0])) return toks[0];
+  // Leading initial(s): use a spelled-out middle name, else rank + surname.
+  const given = toks.slice(1, -1).find((x) => !isInitial(x));
+  if (given) return given;
+  const r = rankFromTitle(title);
+  return r && toks.length > 1 && !isInitial(last) ? `${r} ${last}` : "";
+}
+
+/** "Boaz PD" -> "Boaz Police Department"; drops "(KY)"-style parentheticals. */
+export function cleanAgency(raw: string | null | undefined): string {
+  return (raw || "")
+    .replace(/\([^)]*\)/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\bPD$/, "Police Department")
+    .replace(/\bSO$/, "Sheriff's Office")
+    .replace(/\bDPS$/, "Department of Public Safety");
 }
 
 /** Narrow the Json column back into entries (defensive against bad data). */
@@ -188,6 +306,7 @@ export function readCustomList(raw: unknown): ListEntry[] | null {
       email,
       firstName: String(o.firstName ?? "").trim(),
       name: String(o.name ?? "").trim(),
+      ...(o.agency ? { agency: String(o.agency).trim() } : {}),
     });
   }
   return out;

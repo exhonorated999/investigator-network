@@ -30,7 +30,11 @@ function parseFrom(from: string): { name: string; address: string } {
 function fromHeader(overrideName: string): string {
   const { name, address } = parseFrom(FROM_DEFAULT);
   const display = overrideName.trim() || name || "Investigator Network";
-  return `${display} <${address}>`;
+  // RFC 5322: display names with specials (e.g. "Intellect LE, LLC") must be quoted.
+  const safe = /[",.<>@:;()[\]\\]/.test(display)
+    ? `"${display.replace(/["\\]/g, "\\$&")}"`
+    : display;
+  return `${safe} <${address}>`;
 }
 
 function newUnsubToken(): string {
@@ -165,7 +169,7 @@ type RenderFields = Pick<Campaign, "subject" | "preheader" | "bodyHtml" | "fullH
  */
 export function renderForRecipient(
   campaign: RenderFields,
-  r: { firstName: string; unsubscribeUrl: string }
+  r: { firstName: string; agency?: string; unsubscribeUrl: string }
 ): { subject: string; html: string; text: string } {
   const subject = applyMerge(campaign.subject, r, "text");
   const body = applyMerge(campaign.bodyHtml, r, "html");
@@ -193,6 +197,16 @@ export function renderForRecipient(
 export function sampleFirstName(campaign: Pick<Campaign, "customList">): string {
   const list = readCustomList(campaign.customList);
   return list?.find((e) => e.firstName)?.firstName ?? "";
+}
+
+/** Sample merge vars (first name + agency) for previews/tests. */
+export function sampleMergeVars(campaign: Pick<Campaign, "customList">): {
+  firstName: string;
+  agency: string;
+} {
+  const list = readCustomList(campaign.customList) ?? [];
+  const e = list.find((x) => x.firstName && x.agency) ?? list.find((x) => x.firstName);
+  return { firstName: e?.firstName ?? "", agency: e?.agency ?? "" };
 }
 
 /**
@@ -311,6 +325,9 @@ export async function sendCampaign(campaignId: string): Promise<SendOutcome> {
 
   const from = fromHeader(campaign.fromName);
   const base = appUrl();
+  const agencyByEmail = new Map(
+    (readCustomList(campaign.customList) ?? []).map((e) => [e.email, e.agency ?? ""])
+  );
   let sent = 0;
   let failed = 0;
 
@@ -319,6 +336,7 @@ export async function sendCampaign(campaignId: string): Promise<SendOutcome> {
       const unsubscribeUrl = `${base}/api/unsubscribe?token=${row.unsubToken}`;
       const msg = renderForRecipient(campaign, {
         firstName: row.firstName,
+        agency: agencyByEmail.get(row.email.toLowerCase()) ?? "",
         unsubscribeUrl,
       });
       return {
@@ -453,7 +471,7 @@ export async function sendTest(
   const base = appUrl();
   const unsubscribeUrl = `${base}/api/unsubscribe?token=preview-${newUnsubToken()}`;
   const msg = renderForRecipient(campaign, {
-    firstName: sampleFirstName(campaign),
+    ...sampleMergeVars(campaign),
     unsubscribeUrl,
   });
   const apiKey = process.env.RESEND_API_KEY;

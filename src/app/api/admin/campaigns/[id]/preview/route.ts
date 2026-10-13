@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/rbac";
 import { appUrl } from "@/lib/email-template";
-import { renderForRecipient, sampleFirstName } from "@/lib/campaigns";
+import { renderForRecipient, sampleMergeVars } from "@/lib/campaigns";
 
 /**
  * Admin-only rendered preview of a campaign — the full branded email exactly as
@@ -21,7 +21,7 @@ export async function GET(
   if (!campaign) return new NextResponse("Not found", { status: 404 });
 
   const { html } = renderForRecipient(campaign, {
-    firstName: sampleFirstName(campaign),
+    ...sampleMergeVars(campaign),
     unsubscribeUrl: `${appUrl()}/api/unsubscribe?token=preview`,
   });
 

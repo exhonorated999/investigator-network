@@ -217,7 +217,10 @@ export default async function CampaignDetailPage({
                     <td className={`p-2 ${e.firstName ? "text-accent-bright" : "text-warning"}`}>
                       {e.firstName || `(blank → “${DEFAULT_FIRST_NAME_FALLBACK}”)`}
                     </td>
-                    <td className="p-2 text-muted">{e.name || "—"}</td>
+                    <td className="p-2 text-muted">
+                      {e.name || "—"}
+                      {e.agency ? <span className="block text-[10px] opacity-70">{e.agency}</span> : null}
+                    </td>
                   </tr>
                 ))}
               </tbody>

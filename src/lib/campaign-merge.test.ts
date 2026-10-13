@@ -6,6 +6,8 @@ import {
   parseRecipientRows,
   hasMergeTags,
   isFullHtmlDocument,
+  greetingNameFrom,
+  cleanAgency,
 } from "./campaign-merge";
 
 test("applyMerge substitutes first name, escapes html, falls back", () => {
@@ -57,4 +59,40 @@ test("parseRecipientRows maps sheet headers, dedupes, skips blanks", () => {
   assert.equal(r.skippedNoEmail, 2);
   assert.equal(r.blankFirstName, 1);
   assert.ok(parseRecipientRows([["name"], ["x"]]).error);
+});
+
+test("liquid-style defaults, agency tag, placeholder aliases", () => {
+  const g = `{{first_name | default: "Detective"}},`;
+  assert.equal(applyMerge(g, { firstName: "Dana" }), "Dana,");
+  assert.equal(applyMerge(g, { firstName: "" }), "Detective,");
+  assert.equal(applyMerge("like {{agency}}.", { agency: "Boaz Police Department" }), "like Boaz Police Department.");
+  assert.equal(applyMerge("like {{agency}}.", {}), "like your agency.");
+  assert.equal(applyMerge("at {{agency}}", { agency: "Sheriff's & Co" }), "at Sheriff's &amp; Co");
+  const out = fillFullHtml(`<html><body><a href="{{unsubscribe_link}}">u</a>{{postal_address}}</body></html>`, {
+    unsubscribeUrl: "https://x/u",
+    address: "1 Main",
+  });
+  assert.match(out, /href="https:\/\/x\/u"/);
+  assert.match(out, /1 Main<\/body>/);
+});
+
+test("greetingNameFrom handles messy LE contact names", () => {
+  const cases: [string, string, string][] = [
+    ["Dustin Baker", "", "Dustin"],
+    ["(Investigations)", "", ""],
+    ["Det. Frias", "", "Detective Frias"],
+    ["Lt. Molder", "", "Lieutenant Molder"],
+    ["Sgt. Sanchez", "Detective", "Sergeant Sanchez"],
+    ["D. Robertson", "Detective", "Detective Robertson"],
+    ["D. Robertson", "", ""],
+    ["S. L. Entrekin", "Detective Sergeant", "Sergeant Entrekin"],
+    ["J. Michael Sesher", "", "Michael"],
+    ["Fields, Twandy", "", "Twandy"],
+    ["Joseph J. Rudner Jr.", "", "Joseph"],
+    ["J. Cedillo / D. Parr / J. Mijares", "Detective", ""],
+  ];
+  for (const [n, t, want] of cases) assert.equal(greetingNameFrom(n, t), want, n);
+  assert.equal(cleanAgency("Boaz PD"), "Boaz Police Department");
+  assert.equal(cleanAgency("Montgomery County Sheriff's Office (KY)"), "Montgomery County Sheriff's Office");
+  assert.equal(cleanAgency("Davison (City) PD"), "Davison Police Department");
 });
