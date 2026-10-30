@@ -416,6 +416,7 @@ export async function sendLiveSessionReminders(formData: FormData) {
           unitTitle: unit.title,
           startsAt: data.startsAt ? String(data.startsAt) : undefined,
           joinUrl: data.teamsJoinUrl ? String(data.teamsJoinUrl) : undefined,
+          courseSlug: unit.section.course.slug,
         })
       )
   );

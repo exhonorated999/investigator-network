@@ -118,15 +118,40 @@ export function sendDenialEmail(to: string, name: string) {
   });
 }
 
+/**
+ * Hybrid courses whose on-demand video track is identical to the live class
+ * (either one earns the certificate). Their reminders tell learners they don't
+ * need to reply to reschedule.
+ */
+const ON_DEMAND_EQUIVALENT_SLUGS = new Set([
+  "datapilot-dpx-dp10-essentials",
+  "datapilot-desktop-essentials",
+]);
+
 export function sendLiveSessionReminder(
   to: string,
   name: string,
-  opts: { courseTitle: string; unitTitle: string; startsAt?: string; joinUrl?: string }
+  opts: {
+    courseTitle: string;
+    unitTitle: string;
+    startsAt?: string;
+    joinUrl?: string;
+    courseSlug?: string;
+  }
 ) {
   const when = opts.startsAt ? formatSessionTime(opts.startsAt) : "the scheduled time";
   const join = opts.joinUrl
     ? `\n\nWhen it's time, join the Teams meeting here: ${opts.joinUrl}`
     : "";
+  const flexible =
+    opts.courseSlug && ON_DEMAND_EQUIVALENT_SLUGS.has(opts.courseSlug)
+      ? `\n\nCan't make this date? No problem, and there's no need to reply to reschedule. ` +
+        `Every upcoming live training date is listed inside the course, so you can simply ` +
+        `join whichever session fits your schedule. If a live session doesn't work for you, ` +
+        `the on-demand version of the course covers the same material and earns the same ` +
+        `certificate, and you can complete it at your own pace anytime:\n` +
+        `${appUrl()}/courses/${opts.courseSlug}`
+      : "";
   return send({
     to,
     subject: `Reminder: live training "${opts.unitTitle}" — ${opts.courseTitle}`,
@@ -135,7 +160,7 @@ export function sendLiveSessionReminder(
       `This is a reminder for your upcoming live training session "${opts.unitTitle}" ` +
       `in ${opts.courseTitle}, scheduled for ${when}.\n\n` +
       `Please log in to Investigator Network at least 15 minutes prior to the start time so you're ready when the session begins:\n${loginUrl()}` +
-      `${join}\n\n— Investigator Network`,
+      `${join}${flexible}\n\n— Investigator Network`,
   });
 }
 

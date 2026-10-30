@@ -269,6 +269,7 @@ export async function POST(request: Request) {
             unitTitle: u.title,
             startsAt: typeof rawStarts === "string" ? rawStarts : undefined,
             joinUrl: data.teamsJoinUrl ? String(data.teamsJoinUrl) : undefined,
+            courseSlug,
           });
       if (res.ok) {
         base.sent += 1;
