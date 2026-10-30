@@ -7,6 +7,8 @@ import { NotificationWatcher } from "@/components/notification-watcher";
 import { InstallPrompt } from "@/components/install-prompt";
 import "./globals.css";
 
+const GA_MEASUREMENT_ID = "G-5133WDLFKV";
+
 const orbitron = Orbitron({
   variable: "--font-orbitron",
   subsets: ["latin"],
@@ -80,6 +82,14 @@ export default async function RootLayout({
         {signedIn ? <NotificationWatcher /> : null}
         {children}
         <InstallPrompt />
+        {/* Google Analytics 4 */}
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+          strategy="afterInteractive"
+        />
+        <Script id="ga4-init" strategy="afterInteractive">
+          {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${GA_MEASUREMENT_ID}');`}
+        </Script>
       </body>
     </html>
   );
