@@ -1,21 +1,20 @@
 "use client";
 
-import Script from "next/script";
 import { useEffect, useRef } from "react";
 
 type TurnstileTheme = "light" | "dark";
 
+type RenderOptions = {
+  sitekey: string;
+  theme?: TurnstileTheme | "auto";
+  appearance?: "always" | "execute" | "interaction-only";
+  callback?: (token: string) => void;
+  "error-callback"?: (code?: string) => void;
+  "expired-callback"?: () => void;
+};
+
 type TurnstileApi = {
-  render: (
-    element: HTMLElement,
-    options: {
-      sitekey: string;
-      theme?: TurnstileTheme | "auto";
-      appearance?: "always" | "execute" | "interaction-only";
-      "response-field"?: boolean;
-      "response-field-name"?: string;
-    }
-  ) => string;
+  render: (element: HTMLElement, options: RenderOptions) => string;
   reset: (widgetId?: string) => void;
   remove: (widgetId: string) => void;
 };
@@ -26,15 +25,18 @@ declare global {
   }
 }
 
+const SCRIPT_ID = "cf-turnstile-api";
 const SCRIPT_SRC =
   "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
 
 /**
- * Managed Turnstile widget. `interaction-only` stays invisible unless
- * Cloudflare asks the visitor to solve a challenge. The token is written
- * to a hidden `cf-turnstile-response` input inside the surrounding form.
- * `resetSignal` changes after a rejected token so the next submit gets a
- * fresh one (tokens are single-use and expire after five minutes).
+ * Visible Managed Turnstile checkbox.
+ *
+ * `next/script` plus `appearance: "interaction-only"` left an empty shell:
+ * the challenge iframe lives in a closed shadow root, React updates could
+ * detach it ("Cannot find Widget"), and a submit with no token showed
+ * "confirm you're human" with nothing to click. This renders explicitly
+ * into a stable node and paints the widget again if that node is cleared.
  */
 export function TurnstileField({
   siteKey,
@@ -44,58 +46,84 @@ export function TurnstileField({
   resetSignal: string;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const widgetId = useRef<string | null>(null);
-  const mountRef = useRef<() => void>(() => {});
+  const widgetIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
+    const container = containerRef.current;
+    if (!container) return;
+    const host: HTMLDivElement = container;
+    let removed = false;
 
-    function mount() {
-      const container = containerRef.current;
-      if (cancelled || !container || !window.turnstile || widgetId.current) return;
+    function render() {
+      if (removed || !host.isConnected || !window.turnstile) return;
+      if (widgetIdRef.current && host.childElementCount > 0) return;
+      if (widgetIdRef.current) {
+        try {
+          window.turnstile.remove(widgetIdRef.current);
+        } catch {
+          /* The node is already gone. */
+        }
+        widgetIdRef.current = null;
+      }
       const theme: TurnstileTheme =
         document.documentElement.getAttribute("data-theme") === "light"
           ? "light"
           : "dark";
-      widgetId.current = window.turnstile.render(container, {
+      widgetIdRef.current = window.turnstile.render(host, {
         sitekey: siteKey,
         theme,
-        appearance: "interaction-only",
-        "response-field": true,
-        "response-field-name": "cf-turnstile-response",
+        appearance: "always",
+        "error-callback": () => {
+          const id = widgetIdRef.current;
+          if (id) window.turnstile?.reset(id);
+        },
       });
     }
 
-    mountRef.current = mount;
-    mount();
+    if (window.turnstile) {
+      render();
+    } else {
+      let script = document.getElementById(SCRIPT_ID) as HTMLScriptElement | null;
+      if (!script) {
+        script = document.createElement("script");
+        script.id = SCRIPT_ID;
+        script.src = SCRIPT_SRC;
+        script.async = true;
+        script.defer = true;
+        document.head.appendChild(script);
+      }
+      script.addEventListener("load", render);
+    }
+
+    // React can drop the shadow host on a later render without remounting
+    // this effect. Put the checkbox back if the container is emptied.
+    const timer = window.setInterval(render, 1000);
 
     return () => {
-      cancelled = true;
-      mountRef.current = () => {};
-      if (widgetId.current && window.turnstile) {
-        window.turnstile.remove(widgetId.current);
-        widgetId.current = null;
+      removed = true;
+      window.clearInterval(timer);
+      const id = widgetIdRef.current;
+      widgetIdRef.current = null;
+      if (id) {
+        try {
+          window.turnstile?.remove(id);
+        } catch {
+          /* already removed */
+        }
       }
     };
   }, [siteKey]);
 
   useEffect(() => {
-    if (!resetSignal || !widgetId.current || !window.turnstile) return;
-    window.turnstile.reset(widgetId.current);
+    if (!resetSignal) return;
+    const id = widgetIdRef.current;
+    if (!id || !window.turnstile) return;
+    window.turnstile.reset(id);
   }, [resetSignal]);
 
   return (
-    <div className="flex flex-col gap-2">
-      <Script
-        src={SCRIPT_SRC}
-        strategy="afterInteractive"
-        onLoad={() => mountRef.current()}
-      />
-      <div ref={containerRef} />
-      <p className="font-mono text-[10px] leading-relaxed text-muted">
-        A Cloudflare check runs with this form. If it never finishes, allow
-        challenges.cloudflare.com and try again.
-      </p>
+    <div id="human-check" className="flex flex-col gap-2">
+      <div ref={containerRef} className="min-h-[65px]" />
     </div>
   );
 }

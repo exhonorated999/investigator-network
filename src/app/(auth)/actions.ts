@@ -17,6 +17,7 @@ import {
 import { HONEYPOT_FIELD, HONEYPOT_MESSAGE, honeypotFilled } from "@/lib/signup-honeypot";
 import {
   TURNSTILE_FAILED_MESSAGE,
+  TURNSTILE_MISSING_MESSAGE,
   verifyTurnstileToken,
 } from "@/lib/turnstile";
 import {
@@ -128,7 +129,10 @@ export async function registerAction(
     console.info("[register] rejected signup", { reason: captcha.code });
     return {
       ok: false,
-      message: TURNSTILE_FAILED_MESSAGE,
+      message:
+        captcha.code === "missing-token"
+          ? TURNSTILE_MISSING_MESSAGE
+          : TURNSTILE_FAILED_MESSAGE,
       turnstileReset: crypto.randomUUID(),
     };
   }

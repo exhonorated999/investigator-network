@@ -19,8 +19,11 @@
 const SITEVERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 const MAX_TOKEN_LENGTH = 2048;
 
+export const TURNSTILE_MISSING_MESSAGE =
+  "Check the box that says “Verify you are human,” then submit again.";
+
 export const TURNSTILE_FAILED_MESSAGE =
-  "Please confirm you're human and try again.";
+  "The human check didn't go through. Complete it again, then submit.";
 
 export type TurnstileMode = "verify" | "skip";
 
