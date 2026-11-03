@@ -10,6 +10,16 @@ import {
   signupEmailBlockReason,
 } from "@/lib/signup-email";
 import {
+  GIBBERISH_AGENCY_MESSAGE,
+  GIBBERISH_NAME_MESSAGE,
+  isGibberishLabel,
+} from "@/lib/signup-gibberish";
+import { HONEYPOT_FIELD, HONEYPOT_MESSAGE, honeypotFilled } from "@/lib/signup-honeypot";
+import {
+  TURNSTILE_FAILED_MESSAGE,
+  verifyTurnstileToken,
+} from "@/lib/turnstile";
+import {
   AUTH_RATE_LIMIT_MESSAGE,
   clientIpFromHeaders,
   consumeAuthLimit,
@@ -25,6 +35,12 @@ export type FormState = {
   message?: string;
   autoApproved?: boolean;
   fieldErrors?: Record<string, string>;
+  /**
+   * Set after a Turnstile token is rejected so the widget can mint a new one.
+   * Tokens are single-use. Field errors that happen before Siteverify leave
+   * this unset and keep the token the visitor already has.
+   */
+  turnstileReset?: string;
 };
 
 async function rateLimitResponse(
@@ -64,10 +80,32 @@ export async function registerAction(
 
   const { name, audience, agency, state, email, password } = parsed.data;
 
-  // Count the attempt, then reject bot emails. Both happen before any read
-  // or write, so a limited or disposable address never creates a user or mail.
+  // Per-IP cap (AUTH_LIMITS.register: 5 attempts / hour) before any bot
+  // check that could call Cloudflare, and before any database read or write.
+  // Admin "Manually enrol a user" does not go through this action.
   const limited = await rateLimitResponse("register");
   if (limited) return limited;
+
+  if (honeypotFilled(formData.get(HONEYPOT_FIELD))) {
+    console.info("[register] rejected signup", { reason: "honeypot" });
+    return { ok: false, message: HONEYPOT_MESSAGE };
+  }
+
+  if (isGibberishLabel(name)) {
+    console.info("[register] rejected signup", {
+      reason: "gibberish-name",
+      length: name.length,
+    });
+    return { ok: false, fieldErrors: { name: GIBBERISH_NAME_MESSAGE } };
+  }
+
+  if (agency && isGibberishLabel(agency)) {
+    console.info("[register] rejected signup", {
+      reason: "gibberish-agency",
+      length: agency.length,
+    });
+    return { ok: false, fieldErrors: { agency: GIBBERISH_AGENCY_MESSAGE } };
+  }
 
   const emailBlock = signupEmailBlockReason(email);
   if (emailBlock) {
@@ -78,6 +116,20 @@ export async function registerAction(
     return {
       ok: false,
       fieldErrors: { email: SIGNUP_EMAIL_REJECTION_MESSAGE },
+    };
+  }
+
+  const headerList = await headers();
+  const captcha = await verifyTurnstileToken(
+    String(formData.get("cf-turnstile-response") ?? ""),
+    clientIpFromHeaders(headerList)
+  );
+  if (!captcha.ok) {
+    console.info("[register] rejected signup", { reason: captcha.code });
+    return {
+      ok: false,
+      message: TURNSTILE_FAILED_MESSAGE,
+      turnstileReset: crypto.randomUUID(),
     };
   }
 

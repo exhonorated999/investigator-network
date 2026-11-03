@@ -20,6 +20,10 @@ export type CreateUserState = {
  * Admin manual enrolment. Creating a user here bypasses the approval queue
  * entirely: the admin explicitly picks the audience (LE / Civilian) and the
  * account is APPROVED immediately, overriding the normal .gov / review gate.
+ *
+ * Public signup bot checks (Turnstile, honeypot, gibberish names, disposable
+ * email, per-IP rate limit) stay on `registerAction` only. An admin can still
+ * enrol a real person whose name would look unusual to those heuristics.
  */
 export async function createUser(
   _prev: CreateUserState,
