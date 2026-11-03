@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   TURNSTILE_FAILED_MESSAGE,
+  TURNSTILE_MISSING_MESSAGE,
   turnstileMode,
   turnstileSiteKey,
   verifyTurnstileToken,
@@ -159,6 +160,8 @@ describe("verifyTurnstileToken", () => {
 
 describe("turnstile messages", () => {
   it("does not include the secret or the key names", () => {
-    assert.equal(/TURNSTILE|secret|siteverify/i.test(TURNSTILE_FAILED_MESSAGE), false);
+    for (const message of [TURNSTILE_FAILED_MESSAGE, TURNSTILE_MISSING_MESSAGE]) {
+      assert.equal(/TURNSTILE|secret|siteverify/i.test(message), false);
+    }
   });
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import { registerAction, type FormState } from "../actions";
 import { Field, SubmitButton } from "@/components/form";
@@ -21,6 +21,12 @@ export function RegisterForm({
   const [region, setRegion] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [clientMessage, setClientMessage] = useState("");
+
+  useEffect(() => {
+    if (!state.turnstileReset) return;
+    document.getElementById("human-check")?.scrollIntoView({ block: "center" });
+  }, [state.turnstileReset]);
 
   if (state.ok) {
     const approved = state.autoApproved;
@@ -73,7 +79,25 @@ export function RegisterForm({
         </div>
       ) : null}
 
-      <form action={formAction} className="relative mt-6 flex flex-col gap-4">
+      <form
+        action={formAction}
+        className="relative mt-6 flex flex-col gap-4"
+        onSubmit={(event) => {
+          if (!turnstileSiteKey) return;
+          const token = String(
+            new FormData(event.currentTarget).get("cf-turnstile-response") ?? ""
+          );
+          if (token.trim()) {
+            setClientMessage("");
+            return;
+          }
+          event.preventDefault();
+          setClientMessage(
+            "Check the box that says “Verify you are human,” then submit again."
+          );
+          document.getElementById("human-check")?.scrollIntoView({ block: "center" });
+        }}
+      >
         {/* Off-screen. Bots that fill every input set this; people do not. */}
         <div
           aria-hidden="true"
@@ -171,6 +195,12 @@ export function RegisterForm({
             siteKey={turnstileSiteKey}
             resetSignal={state.turnstileReset ?? ""}
           />
+        ) : null}
+        {clientMessage ? (
+          <p className="font-mono text-xs text-danger" role="alert">
+            <span className="opacity-60">{"// "}</span>
+            {clientMessage}
+          </p>
         ) : null}
         <SubmitButton label="Request access" />
       </form>
