@@ -59,20 +59,28 @@ export async function recordHeartbeat(userId: string, path: string) {
     },
   });
 
+  if (!prev?.lastSeenAt) return;
+  const deltaMs = Date.now() - prev.lastSeenAt.getTime();
+  if (deltaMs <= 0 || deltaMs > MAX_ACCRUE_MS) return;
+  const day = startOfDay();
+  const seconds = Math.round(deltaMs / 1000);
+
+  // Site-wide engaged time (any signed-in page).
+  await prisma.siteActivity.upsert({
+    where: { userId_day: { userId, day } },
+    create: { userId, day, seconds },
+    update: { seconds: { increment: seconds } },
+  });
+
   // Accrue engaged time to the course the learner was on during the gap.
-  if (prev?.lastSeenCourseId && prev.lastSeenAt) {
-    const deltaMs = Date.now() - prev.lastSeenAt.getTime();
-    if (deltaMs > 0 && deltaMs <= MAX_ACCRUE_MS) {
-      const day = startOfDay();
-      const seconds = Math.round(deltaMs / 1000);
-      await prisma.courseActivity.upsert({
-        where: {
-          userId_courseId_day: { userId, courseId: prev.lastSeenCourseId, day },
-        },
-        create: { userId, courseId: prev.lastSeenCourseId, day, seconds },
-        update: { seconds: { increment: seconds } },
-      });
-    }
+  if (prev.lastSeenCourseId) {
+    await prisma.courseActivity.upsert({
+      where: {
+        userId_courseId_day: { userId, courseId: prev.lastSeenCourseId, day },
+      },
+      create: { userId, courseId: prev.lastSeenCourseId, day, seconds },
+      update: { seconds: { increment: seconds } },
+    });
   }
 }
 

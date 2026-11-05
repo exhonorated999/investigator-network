@@ -9,6 +9,9 @@ import { adminEnrollUserMany, adminUnenrollUser } from "../actions";
 import { PasswordResetForm } from "./password-reset-form";
 import { RoleForm } from "./role-form";
 import { EditDetailsForm } from "./edit-details-form";
+import { loadUserStats } from "@/lib/user-stats";
+import { formatDuration } from "@/lib/user-stats-calc";
+import { UserStatsPanel } from "./user-stats-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -67,6 +70,9 @@ export default async function UserDetailPage({
   });
   const enrollableCourses = allCourses.filter((c) => !enrolledCourseIds.has(c.id));
 
+  const stats = await loadUserStats(user.id);
+  const courseTime = new Map(stats.perCourse.map((p) => [p.courseId, p.seconds]));
+
   const canManage =
     !user.isSuperAdmin &&
     user.id !== session.user.id &&
@@ -86,6 +92,7 @@ export default async function UserDetailPage({
       pct,
       enrolledAt: e.enrolledAt,
       certified: certifiedSet.has(e.course.id),
+      seconds: courseTime.get(e.course.id) ?? 0,
     };
   });
 
@@ -137,6 +144,13 @@ export default async function UserDetailPage({
           </span>
         </div>
       </div>
+
+      {/* ------------------------------------------------ activity stats */}
+      <UserStatsPanel
+        stats={stats}
+        lastSeenAt={user.lastSeenAt}
+        lastSeenPath={user.lastSeenPath}
+      />
 
       {/* ------------------------------------------------ edit details */}
       <section className="panel mt-6 p-5">
@@ -224,6 +238,7 @@ export default async function UserDetailPage({
                 <tr>
                   <th className="eyebrow eyebrow-muted px-3 py-2">Course</th>
                   <th className="eyebrow eyebrow-muted px-3 py-2">Progress</th>
+                  <th className="eyebrow eyebrow-muted px-3 py-2">Time spent</th>
                   <th className="eyebrow eyebrow-muted px-3 py-2">Enrolled</th>
                   <th className="eyebrow eyebrow-muted px-3 py-2 text-right">
                     Actions
@@ -274,6 +289,9 @@ export default async function UserDetailPage({
                           ({r.done}/{r.total})
                         </span>
                       </div>
+                    </td>
+                    <td className="px-3 py-3 font-mono text-[11px] text-foreground">
+                      {formatDuration(r.seconds)}
                     </td>
                     <td className="px-3 py-3 font-mono text-[11px] text-muted">
                       {r.enrolledAt.toLocaleDateString()}

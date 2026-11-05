@@ -97,6 +97,7 @@ model User {
   boardReplies    BoardReply[]
   boardReads      BoardRead[]
   courseActivity  CourseActivity[]
+  siteActivity    SiteActivity[]
   inviteTokens    InviteToken[]
 
   /// Provenance for accounts migrated off the legacy LearnWorlds site. Holds
@@ -962,6 +963,20 @@ model CourseActivity {
 
   @@unique([userId, courseId, day])
   @@index([courseId, day])
+}
+
+/// Site-wide engaged seconds per user per day (any signed-in page, idle time
+/// excluded). Written by recordHeartbeat alongside CourseActivity. Added
+/// 2026-11; older days only have CourseActivity, which loaders treat as a floor.
+model SiteActivity {
+  id      String   @id @default(cuid())
+  userId  String
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  day     DateTime
+  seconds Int      @default(0)
+
+  @@unique([userId, day])
+  @@index([day])
 }
 
 // ---------------------------------------------------------------------------
