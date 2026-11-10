@@ -25,6 +25,10 @@ import {
 } from "@/lib/course-checkout";
 import { enroll } from "../actions";
 import { ViperLanding, VIPER_LANDING_SLUG } from "@/components/course-landing/viper-landing";
+import {
+  FirstWaveLanding,
+  FIRSTWAVE_LANDING_SLUG,
+} from "@/components/course-landing/firstwave-landing";
 
 /**
  * A course description doubles as its landing page. Short descriptions are
@@ -116,9 +120,12 @@ export default async function CourseOverview({
   const isPaid = course.pricing === "PAID";
   const invoiceEmail = checkout?.invoiceEmail || DEFAULT_INVOICE_EMAIL;
 
-  // Bespoke marketing landing (currently only Project V.I.P.E.R.). It replaces
+  // Bespoke marketing landings (Project V.I.P.E.R., FirstWave). They replace
   // the plain header + "open for enrollment" panel; progress + curriculum stay.
   const isViper = slug === VIPER_LANDING_SLUG;
+  const isFirstWave = slug === FIRSTWAVE_LANDING_SLUG;
+  const hasLanding = isViper || isFirstWave;
+  const btn = isFirstWave ? "btn-fw" : "btn-viper";
   const viperSections = isViper
     ? course.sections
         .map((s) => ({
@@ -127,15 +134,15 @@ export default async function CourseOverview({
         }))
         .filter((s) => s.units.length > 0)
     : [];
-  const viperCta = !isViper ? null : enrollment ? (
+  const landingCta = !hasLanding ? null : enrollment ? (
     <>
       {firstUnit ? (
-        <Link href={`/courses/${slug}/units/${firstUnit.id}`} className="btn btn-viper">
+        <Link href={`/courses/${slug}/units/${firstUnit.id}`} className={`btn ${btn}`}>
           {pct > 0 ? `Resume course · ${pct}%` : "Start the course →"}
         </Link>
       ) : null}
       {certificate ? (
-        <Link href={`/certificates/${certificate.serial}`} className="btn btn-viper-ghost">
+        <Link href={`/certificates/${certificate.serial}`} className={`btn ${btn}-ghost`}>
           🏅 View certificate
         </Link>
       ) : null}
@@ -143,10 +150,10 @@ export default async function CourseOverview({
   ) : course.status === "PUBLISHED" && !isPaid ? (
     <form action={enroll}>
       <input type="hidden" name="slug" value={slug} />
-      <button className="btn btn-viper">Enroll free →</button>
+      <button className={`btn ${btn}`}>Enroll free →</button>
     </form>
   ) : (
-    <p className="font-mono text-xs uppercase tracking-[0.16em] text-[#a9c2ad]">
+    <p className="font-mono text-xs uppercase tracking-[0.16em] text-[#a9b4c2]">
       Publish this course to allow enrollment.
     </p>
   );
@@ -154,7 +161,7 @@ export default async function CourseOverview({
   return (
     <div className="min-h-screen">
       <SiteHeader name={user.name} isAdmin={isAdmin} />
-      <main className={`mx-auto px-5 pb-20 pt-8 ${isViper ? "max-w-6xl" : "max-w-4xl"}`}>
+      <main className={`mx-auto px-5 pb-20 pt-8 ${hasLanding ? "max-w-6xl" : "max-w-4xl"}`}>
         <Link
           href="/dashboard"
           className="eyebrow eyebrow-muted transition hover:text-accent-bright"
@@ -162,19 +169,28 @@ export default async function CourseOverview({
           ← Back to my training
         </Link>
 
-        {isViper ? (
+        {hasLanding ? (
           <>
             {course.status !== "PUBLISHED" ? (
               <p className="mt-4">
                 <span className="tag-chip">{`// ${course.status} — ADMIN PREVIEW`}</span>
               </p>
             ) : null}
-            <ViperLanding
-              sections={viperSections}
-              lessonCount={units.filter((u) => u.type === "VIDEO").length}
-              cta={viperCta}
-              enrolled={!!enrollment}
-            />
+            {isFirstWave ? (
+              <FirstWaveLanding
+                lessonCount={units.filter((u) => u.type === "VIDEO").length}
+                hours={course.trainingHours}
+                cta={landingCta}
+                enrolled={!!enrollment}
+              />
+            ) : (
+              <ViperLanding
+                sections={viperSections}
+                lessonCount={units.filter((u) => u.type === "VIDEO").length}
+                cta={landingCta}
+                enrolled={!!enrollment}
+              />
+            )}
           </>
         ) : (
         <>
@@ -211,7 +227,7 @@ export default async function CourseOverview({
 
         {/* ----------------------------------------------------- progress panel */}
         {enrollment ? (
-          <div className={`panel rule-top reveal reveal-2 p-6 ${isViper ? "mt-16" : "mt-8"}`}>
+          <div className={`panel rule-top reveal reveal-2 p-6 ${hasLanding ? "mt-16" : "mt-8"}`}>
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
                 <p className="eyebrow eyebrow-muted">Case progress</p>
@@ -255,7 +271,7 @@ export default async function CourseOverview({
               </div>
             </div>
           </div>
-        ) : isViper ? null : course.status === "PUBLISHED" ? (
+        ) : hasLanding ? null : course.status === "PUBLISHED" ? (
           isPaid ? (
             /* Paid: no self-enroll. Purchase off-site, then an admin enrolls. */
             <div className="panel rule-top reveal reveal-2 mt-8 p-6">
@@ -337,10 +353,10 @@ export default async function CourseOverview({
         ) : null}
 
         {/* -------------------------------------------------------- curriculum */}
-        <section id="curriculum" className={`reveal reveal-3 ${isViper ? "mt-20" : "mt-12"}`}>
+        <section id="curriculum" className={`reveal reveal-3 ${hasLanding ? "mt-20" : "mt-12"}`}>
           <header className="flex items-end justify-between gap-4 border-b border-border pb-3">
             <div>
-              <p className="eyebrow eyebrow-gold">{isViper ? "06 / Full curriculum" : "01 / Curriculum"}</p>
+              <p className="eyebrow eyebrow-gold">{isViper ? "06 / Full curriculum" : isFirstWave ? "05 / Course contents" : "01 / Curriculum"}</p>
               <h2 className="display-lg mt-2">Case file</h2>
             </div>
             <span className="font-mono text-xs text-muted">
