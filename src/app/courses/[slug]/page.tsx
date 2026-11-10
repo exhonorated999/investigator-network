@@ -29,6 +29,10 @@ import {
   FirstWaveLanding,
   FIRSTWAVE_LANDING_SLUG,
 } from "@/components/course-landing/firstwave-landing";
+import {
+  OversightLanding,
+  OVERSIGHT_LANDING_SLUG,
+} from "@/components/course-landing/oversight-landing";
 
 /**
  * A course description doubles as its landing page. Short descriptions are
@@ -120,12 +124,14 @@ export default async function CourseOverview({
   const isPaid = course.pricing === "PAID";
   const invoiceEmail = checkout?.invoiceEmail || DEFAULT_INVOICE_EMAIL;
 
-  // Bespoke marketing landings (Project V.I.P.E.R., FirstWave). They replace
-  // the plain header + "open for enrollment" panel; progress + curriculum stay.
+  // Bespoke marketing landings (Project V.I.P.E.R., FirstWave, Oversight). They
+  // replace the plain header + "open for enrollment" panel; progress +
+  // curriculum stay.
   const isViper = slug === VIPER_LANDING_SLUG;
   const isFirstWave = slug === FIRSTWAVE_LANDING_SLUG;
-  const hasLanding = isViper || isFirstWave;
-  const btn = isFirstWave ? "btn-fw" : "btn-viper";
+  const isOversight = slug === OVERSIGHT_LANDING_SLUG;
+  const hasLanding = isViper || isFirstWave || isOversight;
+  const btn = isFirstWave ? "btn-fw" : isOversight ? "btn-po" : "btn-viper";
   const viperSections = isViper
     ? course.sections
         .map((s) => ({
@@ -180,6 +186,12 @@ export default async function CourseOverview({
               <FirstWaveLanding
                 lessonCount={units.filter((u) => u.type === "VIDEO").length}
                 hours={course.trainingHours}
+                cta={landingCta}
+                enrolled={!!enrollment}
+              />
+            ) : isOversight ? (
+              <OversightLanding
+                lessonCount={units.filter((u) => u.type === "VIDEO").length}
                 cta={landingCta}
                 enrolled={!!enrollment}
               />
@@ -356,7 +368,7 @@ export default async function CourseOverview({
         <section id="curriculum" className={`reveal reveal-3 ${hasLanding ? "mt-20" : "mt-12"}`}>
           <header className="flex items-end justify-between gap-4 border-b border-border pb-3">
             <div>
-              <p className="eyebrow eyebrow-gold">{isViper ? "06 / Full curriculum" : isFirstWave ? "05 / Course contents" : "01 / Curriculum"}</p>
+              <p className="eyebrow eyebrow-gold">{isViper ? "06 / Full curriculum" : isFirstWave || isOversight ? "05 / Course contents" : "01 / Curriculum"}</p>
               <h2 className="display-lg mt-2">Case file</h2>
             </div>
             <span className="font-mono text-xs text-muted">
