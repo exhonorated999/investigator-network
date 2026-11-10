@@ -568,3 +568,244 @@ h4 {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--accent-strong);
 }
+
+/* --------------------------------------------- VIPER course landing page --
+   Bespoke landing for the Project V.I.P.E.R. course (course-landing/*). The
+   hero + bands are always dark (VIPER's neon-green brand art); the cards in
+   between follow the site theme and only borrow the green as a highlight. */
+.viper-landing {
+  --viper: #7ee03a;
+  --viper-ink: #a6ef6a;
+  --viper-soft: rgba(126, 224, 58, 0.08);
+}
+:root[data-theme="light"] .viper-landing {
+  --viper: #4c9a17;
+  --viper-ink: #3d7f10;
+  --viper-soft: rgba(76, 154, 23, 0.08);
+}
+
+.viper-eyebrow { color: var(--viper-ink); }
+
+.viper-hero,
+.viper-band {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(126, 224, 58, 0.25);
+  background:
+    radial-gradient(ellipse 60% 70% at 78% 40%, rgba(126, 224, 58, 0.16), transparent 70%),
+    radial-gradient(ellipse 50% 60% at 0% 100%, rgba(0, 180, 216, 0.1), transparent 70%),
+    linear-gradient(160deg, #0b120d, #070a08 60%, #0a0f12);
+  box-shadow: 0 30px 80px -40px rgba(0, 0, 0, 0.65);
+  color: #e6f0e8;
+}
+.viper-hero .eyebrow,
+.viper-band .eyebrow {
+  color: #b6f57c;
+}
+.viper-hero-grid,
+.viper-band::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(126, 224, 58, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(126, 224, 58, 0.06) 1px, transparent 1px);
+  background-size: 36px 36px;
+  mask-image: radial-gradient(ellipse 90% 80% at 60% 40%, #000 30%, transparent 85%);
+}
+
+.viper-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 1rem;
+  border: 1px solid rgba(166, 239, 106, 0.55);
+  border-radius: 999px;
+  background: rgba(126, 224, 58, 0.1);
+  font-family: var(--font-orbitron), sans-serif;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: #c4f79a;
+}
+.viper-pill::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #a6ef6a;
+  box-shadow: 0 0 12px #a6ef6a;
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+.viper-glow {
+  color: #b6f57c;
+  text-shadow:
+    0 0 18px rgba(166, 239, 106, 0.55),
+    0 0 52px rgba(126, 224, 58, 0.35);
+}
+
+.btn-viper {
+  color: #0b1a04;
+  background: linear-gradient(135deg, #c8fa9a, #7ee03a);
+  border: 1px solid rgba(200, 250, 154, 0.8);
+  box-shadow:
+    0 0 26px rgba(126, 224, 58, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+.btn-viper:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 40px rgba(126, 224, 58, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+.btn-viper-ghost {
+  color: #dcefe0;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(166, 239, 106, 0.4);
+}
+.btn-viper-ghost:hover:not(:disabled) {
+  color: #c4f79a;
+  border-color: #a6ef6a;
+  transform: translateY(-2px);
+}
+
+.viper-frame {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(166, 239, 106, 0.35);
+  box-shadow:
+    0 0 0 6px rgba(126, 224, 58, 0.05),
+    0 30px 60px -20px rgba(0, 0, 0, 0.8),
+    0 0 60px -10px rgba(126, 224, 58, 0.35);
+  transform: perspective(1400px) rotateY(-6deg) rotateX(2deg);
+  transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.viper-frame:hover { transform: perspective(1400px) rotateY(0) rotateX(0); }
+.viper-halo {
+  position: absolute;
+  inset: 10% 8%;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(126, 224, 58, 0.35), transparent 65%);
+  filter: blur(40px);
+}
+.viper-float {
+  position: absolute;
+  padding: 0.5rem 0.8rem;
+  border: 1px solid rgba(166, 239, 106, 0.35);
+  background: rgba(8, 12, 9, 0.88);
+  backdrop-filter: blur(6px);
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: #d6e6da;
+  box-shadow: 0 12px 30px -12px rgba(0, 0, 0, 0.8);
+  animation: viper-bob 6s ease-in-out infinite;
+}
+.viper-float-a { left: -14px; bottom: 14%; }
+.viper-float-b { right: -10px; top: 8%; animation-delay: -3s; }
+@media (max-width: 640px) {
+  .viper-float { display: none; }
+}
+
+.viper-marquee {
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+}
+.viper-marquee-track {
+  display: flex;
+  width: max-content;
+  gap: 2.75rem;
+  animation: viper-marquee 38s linear infinite;
+}
+.viper-agency {
+  white-space: nowrap;
+  font-family: var(--font-orbitron), sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #c9d8cd;
+}
+.viper-agency em {
+  margin-left: 0.4rem;
+  font-style: normal;
+  color: #7ee03a;
+}
+
+.viper-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid color-mix(in srgb, var(--viper) 45%, transparent);
+  background: var(--viper-soft);
+  color: var(--viper-ink);
+  font-size: 20px;
+}
+.viper-card:hover { border-color: color-mix(in srgb, var(--viper) 55%, transparent); }
+.viper-module { border-top: 2px solid color-mix(in srgb, var(--viper) 70%, transparent); }
+
+.viper-screen {
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--viper) 35%, var(--border));
+  box-shadow: 0 30px 70px -35px rgba(0, 0, 0, 0.6);
+  background: #0b1016;
+}
+.viper-screen-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 12px;
+  background: #0f151b;
+  border-bottom: 1px solid rgba(126, 224, 58, 0.18);
+}
+.viper-screen-bar span {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: #2a3640;
+}
+.viper-screen-bar span:first-child { background: #7ee03a; }
+.viper-screen-bar em {
+  margin-left: 8px;
+  font-style: normal;
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 11px;
+  color: #7f9585;
+}
+.viper-fade { animation: viper-fade 0.45s ease both; }
+
+.viper-quote-mark {
+  position: absolute;
+  right: 1.5rem;
+  top: -2.5rem;
+  font-family: Georgia, serif;
+  font-size: 14rem;
+  line-height: 1;
+  color: var(--viper);
+  opacity: 0.12;
+}
+
+@keyframes viper-marquee {
+  to { transform: translateX(-50%); }
+}
+@keyframes viper-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+@keyframes viper-fade {
+  from { opacity: 0; transform: scale(1.01); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .viper-marquee-track,
+  .viper-float,
+  .viper-pill::before,
+  .viper-fade {
+    animation: none;
+  }
+  .viper-frame { transform: none; }
+}

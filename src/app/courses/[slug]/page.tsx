@@ -24,6 +24,7 @@ import {
   DEFAULT_INVOICE_EMAIL,
 } from "@/lib/course-checkout";
 import { enroll } from "../actions";
+import { ViperLanding, VIPER_LANDING_SLUG } from "@/components/course-landing/viper-landing";
 
 /**
  * A course description doubles as its landing page. Short descriptions are
@@ -115,10 +116,45 @@ export default async function CourseOverview({
   const isPaid = course.pricing === "PAID";
   const invoiceEmail = checkout?.invoiceEmail || DEFAULT_INVOICE_EMAIL;
 
+  // Bespoke marketing landing (currently only Project V.I.P.E.R.). It replaces
+  // the plain header + "open for enrollment" panel; progress + curriculum stay.
+  const isViper = slug === VIPER_LANDING_SLUG;
+  const viperSections = isViper
+    ? course.sections
+        .map((s) => ({
+          title: s.title,
+          units: s.units.filter((u) => !liveSessionEnded(u, now)).map((u) => u.title),
+        }))
+        .filter((s) => s.units.length > 0)
+    : [];
+  const viperCta = !isViper ? null : enrollment ? (
+    <>
+      {firstUnit ? (
+        <Link href={`/courses/${slug}/units/${firstUnit.id}`} className="btn btn-viper">
+          {pct > 0 ? `Resume course · ${pct}%` : "Start the course →"}
+        </Link>
+      ) : null}
+      {certificate ? (
+        <Link href={`/certificates/${certificate.serial}`} className="btn btn-viper-ghost">
+          🏅 View certificate
+        </Link>
+      ) : null}
+    </>
+  ) : course.status === "PUBLISHED" && !isPaid ? (
+    <form action={enroll}>
+      <input type="hidden" name="slug" value={slug} />
+      <button className="btn btn-viper">Enroll free →</button>
+    </form>
+  ) : (
+    <p className="font-mono text-xs uppercase tracking-[0.16em] text-[#a9c2ad]">
+      Publish this course to allow enrollment.
+    </p>
+  );
+
   return (
     <div className="min-h-screen">
       <SiteHeader name={user.name} isAdmin={isAdmin} />
-      <main className="mx-auto max-w-4xl px-5 pb-20 pt-8">
+      <main className={`mx-auto px-5 pb-20 pt-8 ${isViper ? "max-w-6xl" : "max-w-4xl"}`}>
         <Link
           href="/dashboard"
           className="eyebrow eyebrow-muted transition hover:text-accent-bright"
@@ -126,6 +162,22 @@ export default async function CourseOverview({
           ← Back to my training
         </Link>
 
+        {isViper ? (
+          <>
+            {course.status !== "PUBLISHED" ? (
+              <p className="mt-4">
+                <span className="tag-chip">{`// ${course.status} — ADMIN PREVIEW`}</span>
+              </p>
+            ) : null}
+            <ViperLanding
+              sections={viperSections}
+              lessonCount={units.filter((u) => u.type === "VIDEO").length}
+              cta={viperCta}
+              enrolled={!!enrollment}
+            />
+          </>
+        ) : (
+        <>
         {/* ----------------------------------------------------------- header */}
         <header className="reveal reveal-1 mt-5">
           <div className="flex items-center gap-3">
@@ -154,10 +206,12 @@ export default async function CourseOverview({
             </p>
           ) : null}
         </header>
+        </>
+        )}
 
         {/* ----------------------------------------------------- progress panel */}
         {enrollment ? (
-          <div className="panel rule-top reveal reveal-2 mt-8 p-6">
+          <div className={`panel rule-top reveal reveal-2 p-6 ${isViper ? "mt-16" : "mt-8"}`}>
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
                 <p className="eyebrow eyebrow-muted">Case progress</p>
@@ -201,7 +255,7 @@ export default async function CourseOverview({
               </div>
             </div>
           </div>
-        ) : course.status === "PUBLISHED" ? (
+        ) : isViper ? null : course.status === "PUBLISHED" ? (
           isPaid ? (
             /* Paid: no self-enroll. Purchase off-site, then an admin enrolls. */
             <div className="panel rule-top reveal reveal-2 mt-8 p-6">
@@ -283,10 +337,10 @@ export default async function CourseOverview({
         ) : null}
 
         {/* -------------------------------------------------------- curriculum */}
-        <section className="reveal reveal-3 mt-12">
+        <section id="curriculum" className={`reveal reveal-3 ${isViper ? "mt-20" : "mt-12"}`}>
           <header className="flex items-end justify-between gap-4 border-b border-border pb-3">
             <div>
-              <p className="eyebrow eyebrow-gold">01 / Curriculum</p>
+              <p className="eyebrow eyebrow-gold">{isViper ? "06 / Full curriculum" : "01 / Curriculum"}</p>
               <h2 className="display-lg mt-2">Case file</h2>
             </div>
             <span className="font-mono text-xs text-muted">
