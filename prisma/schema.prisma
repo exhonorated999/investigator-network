@@ -841,6 +841,8 @@ model Resource {
   /// External link to the tool/resource.
   url         String
   category    ResourceCategory
+  /// Sub-heading within the category (e.g. "Victim support"). "" = Other.
+  group       String           @default("")
   /// null = shown to both sides; otherwise limited to one audience.
   audience    Audience?
   /// Manual ordering within a category (lower shows first).

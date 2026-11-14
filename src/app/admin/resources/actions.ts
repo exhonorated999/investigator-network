@@ -20,6 +20,10 @@ function parseAudience(raw: FormDataEntryValue | null): "LE" | "CIVILIAN" | null
   return s === "LE" || s === "CIVILIAN" ? s : null;
 }
 
+function parseGroup(raw: FormDataEntryValue | null): string {
+  return String(raw || "").trim().replace(/\s+/g, " ").slice(0, 80);
+}
+
 function normalizeUrl(raw: FormDataEntryValue | null): string {
   let s = String(raw || "").trim();
   if (!s) return "";
@@ -41,8 +45,21 @@ export async function createResource(formData: FormData) {
       category,
       description: String(formData.get("description") || "").trim(),
       audience: parseAudience(formData.get("audience")),
+      group: parseGroup(formData.get("group")),
       sortOrder: Number(formData.get("sortOrder") || 0) || 0,
     },
+  });
+  refresh();
+}
+
+/** Move a resource into a different section (sub-heading). Blank = Other. */
+export async function setResourceGroup(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id") || "");
+  if (!id) return;
+  await prisma.resource.update({
+    where: { id },
+    data: { group: parseGroup(formData.get("group")) },
   });
   refresh();
 }

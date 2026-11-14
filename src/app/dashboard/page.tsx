@@ -264,6 +264,7 @@ export default async function DashboardPage() {
               description: r.description,
               url: r.url,
               category: r.category,
+              group: r.group,
             }))}
           />
         );

@@ -1,16 +1,25 @@
 import { loadAllResources, RESOURCE_CATEGORIES } from "@/lib/resources";
-import { createResource, deleteResource } from "./actions";
+import { groupResources, RESOURCE_GROUPS } from "@/lib/resource-groups";
+import { createResource, deleteResource, setResourceGroup } from "./actions";
 
 export const dynamic = "force-dynamic";
 
 export default async function ResourcesPage() {
   const resources = await loadAllResources();
 
-  // Group by category for the management list.
-  const grouped = RESOURCE_CATEGORIES.map((c) => ({
-    ...c,
-    items: resources.filter((r) => r.category === c.id),
-  }));
+  // Group by category, then by section, for the management list.
+  const grouped = RESOURCE_CATEGORIES.map((c) => {
+    const items = resources.filter((r) => r.category === c.id);
+    return { ...c, items, sections: groupResources(c.id, items) };
+  });
+
+  // Suggested section names: the defaults plus anything already in use.
+  const allGroups = [
+    ...new Set([
+      ...Object.values(RESOURCE_GROUPS).flat(),
+      ...resources.map((r) => r.group.trim()).filter(Boolean),
+    ]),
+  ];
 
   return (
     <div className="reveal">
@@ -61,6 +70,15 @@ export default async function ResourcesPage() {
             </select>
           </label>
           <label className="grid gap-1.5">
+            <span className="eyebrow eyebrow-muted">Section (sub-heading)</span>
+            <input
+              name="group"
+              list="resource-groups"
+              className="field"
+              placeholder="e.g. Victim support & image removal"
+            />
+          </label>
+          <label className="grid gap-1.5">
             <span className="eyebrow eyebrow-muted">Sort order</span>
             <input
               type="number"
@@ -76,6 +94,11 @@ export default async function ResourcesPage() {
             </button>
           </div>
         </form>
+        <datalist id="resource-groups">
+          {allGroups.map((g) => (
+            <option key={g} value={g} />
+          ))}
+        </datalist>
       </div>
 
       {/* List, grouped by category */}
@@ -92,7 +115,15 @@ export default async function ResourcesPage() {
               {g.items.length === 0 ? (
                 <p className="p-4 text-[14px] text-muted">No resources in this category.</p>
               ) : (
-                g.items.map((r) => (
+                g.sections.flatMap((s) => [
+                  <p
+                    key={`h-${s.label}`}
+                    className="bg-[rgba(0,180,216,0.04)] px-4 py-2 font-mono text-[10px] uppercase tracking-[0.16em] text-accent-bright"
+                  >
+                    {s.label}
+                    <span className="ml-1.5 text-muted">{s.items.length}</span>
+                  </p>,
+                  ...s.items.map((r) => (
                   <div
                     key={r.id}
                     className="flex items-start justify-between gap-4 p-4"
@@ -123,6 +154,23 @@ export default async function ResourcesPage() {
                       >
                         {r.url} ↗
                       </a>
+                      <form action={setResourceGroup} className="mt-2 flex flex-wrap items-center gap-2">
+                        <input type="hidden" name="id" value={r.id} />
+                        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">
+                          Section
+                        </span>
+                        <input
+                          name="group"
+                          list="resource-groups"
+                          defaultValue={r.group}
+                          placeholder="Other"
+                          aria-label={`Section for ${r.name}`}
+                          className="field !w-64 !py-1 !text-[13px]"
+                        />
+                        <button type="submit" className="btn btn-ghost btn-sm">
+                          Save
+                        </button>
+                      </form>
                     </div>
                     <form action={deleteResource}>
                       <input type="hidden" name="id" value={r.id} />
@@ -134,7 +182,8 @@ export default async function ResourcesPage() {
                       </button>
                     </form>
                   </div>
-                ))
+                  )),
+                ])
               )}
             </div>
           </div>
