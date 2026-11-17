@@ -1,6 +1,10 @@
 import { createHmac, timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
+import { briefDbError, isTransientDbError } from "@/lib/db-errors";
 import { prisma } from "@/lib/prisma";
+
+/** Ask Svix to wait this long before retrying a transient database failure. */
+const RETRY_AFTER_SECONDS = "5";
 
 /**
  * Resend webhook receiver — records delivery + engagement events onto
@@ -14,7 +18,15 @@ import { prisma } from "@/lib/prisma";
  * Events we handle (data.email_id maps to CampaignRecipient.providerId):
  *   email.delivered / email.bounced / email.complained / email.opened /
  *   email.clicked. Transactional emails share this endpoint but have no
- *   matching recipient row, so they're ignored harmlessly.
+ *   matching recipient row, so they're ignored harmlessly (HTTP 200).
+ *
+ * Status writes and the suppression upsert are idempotent, so a Svix retry
+ * of the same event is safe. Open/click counters still increment once per
+ * delivered attempt; the first-seen timestamp is written before the counter
+ * so a retry whose increment never committed does not skip it.
+ *
+ * A transient database error returns 503 with Retry-After instead of an
+ * uncaught 500. Svix retries those. Unknown events are acked.
  */
 
 export const runtime = "nodejs";
@@ -93,12 +105,42 @@ export async function POST(req: Request) {
   const providerId = event.data?.email_id;
   if (!providerId) return NextResponse.json({ ok: true, ignored: "no_id" });
 
+  try {
+    const ignored = await recordCampaignEvent(type, providerId);
+    if (ignored) return NextResponse.json({ ok: true, ignored });
+  } catch (err) {
+    const detail = briefDbError(err);
+    const label = type || "unknown";
+    if (isTransientDbError(err)) {
+      console.error(
+        `resend webhook: transient database error for ${label} (${detail})`
+      );
+      return NextResponse.json(
+        { ok: false, error: "database_unavailable" },
+        { status: 503, headers: { "Retry-After": RETRY_AFTER_SECONDS } }
+      );
+    }
+    console.error(`resend webhook: failed for ${label} (${detail})`);
+    return NextResponse.json({ ok: false, error: "internal" }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true });
+}
+
+/**
+ * Apply one verified event. Throws on database failure so the caller can
+ * return 503 and let Svix retry. No matching recipient is an ack, not an error.
+ */
+async function recordCampaignEvent(
+  type: string,
+  providerId: string
+): Promise<"no_recipient" | null> {
   const recipient = await prisma.campaignRecipient.findFirst({
     where: { providerId },
     select: { id: true, email: true, status: true },
   });
   // Not a campaign message (e.g. transactional) — ack and ignore.
-  if (!recipient) return NextResponse.json({ ok: true, ignored: "no_recipient" });
+  if (!recipient) return "no_recipient";
 
   const now = new Date();
 
@@ -131,6 +173,12 @@ export async function POST(req: Request) {
       break;
 
     case "email.opened":
+      // Timestamp first: it only fills a null column, so a retry is a no-op.
+      // The counter comes second. If it fails, Svix retries and increments once.
+      await prisma.campaignRecipient.updateMany({
+        where: { id: recipient.id, firstOpenedAt: null },
+        data: { firstOpenedAt: now },
+      });
       await prisma.campaignRecipient.update({
         where: { id: recipient.id },
         data: {
@@ -138,24 +186,19 @@ export async function POST(req: Request) {
           lastOpenedAt: now,
         },
       });
-      // Set firstOpenedAt only if empty (separate update to avoid clobbering).
-      await prisma.campaignRecipient.updateMany({
-        where: { id: recipient.id, firstOpenedAt: null },
-        data: { firstOpenedAt: now },
-      });
       break;
 
     case "email.clicked":
+      await prisma.campaignRecipient.updateMany({
+        where: { id: recipient.id, firstClickedAt: null },
+        data: { firstClickedAt: now },
+      });
       await prisma.campaignRecipient.update({
         where: { id: recipient.id },
         data: {
           clickCount: { increment: 1 },
           lastClickedAt: now,
         },
-      });
-      await prisma.campaignRecipient.updateMany({
-        where: { id: recipient.id, firstClickedAt: null },
-        data: { firstClickedAt: now },
       });
       break;
 
@@ -164,5 +207,5 @@ export async function POST(req: Request) {
       break;
   }
 
-  return NextResponse.json({ ok: true });
+  return null;
 }
