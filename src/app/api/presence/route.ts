@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { briefDbError } from "@/lib/db-errors";
 import { recordHeartbeat } from "@/lib/presence";
 
 /**
@@ -26,8 +27,9 @@ export async function POST(req: Request) {
 
   try {
     await recordHeartbeat(userId, path);
-  } catch {
-    // Never let telemetry surface as an error to the client.
+  } catch (err) {
+    // Telemetry must not fail the beacon. Log so a dead database is visible.
+    console.error(`presence heartbeat failed (${briefDbError(err)})`);
   }
 
   return new NextResponse(null, { status: 204 });

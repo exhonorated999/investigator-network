@@ -35,9 +35,9 @@ function startOfDay(now = new Date()): Date {
  * Record a heartbeat. `path` is the learner-facing route they were on; we
  * resolve it to a course/unit so staff can see what someone is working on.
  *
- * Resolution is best-effort: an unrecognized path just clears the course, and
- * any failure is swallowed by the caller. Presence is telemetry, never a
- * reason to fail a request.
+ * Resolution is best-effort: an unrecognized path just clears the course.
+ * The caller logs failures and still returns 204. Presence is telemetry,
+ * never a reason to fail a request.
  */
 export async function recordHeartbeat(userId: string, path: string) {
   const { courseId, unitId } = await resolveLocation(path);
