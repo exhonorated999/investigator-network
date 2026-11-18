@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { briefDbError } from "@/lib/db-errors";
 import { pingDatabase } from "@/lib/prisma";
+import { drainPendingUnsubscribes } from "@/lib/unsubscribe";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,6 +13,12 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     await pingDatabase();
+    // Replay opt-outs captured while the database was down. Not awaited:
+    // a long queue must not fail the liveness probe. The in-process
+    // reconciler retries the same journal.
+    void drainPendingUnsubscribes().catch((err) => {
+      console.error(`health: unsubscribe replay failed (${briefDbError(err)})`);
+    });
     return NextResponse.json(
       { ok: true },
       { status: 200, headers: { "Cache-Control": "no-store" } }

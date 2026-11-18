@@ -1,6 +1,10 @@
-import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { renderCampaignEmail, htmlToText, appUrl, PHYSICAL_ADDRESS } from "@/lib/email-template";
+import {
+  buildUnsubscribeUrl,
+  createUnsubToken,
+  listUnsubscribeHeaders,
+} from "@/lib/unsub-token";
 import {
   applyMerge,
   fillFullHtml,
@@ -35,10 +39,6 @@ function fromHeader(overrideName: string): string {
     ? `"${display.replace(/["\\]/g, "\\$&")}"`
     : display;
   return `${safe} <${address}>`;
-}
-
-function newUnsubToken(): string {
-  return randomBytes(18).toString("hex");
 }
 
 export interface AssembledRecipient {
@@ -318,7 +318,7 @@ export async function sendCampaign(campaignId: string): Promise<SendOutcome> {
       name: r.name,
       firstName: r.firstName,
       kind: r.kind,
-      unsubToken: newUnsubToken(),
+      unsubToken: createUnsubToken(r.email),
     })),
     skipDuplicates: true,
   });
@@ -338,7 +338,7 @@ export async function sendCampaign(campaignId: string): Promise<SendOutcome> {
 
   for (const group of chunk(rows, 100)) {
     const items: BatchItem[] = group.map((row) => {
-      const unsubscribeUrl = `${base}/api/unsubscribe?token=${row.unsubToken}`;
+      const unsubscribeUrl = buildUnsubscribeUrl(row.unsubToken, base);
       const msg = renderForRecipient(campaign, {
         firstName: row.firstName,
         agency: agencyByEmail.get(row.email.toLowerCase()) ?? "",
@@ -350,10 +350,7 @@ export async function sendCampaign(campaignId: string): Promise<SendOutcome> {
         subject: msg.subject,
         html: msg.html,
         text: msg.text,
-        headers: {
-          "List-Unsubscribe": `<${unsubscribeUrl}>`,
-          "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
-        },
+        headers: listUnsubscribeHeaders(unsubscribeUrl),
       };
     });
 
@@ -466,15 +463,15 @@ export async function loadAllCampaigns() {
 
 /**
  * Send a single preview copy of a campaign to one address, without creating
- * recipient rows or touching campaign status. Uses an unsubscribe token that
- * isn't tied to a real recipient (the link still works defensively).
+ * recipient rows or touching campaign status. The unsubscribe token seals
+ * this address, so the link still suppresses them without a recipient row.
  */
 export async function sendTest(
   campaign: RenderFields & Pick<Campaign, "fromName" | "customList">,
   toEmail: string
 ): Promise<{ ok: boolean; error?: string }> {
   const base = appUrl();
-  const unsubscribeUrl = `${base}/api/unsubscribe?token=preview-${newUnsubToken()}`;
+  const unsubscribeUrl = buildUnsubscribeUrl(createUnsubToken(toEmail), base);
   const msg = renderForRecipient(campaign, {
     ...sampleMergeVars(campaign),
     unsubscribeUrl,
@@ -496,6 +493,7 @@ export async function sendTest(
       subject: `[TEST] ${msg.subject}`,
       html: msg.html,
       text: msg.text,
+      headers: listUnsubscribeHeaders(unsubscribeUrl),
     }),
   });
   if (!res.ok) {

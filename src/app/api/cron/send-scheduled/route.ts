@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runDueScheduledCampaigns } from "@/lib/campaigns";
+import { briefDbError } from "@/lib/db-errors";
+import { drainPendingUnsubscribes } from "@/lib/unsubscribe";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,8 +31,25 @@ async function handle(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
 
+  // Apply opt-outs queued during a database outage before the next send,
+  // so a recovered database cannot mail someone who already unsubscribed.
+  let unsubscribeReplay: Awaited<ReturnType<typeof drainPendingUnsubscribes>> | null =
+    null;
+  try {
+    unsubscribeReplay = await drainPendingUnsubscribes();
+  } catch (err) {
+    console.error(
+      JSON.stringify({
+        event: "unsubscribe",
+        source: "reconcile",
+        outcome: "queued",
+        error: briefDbError(err),
+      })
+    );
+  }
+
   const result = await runDueScheduledCampaigns();
-  return NextResponse.json({ ok: true, ...result });
+  return NextResponse.json({ ok: true, unsubscribeReplay, ...result });
 }
 
 export async function GET(req: NextRequest) {
